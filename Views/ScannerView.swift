@@ -5,8 +5,6 @@ import Vision
 struct ScannerView: View {
     @StateObject private var viewModel = ScannerViewModel()
     @Environment(\.dismiss) private var dismiss
-    @State private var showingBarcodeResult = false
-    @State private var scannedCode = ""
     
     var body: some View {
         ZStack {
@@ -107,21 +105,11 @@ struct ScannerView: View {
         }
         .onReceive(viewModel.$scannedBarcode) { barcode in
             if !barcode.isEmpty {
-                scannedCode = barcode
-                showingBarcodeResult = true
                 viewModel.handleBarcodeDetection(barcode)
-            }
-        }
-        .alert("Barkod Tarandı", isPresented: $showingBarcodeResult) {
-            Button("Web Sitesini Aç") {
-                viewModel.openWebsite(with: scannedCode)
+                // Direkt web sitesini aç ve view'ı kapat
+                viewModel.openWebsite(with: barcode)
                 dismiss()
             }
-            Button("Tekrar Tara") {
-                viewModel.resetScanning()
-            }
-        } message: {
-            Text("Barkod içeriği: \(scannedCode)")
         }
     }
 }
