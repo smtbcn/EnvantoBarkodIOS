@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Uygulama içi dosya yolları -->
+    <files-path name="internal_files" path="." />
+    <files-path name="app_images" path="images" />
+    <cache-path name="internal_cache" path="." />
+    <cache-path name="temp_camera" path="temp_camera" />
+    
+    <!-- Uygulama özel harici depolama yolları -->
+    <external-files-path name="external_files" path="." />
+    <external-files-path name="external_files_download" path="Download" />
+    <external-files-path name="external_files_pictures" path="Pictures" />
+    <external-files-path name="app_images" path="Images" />
+    <external-files-path name="envanto_images" path="EnvantoImages" />
+    <external-cache-path name="external_cache" path="." />
+    
+    <!-- APK indirme ve kurulum için özel yollar -->
+    <external-files-path name="apk_downloads" path="Download" />
+    <external-files-path name="shared_apks" path="." />
+    
+    <!-- Genel harici depolama yolları -->
+    <external-path name="external_storage" path="." />
+    <external-path name="downloads" path="Download" />
+    <external-path name="pictures" path="Pictures" />
+    <external-path name="dcim" path="DCIM" />
+    <external-path name="camera" path="DCIM/Camera" />
+    
+    <!-- Android 10+ için özel yollar -->
+    <external-path name="external_files_compat" path="Android/data/${applicationId}" />
+    <external-path name="external_downloads_compat" path="Download" />
+    
+    <!-- Kök dizin erişimi -->
+    <root-path name="root" path="." />
+</paths> 
