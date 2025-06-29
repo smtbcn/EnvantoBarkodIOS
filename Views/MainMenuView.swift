@@ -7,74 +7,88 @@ struct MainMenuView: View {
     
     var body: some View {
         VStack(spacing: 20) {
-            // Başlık ve versiyon bilgisi
-            VStack(spacing: 8) {
+            // Logo ve başlık
+            VStack(spacing: 16) {
+                // App Logo
+                Image(systemName: "doc.text.viewfinder")
+                    .font(.system(size: 80))
+                    .foregroundColor(.blue)
+                    .padding()
+                    .background(
+                        Circle()
+                            .fill(Color.blue.opacity(0.1))
+                            .frame(width: 120, height: 120)
+                    )
+                
+                // Başlık
                 Text("Envanto Barkod")
                     .font(.largeTitle)
                     .fontWeight(.bold)
                     .foregroundColor(.primary)
                 
-                Text("Versiyon: \(Bundle.main.appVersionLong)")
-                    .font(.caption)
+                // Açıklama metni
+                Text("Barkod tarama ve yükleme işlemlerinizi kolayca gerçekleştirin")
+                    .font(.subheadline)
                     .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
             }
             .padding(.top, 20)
             
             Spacer()
             
-            // Ana menü butonları
+            // Ana menü butonları - 2x2 Grid
             VStack(spacing: 16) {
-                // Barkod Tara butonu
-                NavigationLink(destination: ScannerView()) {
-                    MenuButtonContent(
-                        title: "Barkod Tara",
-                        icon: "qrcode.viewfinder",
+                HStack(spacing: 16) {
+                    // Barkod Tara
+                    NavigationLink(destination: ScannerView()) {
+                        GridButtonContent(
+                            title: "Barkod Tara",
+                            icon: "qrcode.viewfinder",
+                            color: .blue
+                        )
+                    }
+                    .disabled(!viewModel.hasRequiredPermissions)
+                    
+                    // Barkod Yükle
+                    GridButton(
+                        title: "Barkod Yükle",
+                        icon: "square.and.arrow.up",
+                        color: .orange
+                    ) {
+                        if viewModel.hasRequiredPermissions {
+                            // Upload görünümüne git
+                        } else {
+                            showingPermissionAlert = true
+                        }
+                    }
+                }
+                
+                HStack(spacing: 16) {
+                    // Müşteri Resimleri
+                    GridButton(
+                        title: "Müşteri Resimleri",
+                        icon: "photo.on.rectangle",
                         color: .blue
-                    )
-                }
-                .disabled(!viewModel.hasRequiredPermissions)
-                .onTapGesture {
-                    if !viewModel.hasRequiredPermissions {
-                        showingPermissionAlert = true
+                    ) {
+                        if viewModel.hasRequiredPermissions {
+                            // Customer images görünümüne git
+                        } else {
+                            showingPermissionAlert = true
+                        }
                     }
-                }
-                
-                // Barkod Yükle butonu
-                MenuButton(
-                    title: "Barkod Yükle",
-                    icon: "square.and.arrow.up",
-                    color: .green
-                ) {
-                    if viewModel.hasRequiredPermissions {
-                        // Upload görünümüne git
-                    } else {
-                        showingPermissionAlert = true
-                    }
-                }
-                
-                // Müşteri Resimleri butonu
-                MenuButton(
-                    title: "Müşteri Resimleri",
-                    icon: "photo.on.rectangle",
-                    color: .orange
-                ) {
-                    if viewModel.hasRequiredPermissions {
-                        // Customer images görünümüne git
-                    } else {
-                        showingPermissionAlert = true
-                    }
-                }
-                
-                // Araçtaki Ürünler butonu
-                MenuButton(
-                    title: "Araçtaki Ürünler",
-                    icon: "car.fill",
-                    color: .purple
-                ) {
-                    if viewModel.hasRequiredPermissions {
-                        // Vehicle products görünümüne git
-                    } else {
-                        showingPermissionAlert = true
+                    
+                    // Araçtaki Ürünler
+                    GridButton(
+                        title: "Araçtaki Ürünler",
+                        icon: "car.fill",
+                        color: .green
+                    ) {
+                        if viewModel.hasRequiredPermissions {
+                            // Vehicle products görünümüne git
+                        } else {
+                            showingPermissionAlert = true
+                        }
                     }
                 }
             }
@@ -82,25 +96,44 @@ struct MainMenuView: View {
             
             Spacer()
             
-            // Cihaz sahibi bilgisi
-            if !viewModel.deviceOwner.isEmpty {
-                Text("Cihaz Sahibi: \(viewModel.deviceOwner)")
+            // Uygulama Ayarları butonu
+            Button(action: {
+                showingSettings = true
+            }) {
+                HStack {
+                    Image(systemName: "gearshape.fill")
+                        .font(.title2)
+                        .foregroundColor(.white)
+                    
+                    Text("Uygulama Ayarları")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.blue)
+                )
+            }
+            .padding(.horizontal, 40)
+            
+            // Alt bilgiler
+            VStack(spacing: 4) {
+                if !viewModel.deviceOwner.isEmpty {
+                    Text("Cihaz Sahibi: \(viewModel.deviceOwner)")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                }
+                
+                Text("Versiyon: \(Bundle.main.appVersionLong)")
                     .font(.footnote)
                     .foregroundColor(.secondary)
-                    .padding(.bottom, 10)
             }
+            .padding(.bottom, 20)
         }
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: {
-                    showingSettings = true
-                }) {
-                    Image(systemName: "gearshape.fill")
-                        .foregroundColor(.primary)
-                }
-            }
-        }
+        .navigationBarHidden(true)
         .sheet(isPresented: $showingSettings) {
             SettingsView(viewModel: viewModel)
         }
@@ -118,7 +151,7 @@ struct MainMenuView: View {
     }
 }
 
-struct MenuButton: View {
+struct GridButton: View {
     let title: String
     let icon: String
     let color: Color
@@ -126,39 +159,32 @@ struct MenuButton: View {
     
     var body: some View {
         Button(action: action) {
-            MenuButtonContent(title: title, icon: icon, color: color)
+            GridButtonContent(title: title, icon: icon, color: color)
         }
         .buttonStyle(PlainButtonStyle())
     }
 }
 
-struct MenuButtonContent: View {
+struct GridButtonContent: View {
     let title: String
     let icon: String
     let color: Color
     
     var body: some View {
-        HStack {
+        VStack(spacing: 12) {
             Image(systemName: icon)
-                .font(.title2)
+                .font(.system(size: 32))
                 .foregroundColor(.white)
-                .frame(width: 30, height: 30)
             
             Text(title)
-                .font(.headline)
-                .fontWeight(.medium)
+                .font(.system(size: 16, weight: .medium))
                 .foregroundColor(.white)
-            
-            Spacer()
-            
-            Image(systemName: "chevron.right")
-                .font(.title3)
-                .foregroundColor(.white.opacity(0.8))
+                .multilineTextAlignment(.center)
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 16)
+        .frame(maxWidth: .infinity, minHeight: 120)
+        .padding(.vertical, 20)
         .background(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: 16)
                 .fill(
                     LinearGradient(
                         gradient: Gradient(colors: [color.opacity(0.9), color]),
@@ -167,6 +193,7 @@ struct MenuButtonContent: View {
                     )
                 )
         )
+        .shadow(color: color.opacity(0.3), radius: 8, x: 0, y: 4)
     }
 }
 

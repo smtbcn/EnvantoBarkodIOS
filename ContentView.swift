@@ -5,13 +5,11 @@ struct ContentView: View {
     
     var body: some View {
         NavigationView {
-            if showScanner {
+            MainMenuView()
+        }
+        .fullScreenCover(isPresented: $showScanner) {
+            NavigationView {
                 ScannerView()
-                    .onDisappear {
-                        showScanner = false
-                    }
-            } else {
-                MainMenuView()
             }
         }
         .onOpenURL { url in
