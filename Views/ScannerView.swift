@@ -23,7 +23,6 @@ struct ScannerView: View {
                     }) {
                         Image(systemName: "xmark")
                             .font(.title2)
-                            .fontWeight(.medium)
                             .foregroundColor(.white)
                             .padding(12)
                             .background(Color.black.opacity(0.3))
@@ -37,7 +36,6 @@ struct ScannerView: View {
                     }) {
                         Image(systemName: viewModel.isFlashOn ? "bolt.fill" : "bolt.slash.fill")
                             .font(.title2)
-                            .fontWeight(.medium)
                             .foregroundColor(.white)
                             .padding(12)
                             .background(Color.black.opacity(0.3))

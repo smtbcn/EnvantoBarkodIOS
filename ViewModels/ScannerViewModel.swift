@@ -66,16 +66,18 @@ class ScannerViewModel: NSObject, ObservableObject {
     
     func startScanning() {
         sessionQueue.async { [weak self] in
-            if !self?.captureSession.isRunning == true {
-                self?.captureSession.startRunning()
+            guard let self = self else { return }
+            if !self.captureSession.isRunning {
+                self.captureSession.startRunning()
             }
         }
     }
     
     func stopScanning() {
         sessionQueue.async { [weak self] in
-            if self?.captureSession.isRunning == true {
-                self?.captureSession.stopRunning()
+            guard let self = self else { return }
+            if self.captureSession.isRunning {
+                self.captureSession.stopRunning()
             }
         }
     }
