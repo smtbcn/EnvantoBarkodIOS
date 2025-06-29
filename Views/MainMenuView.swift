@@ -159,7 +159,13 @@ struct MenuButtonContent: View {
         .padding(.vertical, 16)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(color.gradient)
+                .fill(
+                    LinearGradient(
+                        gradient: Gradient(colors: [color.opacity(0.9), color]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
         )
     }
 }
