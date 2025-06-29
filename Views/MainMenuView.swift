@@ -10,16 +10,46 @@ struct MainMenuView: View {
         VStack(spacing: 20) {
             // Logo ve başlık
             VStack(spacing: 16) {
-                // App Logo
-                Image(systemName: "doc.text.viewfinder")
-                    .font(.system(size: 80))
-                    .foregroundColor(.blue)
-                    .padding()
-                    .background(
-                        Circle()
-                            .fill(Color.blue.opacity(0.1))
-                            .frame(width: 120, height: 120)
-                    )
+                // App Logo - Android'deki gibi "E" logosu
+                ZStack {
+                    // Arka plan daire
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                gradient: Gradient(colors: [Color.blue.opacity(0.8), Color.blue]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 120, height: 120)
+                        .shadow(color: Color.blue.opacity(0.3), radius: 8, x: 0, y: 4)
+                    
+                    // Beyaz grid çizgiler (Android tasarımı)
+                    VStack(spacing: 8) {
+                        HStack(spacing: 8) {
+                            Rectangle().fill(Color.white.opacity(0.3)).frame(width: 20, height: 3)
+                            Rectangle().fill(Color.white.opacity(0.3)).frame(width: 20, height: 3)
+                            Rectangle().fill(Color.white.opacity(0.3)).frame(width: 20, height: 3)
+                        }
+                        HStack(spacing: 8) {
+                            Rectangle().fill(Color.white.opacity(0.3)).frame(width: 20, height: 3)
+                            Rectangle().fill(Color.white.opacity(0.3)).frame(width: 20, height: 3)
+                            Rectangle().fill(Color.white.opacity(0.3)).frame(width: 20, height: 3)
+                        }
+                        HStack(spacing: 8) {
+                            Rectangle().fill(Color.white.opacity(0.3)).frame(width: 20, height: 3)
+                            Rectangle().fill(Color.white.opacity(0.3)).frame(width: 20, height: 3)
+                            Rectangle().fill(Color.white.opacity(0.3)).frame(width: 20, height: 3)
+                        }
+                    }
+                    .offset(y: -5)
+                    
+                    // "E" harfi
+                    Text("E")
+                        .font(.system(size: 48, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
+                        .shadow(color: Color.black.opacity(0.2), radius: 2, x: 0, y: 1)
+                }
                 
                 // Başlık
                 Text("Envanto Barkod")
