@@ -92,7 +92,6 @@ struct SettingsView: View {
                         saveSettings()
                         dismiss()
                     }
-                    .fontWeight(.semibold)
                 }
             }
         }
