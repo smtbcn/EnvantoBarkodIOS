@@ -10,8 +10,8 @@ struct MainMenuView: View {
         VStack(spacing: 20) {
             // Logo ve başlık
             VStack(spacing: 16) {
-                // App Logo - Assets'teki hazır PNG'yi kullan
-                Image("AppIcon")
+                // App Logo - Özel EnvantoLogo image set
+                Image("EnvantoLogo")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 120, height: 120)
