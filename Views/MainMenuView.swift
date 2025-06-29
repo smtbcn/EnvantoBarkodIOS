@@ -184,7 +184,7 @@ struct GridButtonContent: View {
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity, minHeight: 120)
-        .padding(.vertical, 20)
+        .padding(.vertical, 12)
         .background(
             RoundedRectangle(cornerRadius: 16)
                 .fill(
