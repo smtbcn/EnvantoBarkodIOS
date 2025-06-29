@@ -6,6 +6,7 @@ struct ContentView: View {
     var body: some View {
         NavigationView {
             MainMenuView()
+                .environmentObject(appState)
         }
         .fullScreenCover(isPresented: $appState.showScanner) {
             NavigationView {

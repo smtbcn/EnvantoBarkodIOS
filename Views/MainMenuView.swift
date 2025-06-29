@@ -4,6 +4,7 @@ struct MainMenuView: View {
     @StateObject private var viewModel = MainViewModel()
     @State private var showingSettings = false
     @State private var showingPermissionAlert = false
+    @EnvironmentObject var appState: AppStateManager
     
     var body: some View {
         VStack(spacing: 20) {
@@ -41,14 +42,18 @@ struct MainMenuView: View {
             VStack(spacing: 16) {
                 HStack(spacing: 16) {
                     // Barkod Tara
-                    NavigationLink(destination: ScannerView()) {
-                        GridButtonContent(
-                            title: "Barkod Tara",
-                            icon: "qrcode.viewfinder",
-                            color: .blue
-                        )
+                    GridButton(
+                        title: "Barkod Tara",
+                        icon: "qrcode.viewfinder",
+                        color: .blue
+                    ) {
+                        if viewModel.hasRequiredPermissions {
+                            // Android mantık: AppStateManager ile scanner aç
+                            appState.showScanner = true
+                        } else {
+                            showingPermissionAlert = true
+                        }
                     }
-                    .disabled(!viewModel.hasRequiredPermissions)
                     
                     // Barkod Yükle
                     GridButton(
@@ -198,7 +203,6 @@ struct GridButtonContent: View {
 }
 
 #Preview {
-    NavigationView {
-        MainMenuView()
-    }
+    MainMenuView()
+        .environmentObject(AppStateManager())
 } 
