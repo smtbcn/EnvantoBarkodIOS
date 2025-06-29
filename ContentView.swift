@@ -1,16 +1,23 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var shouldOpenScanner = false
+    @State private var showScanner = false
     
     var body: some View {
         NavigationView {
-            MainMenuView(shouldOpenScanner: $shouldOpenScanner)
+            if showScanner {
+                ScannerView()
+                    .onDisappear {
+                        showScanner = false
+                    }
+            } else {
+                MainMenuView()
+            }
         }
         .onOpenURL { url in
             // URL scheme: envantobarcode://
             if url.scheme == "envantobarcode" {
-                shouldOpenScanner = true
+                showScanner = true
             }
         }
     }
