@@ -1,50 +1,41 @@
 # @format
 
 workflows:
-  ios-workflow:
-    name: iOS Workflow
-    max_build_duration: 120
+  # Ücretsiz Simulator Build (Test için)
+  ios-simulator:
+    name: iOS Simulator Build (FREE)
+    max_build_duration: 60
     instance_type: mac_mini_m1
-    integrations:
-      app_store_connect: codemagic
     environment:
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.envanto.barkod
       vars:
-        XCODE_WORKSPACE: "EnvantoBarkod.xcodeproj" # Proje dosyanızın adı
-        XCODE_SCHEME: "EnvantoBarkod" # Scheme adı
-        BUNDLE_ID: "com.envanto.barkod" # Bundle identifier
-        APP_ID: 1234567890 # App Store Connect'teki App ID (değiştirin)
+        XCODE_PROJECT: "EnvantoBarkod.xcodeproj"
+        XCODE_SCHEME: "EnvantoBarkod"
       xcode: latest
-      cocoapods: default
     scripts:
-      - name: Set up keychain to be used for codesigning
+      - name: Build for iOS Simulator
         script: |
-          keychain initialize
-      - name: Fetch signing files
+          xcode-build build \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME" \
+            -destination "platform=iOS Simulator,name=iPhone 15,OS=latest" \
+            -configuration Debug \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+      - name: Locate and archive simulator app
         script: |
-          app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE --create
-      - name: Use system default keychain
-        script: |
-          keychain add-certificates
-      - name: Set up code signing settings on Xcode project
-        script: |
-          xcode-project use-profiles
-      - name: Get CocoaPods dependencies
-        script: |
-          # CocoaPods kullanıyorsanız aktifleştirin
-          # pod install
-      - name: Build ipa for distribution
-        script: |
-          xcode-build build-xcarchive \
-            --workspace "$XCODE_WORKSPACE" \
-            --scheme "$XCODE_SCHEME"
+          echo "Locating .app file..."
+          APP_PATH=$(find $HOME/Library/Developer/Xcode/DerivedData -name "*.app" -path "*/Build/Products/Debug-iphonesimulator/*" | head -1)
+          echo "Found app at: $APP_PATH"
+          if [ -n "$APP_PATH" ]; then
+            cd "$(dirname "$APP_PATH")"
+            zip -r EnvantoBarkod-Simulator.zip "$(basename "$APP_PATH")"
+            mv EnvantoBarkod-Simulator.zip $CM_BUILD_DIR/
+          fi
     artifacts:
-      - build/ios/ipa/*.ipa
+      - "*.zip"
       - /tmp/xcodebuild_logs/*.log
-      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
-      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/Products/Debug-iphonesimulator/*.app
     publishing:
       email:
         recipients:
@@ -52,9 +43,45 @@ workflows:
         notify:
           success: true
           failure: true
-      app_store_connect:
-        auth: integration
-        # Beta test için TestFlight'a yüklemek istiyorsanız:
-        # submit_to_testflight: true
-        # App Store'a release yapmak istiyorsanız:
-        # submit_to_app_store: false
+
+  # Apple Developer Hesabı ile Gerçek Cihaz Build'i (Ücretli - $99/yıl)
+  ios-device:
+    name: iOS Device Build (PAID - Need Apple Developer Account)
+    max_build_duration: 90
+    instance_type: mac_mini_m1
+    integrations:
+      app_store_connect: codemagic
+    environment:
+      ios_signing:
+        distribution_type: ad_hoc
+        bundle_identifier: com.envanto.barkod
+      vars:
+        XCODE_PROJECT: "EnvantoBarkod.xcodeproj"
+        XCODE_SCHEME: "EnvantoBarkod"
+      xcode: latest
+    scripts:
+      - name: Set up keychain
+        script: keychain initialize
+      - name: Fetch signing files
+        script: |
+          app-store-connect fetch-signing-files com.envanto.barkod \
+            --type IOS_APP_ADHOC --create
+      - name: Add certificates to keychain
+        script: keychain add-certificates
+      - name: Set up code signing
+        script: xcode-project use-profiles
+      - name: Build IPA for device
+        script: |
+          xcode-build build-xcarchive \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      email:
+        recipients:
+          - your-email@example.com
+        notify:
+          success: true
+          failure: true
