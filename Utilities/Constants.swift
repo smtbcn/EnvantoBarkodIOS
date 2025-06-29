@@ -3,7 +3,7 @@ import Foundation
 struct Constants {
     
     struct Network {
-        static let defaultBaseURL = "https://envanto.com.tr/barkod"
+        static let defaultBaseURL = "https://envanto.app/barkodindex.asp?barcode="
         static let timeoutInterval: TimeInterval = 30.0
     }
     

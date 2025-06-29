@@ -56,13 +56,7 @@ class BarcodeService: ObservableObject {
         // Desteklenen barkod formatları
         request.symbologies = [
             .qr,
-            .dataMatrix,
-            .ean13,
-            .ean8,
-            .code128,
-            .code39,
-            .pdf417,
-            .aztec
+            .dataMatrix
         ]
         
         let handler = VNImageRequestHandler(cvPixelBuffer: pixelBuffer, options: [:])
@@ -85,14 +79,6 @@ class BarcodeService: ObservableObject {
             return .qr
         case .dataMatrix:
             return .dataMatrix
-        case .ean13:
-            return .ean13
-        case .ean8:
-            return .ean8
-        case .code128:
-            return .code128
-        case .code39:
-            return .code39
         default:
             return .unknown
         }

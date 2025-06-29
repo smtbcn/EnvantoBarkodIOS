@@ -119,7 +119,7 @@ class ScannerViewModel: NSObject, ObservableObject {
     
     func openWebsite(with barcodeContent: String) {
         let baseURL = UserDefaults.standard.string(forKey: Constants.UserDefaults.baseURL) ?? Constants.Network.defaultBaseURL
-        let fullURL = "\(baseURL)/\(barcodeContent)"
+        let fullURL = "\(baseURL)\(barcodeContent)"
         
         if let url = URL(string: fullURL) {
             UIApplication.shared.open(url)
@@ -155,7 +155,7 @@ class ScannerViewModel: NSObject, ObservableObject {
         }
         
         // QR kod ve Data Matrix'i destekle
-        request.symbologies = [.qr, .dataMatrix, .ean13, .ean8, .code128]
+        request.symbologies = [.qr, .dataMatrix]
         
         let handler = VNImageRequestHandler(cvPixelBuffer: image, options: [:])
         

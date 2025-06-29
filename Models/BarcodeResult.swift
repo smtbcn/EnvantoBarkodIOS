@@ -10,10 +10,6 @@ struct BarcodeResult: Identifiable, Codable {
     enum BarcodeFormat: String, CaseIterable, Codable {
         case qr = "QR"
         case dataMatrix = "DataMatrix"
-        case ean13 = "EAN-13"
-        case ean8 = "EAN-8"
-        case code128 = "Code128"
-        case code39 = "Code39"
         case unknown = "Unknown"
         
         var displayName: String {
@@ -22,14 +18,6 @@ struct BarcodeResult: Identifiable, Codable {
                 return "QR Kod"
             case .dataMatrix:
                 return "Data Matrix"
-            case .ean13:
-                return "EAN-13"
-            case .ean8:
-                return "EAN-8"
-            case .code128:
-                return "Code 128"
-            case .code39:
-                return "Code 39"
             case .unknown:
                 return "Bilinmeyen"
             }
