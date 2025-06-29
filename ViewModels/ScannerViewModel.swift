@@ -8,9 +8,8 @@ class ScannerViewModel: NSObject, ObservableObject {
     @Published var isAutoFocusing = false
     @Published var scannedBarcode = ""
     @Published var scannerLineOffset: CGFloat = -140
-    @Published var showWebBrowser = false
-    @Published var webURL: URL?
-    @Published var isCameraActive = true
+    // Android logic: finish() gibi - ScannerView'ı kapat ve external browser aç
+    @Published var shouldDismissToMain = false
     
     let captureSession = AVCaptureSession()
     private var videoOutput = AVCaptureVideoDataOutput()
@@ -127,31 +126,13 @@ class ScannerViewModel: NSObject, ObservableObject {
         let fullURL = "\(baseURL)\(barcodeContent)"
         
         if let url = URL(string: fullURL) {
+            // Android mantık: finish() equivalent - ScannerView'ı kapat ve external browser'da aç
             DispatchQueue.main.async {
-                // Kamera session'ını durdur (performans için)
-                self.pauseCamera()
-                self.webURL = url
-                self.showWebBrowser = true
-            }
-        }
-    }
-    
-    func pauseCamera() {
-        isCameraActive = false
-        sessionQueue.async { [weak self] in
-            guard let self = self else { return }
-            if self.captureSession.isRunning {
-                self.captureSession.stopRunning()
-            }
-        }
-    }
-    
-    func resumeCamera() {
-        isCameraActive = true
-        sessionQueue.async { [weak self] in
-            guard let self = self else { return }
-            if !self.captureSession.isRunning {
-                self.captureSession.startRunning()
+                // External browser'da aç (Android CustomTabsIntent equivalent)
+                UIApplication.shared.open(url)
+                
+                // ScannerView'ı kapat (Android finish() equivalent)
+                self.shouldDismissToMain = true
             }
         }
     }
