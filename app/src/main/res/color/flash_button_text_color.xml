@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Flash Button Text Color Selector -->
-<selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Text color remains white for all states -->
-    <item android:color="#FFFFFF" />
-</selector>

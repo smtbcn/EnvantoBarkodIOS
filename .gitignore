@@ -238,6 +238,7 @@ temp/
 tmp/
 
 # Proje özel dosyalar
+/Android/
 /barkod_yukle_android/
 /Belgeler/
 database_setup.sql
@@ -358,4 +359,64 @@ response.json
 
 # APK files
 *.apk
-*.aab 
+*.aab
+
+# ========================================
+# iOS & Xcode Ignore Rules
+# ========================================
+
+# Xcode build products
+DerivedData/
+build/
+
+# Xcode user settings
+*.xcuserstate
+*.xcuserdatad
+xcuserdata/
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+!default.mode1v3
+!default.mode2v3
+!default.perspectivev3
+
+# Xcode project files
+*.pbxuser
+*.pbxproj.orig
+*.xcworkspace/
+
+# CocoaPods (eğer kullanılırsa)
+Pods/
+Podfile.lock
+
+# Swift Package Manager
+.swiftpm/
+Package.resolved
+
+# fastlane (iOS deployment)
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# Code Injection
+iOSInjectionProject/
+
+# iOS certificates ve provisioning profiles
+*.mobileprovision
+*.cer
+*.p12
+*.certSigningRequest
+
+# iOS Simulator logs
+*.xcactivitylog
+
+# Playgrounds timeline
+timeline.xctimeline
+playground.xcworkspace
+
+# AppStore Connect API Key
+AuthKey_*.p8
+
+# Swift build artifacts
+.build/ 
