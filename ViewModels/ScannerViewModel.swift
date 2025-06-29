@@ -8,6 +8,8 @@ class ScannerViewModel: NSObject, ObservableObject {
     @Published var isAutoFocusing = false
     @Published var scannedBarcode = ""
     @Published var scannerLineOffset: CGFloat = -140
+    @Published var showWebBrowser = false
+    @Published var webURL: URL?
     
     let captureSession = AVCaptureSession()
     private var videoOutput = AVCaptureVideoDataOutput()
@@ -124,7 +126,10 @@ class ScannerViewModel: NSObject, ObservableObject {
         let fullURL = "\(baseURL)\(barcodeContent)"
         
         if let url = URL(string: fullURL) {
-            UIApplication.shared.open(url)
+            DispatchQueue.main.async {
+                self.webURL = url
+                self.showWebBrowser = true
+            }
         }
     }
     

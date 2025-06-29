@@ -106,9 +106,18 @@ struct ScannerView: View {
         .onReceive(viewModel.$scannedBarcode) { barcode in
             if !barcode.isEmpty {
                 viewModel.handleBarcodeDetection(barcode)
-                // Direkt web sitesini aç ve view'ı kapat
+                // In-app browser ile web sitesini aç
                 viewModel.openWebsite(with: barcode)
-                dismiss()
+            }
+        }
+        .sheet(isPresented: $viewModel.showWebBrowser) {
+            if let url = viewModel.webURL {
+                WebBrowserView(url: url)
+                    .onDisappear {
+                        // Web browser kapandığında scanner'ı resetle ve ana menüye dön
+                        viewModel.resetScanning()
+                        dismiss()
+                    }
             }
         }
     }
