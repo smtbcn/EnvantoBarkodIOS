@@ -10,6 +10,7 @@ class ScannerViewModel: NSObject, ObservableObject {
     @Published var scannerLineOffset: CGFloat = -140
     @Published var showWebBrowser = false
     @Published var webURL: URL?
+    @Published var isCameraActive = true
     
     let captureSession = AVCaptureSession()
     private var videoOutput = AVCaptureVideoDataOutput()
@@ -127,8 +128,30 @@ class ScannerViewModel: NSObject, ObservableObject {
         
         if let url = URL(string: fullURL) {
             DispatchQueue.main.async {
+                // Kamera session'ını durdur (performans için)
+                self.pauseCamera()
                 self.webURL = url
                 self.showWebBrowser = true
+            }
+        }
+    }
+    
+    func pauseCamera() {
+        isCameraActive = false
+        sessionQueue.async { [weak self] in
+            guard let self = self else { return }
+            if self.captureSession.isRunning {
+                self.captureSession.stopRunning()
+            }
+        }
+    }
+    
+    func resumeCamera() {
+        isCameraActive = true
+        sessionQueue.async { [weak self] in
+            guard let self = self else { return }
+            if !self.captureSession.isRunning {
+                self.captureSession.startRunning()
             }
         }
     }

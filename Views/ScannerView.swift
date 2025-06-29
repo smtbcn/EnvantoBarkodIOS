@@ -6,6 +6,7 @@ import WebKit
 struct ScannerView: View {
     @StateObject private var viewModel = ScannerViewModel()
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var appState: AppStateManager
     
     var body: some View {
         ZStack {
@@ -115,9 +116,13 @@ struct ScannerView: View {
             if let url = viewModel.webURL {
                 WebBrowserView(url: url)
                     .onDisappear {
-                        // Web browser kapandığında scanner'ı resetle ve ana menüye dön
+                        // Web browser kapandığında kamera session'ını tekrar başlat
+                        viewModel.resumeCamera()
                         viewModel.resetScanning()
-                        dismiss()
+                        // Ana menüye performanslı dönüş
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            appState.closeScannerToMainMenu()
+                        }
                     }
             }
         }
@@ -308,4 +313,5 @@ extension Notification.Name {
 
 #Preview {
     ScannerView()
+        .environmentObject(AppStateManager())
 } 
