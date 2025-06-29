@@ -4,6 +4,7 @@ struct MainMenuView: View {
     @StateObject private var viewModel = MainViewModel()
     @State private var showingSettings = false
     @State private var showingPermissionAlert = false
+    @Binding var shouldOpenScanner: Bool
     
     var body: some View {
         VStack(spacing: 20) {
@@ -25,7 +26,10 @@ struct MainMenuView: View {
             // Ana menü butonları
             VStack(spacing: 16) {
                 // Barkod Tara butonu
-                NavigationLink(destination: ScannerView()) {
+                NavigationLink(
+                    destination: ScannerView(),
+                    isActive: $shouldOpenScanner
+                ) {
                     MenuButtonContent(
                         title: "Barkod Tara",
                         icon: "qrcode.viewfinder",
@@ -172,6 +176,6 @@ struct MenuButtonContent: View {
 
 #Preview {
     NavigationView {
-        MainMenuView()
+        MainMenuView(shouldOpenScanner: .constant(false))
     }
 } 
