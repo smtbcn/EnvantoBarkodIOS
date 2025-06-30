@@ -24,6 +24,7 @@
 		AB1234567890123400000034 /* BarcodeUploadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000035 /* BarcodeUploadView.swift */; };
 		AB1234567890123400000036 /* SavedImagesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000037 /* SavedImagesView.swift */; };
 		AB1234567890123400000038 /* SQLiteManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000039 /* SQLiteManager.swift */; };
+		AB1234567890123400000040 /* ApiService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000041 /* ApiService.swift */; };
 		AB12345678901234ASSETS002 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AB12345678901234ASSETS001 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
@@ -46,6 +47,7 @@
 		AB1234567890123400000035 /* BarcodeUploadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeUploadView.swift; sourceTree = "<group>"; };
 		AB1234567890123400000037 /* SavedImagesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedImagesView.swift; sourceTree = "<group>"; };
 		AB1234567890123400000039 /* SQLiteManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLiteManager.swift; sourceTree = "<group>"; };
+		AB1234567890123400000041 /* ApiService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApiService.swift; sourceTree = "<group>"; };
 		AB123456789012340000001A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AB12345678901234ASSETS001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */

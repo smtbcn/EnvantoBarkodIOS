@@ -1,5 +1,6 @@
 import SwiftUI
 import Foundation
+import UIKit
 
 // MARK: - Customer Model (API'den gelen format: {"musteri_adi":"..."})
 struct Customer: Codable {
@@ -23,253 +24,217 @@ class BarcodeUploadViewModel: ObservableObject {
     @Published var toastMessage = ""
     
     private var customerCache: [String] = []
-    private var lastCacheUpdate: Date?
-    private let cacheExpirationInterval: TimeInterval = 6 * 60 * 60 // 6 hours like Android
+    private var lastCacheTime: Date?
+    private let cacheValidityDuration: TimeInterval = 6 * 60 * 60 // 6 saat
+    
+    private var toastTimer: Timer?
     
     init() {
-        loadCustomerCache()
+        checkDeviceAuthorization()
     }
     
     func checkDeviceAuthorization() {
-        isLoading = true
+        let deviceId = UIDevice.current.identifierForVendor?.uuidString ?? "iOS User"
         
-        DeviceAuthManager.checkDeviceAuthorization(callback: DeviceAuthCallbackImpl(
-            authSuccessHandler: { [weak self] in
-                DispatchQueue.main.async {
-                    self?.isLoading = false
-                    self?.isAuthSuccess = true
-                    self?.checkAndUpdateCustomerCache()
-                }
-            },
-            authFailureHandler: { [weak self] in
-                DispatchQueue.main.async {
-                    self?.isLoading = false
-                    self?.isAuthSuccess = false
-                }
-            },
-            showLoadingHandler: { [weak self] in
-                DispatchQueue.main.async {
-                    self?.isLoading = true
-                }
-            },
-            hideLoadingHandler: { [weak self] in
-                DispatchQueue.main.async {
-                    self?.isLoading = false
-                }
+        // Android'deki gibi usersperm.asp endpoint'ini kullan
+        let urlString = "https://envanto.app/barkod_yukle_android/usersperm.asp"
+        guard let url = URL(string: urlString) else { return }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        
+        let body = "action=check&cihaz_bilgisi=\(deviceId)"
+        request.httpBody = body.data(using: .utf8)
+        
+        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+            if let error = error {
+                print("❌ Device auth error: \(error.localizedDescription)")
+                return
             }
-        ))
+            
+            guard let data = data else {
+                print("❌ No auth data received")
+                return
+            }
+            
+            do {
+                let response = try JSONDecoder().decode(DeviceAuthResponse.self, from: data)
+                if !response.success {
+                    DispatchQueue.main.async {
+                        self?.showToast("Cihaz yetkisi yok: \(response.message ?? "Bilinmeyen hata")")
+                    }
+                }
+            } catch {
+                print("❌ Auth JSON decode error: \(error.localizedDescription)")
+            }
+        }.resume()
     }
     
     func searchCustomers(query: String) {
-        guard query.count >= 2 else { 
+        guard query.count >= 2 else {
             searchResults = []
-            return 
-        }
-        
-        isSearching = true
-        
-        // First search in cache (offline)
-        searchOfflineCustomers(query: query)
-        
-        // Then search online in parallel
-        searchOnlineCustomers(query: query)
-    }
-    
-    private func searchOfflineCustomers(query: String) {
-        // Android behavior: Search SQLite cache first
-        let sqliteResults = SQLiteManager.shared.searchCachedMusteriler(query: query)
-        
-        // Fallback: UserDefaults cache
-        let filteredCache = customerCache.filter { customer in
-            customer.lowercased().contains(query.lowercased())
-        }
-        
-        // Combine SQLite and UserDefaults results, removing duplicates
-        let combinedOfflineResults = Array(Set(sqliteResults + filteredCache)).sorted()
-        
-        DispatchQueue.main.async { [weak self] in
-            self?.searchResults = Array(combinedOfflineResults.prefix(10)) // Limit to 10 results
-            print("📱 Offline search: Found \(combinedOfflineResults.count) customers (SQLite: \(sqliteResults.count), Cache: \(filteredCache.count))")
-        }
-    }
-    
-    private func searchOnlineCustomers(query: String) {
-        guard let baseURL = Bundle.main.object(forInfoDictionaryKey: "API_BASE_URL") as? String,
-              let url = URL(string: "\(baseURL)customers.asp") else {
-            print("❌ Invalid API URL")
             return
         }
         
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        // Önbellekten müşterileri kontrol et
+        if let lastCache = lastCacheTime,
+           Date().timeIntervalSince(lastCache) < cacheValidityDuration {
+            // Önbellek geçerli, filtreleme yap
+            searchResults = customerCache.filter { $0.lowercased().contains(query.lowercased()) }
+            return
+        }
         
-        let parameters = "action=search&query=\(query)"
-        request.httpBody = parameters.data(using: .utf8)
+        // Önbellek geçersiz veya yok, API'den yeni liste al
+        isLoading = true
         
-        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
+        // Android'deki gibi customers.asp endpoint'ini kullan
+        let urlString = "https://envanto.app/barkod_yukle_android/customers.asp?action=search&query=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
+        
+        guard let url = URL(string: urlString) else {
+            isLoading = false
+            return
+        }
+        
+        URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
             DispatchQueue.main.async {
-                self?.isSearching = false
-            }
-            
-            if let error = error {
-                print("❌ Search API error: \(error)")
-                return
-            }
-            
-            guard let data = data else {
-                print("❌ No data received")
-                return
-            }
-            
-            print("📡 Search API response: \(String(data: data, encoding: .utf8) ?? "Invalid data")")
-            
-            do {
-                let customers = try JSONDecoder().decode([Customer].self, from: data)
-                let customerNames = customers.map { $0.musteri_adi }
+                self?.isLoading = false
                 
-                DispatchQueue.main.async {
-                    // Merge with offline results, removing duplicates
-                    let combinedResults = Array(Set(self?.searchResults ?? [] + customerNames))
-                        .sorted()
-                        .prefix(10)
-                    
-                    self?.searchResults = Array(combinedResults)
-                    print("🌐 Online search: Found \(customers.count) customers, total results: \(combinedResults.count)")
+                if let error = error {
+                    print("❌ Customer search error: \(error.localizedDescription)")
+                    return
                 }
-            } catch {
-                print("❌ JSON decode error: \(error)")
+                
+                guard let data = data else {
+                    print("❌ No data received")
+                    return
+                }
+                
+                do {
+                    let customers = try JSONDecoder().decode([String].self, from: data)
+                    self?.customerCache = customers
+                    self?.lastCacheTime = Date()
+                    self?.searchResults = customers.filter { $0.lowercased().contains(query.lowercased()) }
+                } catch {
+                    print("❌ JSON decode error: \(error.localizedDescription)")
+                }
             }
         }.resume()
     }
     
-    private func checkAndUpdateCustomerCache() {
-        // Android behavior: Check SQLite cache first
-        let sqliteCachedCount = SQLiteManager.shared.getCachedMusteriCount()
-        let userDefaultsCachedCount = customerCache.count
+    func saveImages(images: [UIImage], customerName: String, source: String) {
+        let totalImages = images.count
+        var savedCount = 0
         
-        print("📋 Customer cache check: SQLite: \(sqliteCachedCount), UserDefaults: \(userDefaultsCachedCount)")
-        
-        // If no customers in SQLite cache, immediately fetch all (Android behavior)
-        if sqliteCachedCount == 0 {
-            print("📋 No customers in SQLite cache, fetching all immediately...")
-            fetchAndCacheAllCustomers()
-            return
-        }
-        
-        // Check if cache needs update (6 hours) - Android CUSTOMER_CACHE_UPDATE_INTERVAL
-        let lastSQLiteUpdate = UserDefaults.standard.double(forKey: "last_customer_update")
-        if lastSQLiteUpdate > 0 {
-            let timeSinceLastUpdate = Date().timeIntervalSince1970 - lastSQLiteUpdate
-            if timeSinceLastUpdate < cacheExpirationInterval {
-                print("📋 SQLite cache is fresh (\(Int(timeSinceLastUpdate/3600)) hours old), no update needed")
-                return
-            }
-        }
-        
-        print("📋 SQLite cache is stale, updating...")
-        fetchAndCacheAllCustomers()
-    }
-    
-    private func fetchAndCacheAllCustomers() {
-        print("📋 Fetching all customers for cache...")
-        
-        guard let baseURL = Bundle.main.object(forInfoDictionaryKey: "API_BASE_URL") as? String,
-              let url = URL(string: "\(baseURL)customers.asp") else {
-            print("❌ Invalid API URL for cache")
-            return
-        }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        
-        let parameters = "action=getall"
-        request.httpBody = parameters.data(using: .utf8)
-        
-        URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
-            if let error = error {
-                print("❌ Cache API error: \(error)")
-                return
-            }
+        for (index, image) in images.enumerated() {
+            // iOS Documents/EnvantoBarkod/customerName/IMG_timestamp_index.jpg
+            let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            let appDirectory = documentsPath.appendingPathComponent("EnvantoBarkod")
+            let customerDirectory = appDirectory.appendingPathComponent(customerName)
             
-            guard let data = data else {
-                print("❌ No cache data received")
-                return
-            }
+            // Create directory if needed
+            try? FileManager.default.createDirectory(at: customerDirectory, withIntermediateDirectories: true, attributes: nil)
             
-            print("📡 Cache API response size: \(data.count) bytes")
+            // Generate filename like Android: IMG_timestamp_index.jpg
+            let timestamp = Int(Date().timeIntervalSince1970)
+            let fileName = "IMG_\(timestamp)_\(index).jpg"
+            let fileURL = customerDirectory.appendingPathComponent(fileName)
             
-            do {
-                let customers = try JSONDecoder().decode([Customer].self, from: data)
-                let customerNames = customers.map { $0.musteri_adi }
-                
-                DispatchQueue.main.async {
-                    // Update both SQLite (primary) and UserDefaults (backup)
-                    SQLiteManager.shared.cacheMusteriler(customerNames)
+            // Save image
+            if let imageData = image.jpegData(compressionQuality: 0.8) {
+                do {
+                    try imageData.write(to: fileURL)
+                    savedCount += 1
+                    print("✅ Resim kaydedildi: \(fileURL.path)")
                     
-                    self?.customerCache = customerNames
-                    self?.lastCacheUpdate = Date()
-                    self?.saveCustomerCache()
+                    // SQLite'a kaydet ve yüklemeyi başlat
+                    let deviceId = UIDevice.current.identifierForVendor?.uuidString ?? "iOS User"
+                    let dbResult = SQLiteManager.shared.addBarkodResim(
+                        musteriAdi: customerName,
+                        resimYolu: fileURL.path,
+                        yukleyen: deviceId
+                    )
                     
-                    print("📋 ✅ Customer cache updated: \(customers.count) customers (SQLite + UserDefaults)")
+                    if dbResult > 0 {
+                        print("✅ Database kaydı oluşturuldu: ID \(dbResult)")
+                        // Resmi yüklemeye başla
+                        uploadImage(imagePath: fileURL.path, customerName: customerName)
+                    } else {
+                        print("❌ Database kaydı başarısız")
+                    }
+                    
+                } catch {
+                    print("❌ Resim kaydetme hatası: \(error.localizedDescription)")
                 }
-            } catch {
-                print("❌ Cache JSON decode error: \(error)")
             }
-        }.resume()
-    }
-    
-    private func loadCustomerCache() {
-        if let cached = UserDefaults.standard.array(forKey: "customerCache") as? [String] {
-            customerCache = cached
-            print("📋 Loaded \(cached.count) customers from cache")
         }
         
-        if let lastUpdate = UserDefaults.standard.object(forKey: "lastCacheUpdate") as? Date {
-            lastCacheUpdate = lastUpdate
-            let hoursAgo = Int(Date().timeIntervalSince(lastUpdate) / 3600)
-            print("📋 Last cache update: \(hoursAgo) hours ago")
+        // Android style toast message
+        if savedCount > 0 {
+            showToast("\(source)'den \(savedCount)/\(totalImages) resim kaydedildi")
+        } else {
+            showToast("Resim kaydetme başarısız")
         }
     }
     
-    private func saveCustomerCache() {
-        UserDefaults.standard.set(customerCache, forKey: "customerCache")
-        UserDefaults.standard.set(lastCacheUpdate, forKey: "lastCacheUpdate")
-        print("📋 Customer cache saved to UserDefaults")
+    func uploadImage(imagePath: String, customerName: String) {
+        isLoading = true
+        let deviceId = UIDevice.current.identifierForVendor?.uuidString ?? "iOS User"
+        
+        ApiService.shared.uploadImage(
+            customerName: customerName,
+            imagePath: imagePath,
+            uploader: deviceId
+        ) { [weak self] result in
+            DispatchQueue.main.async {
+                self?.isLoading = false
+                
+                switch result {
+                case .success(let response):
+                    if response.success {
+                        print("✅ Resim yüklendi: \(imagePath)")
+                        // Update SQLite status
+                        SQLiteManager.shared.updateBarkodResimStatus(resimYolu: imagePath, yuklendi: true)
+                    } else {
+                        print("❌ Yükleme başarısız: \(response.message ?? "Bilinmeyen hata")")
+                        self?.showToast("Yükleme başarısız: \(response.message ?? "Bilinmeyen hata")")
+                    }
+                    
+                case .failure(let error):
+                    print("❌ Yükleme hatası: \(error.localizedDescription)")
+                    self?.showToast("Yükleme hatası: \(error.localizedDescription)")
+                }
+            }
+        }
     }
     
     func showToast(_ message: String) {
         toastMessage = message
         showingToast = true
         
-        // Auto hide after 2 seconds
+        // 2 saniye sonra toast'ı kapat
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
             self?.showingToast = false
         }
     }
+    
+    func startUploadRetryService() {
+        // Yüklenememiş resimleri kontrol et
+        let unuploadedImages = SQLiteManager.shared.getUnuploadedImages()
+        
+        for image in unuploadedImages {
+            uploadImage(imagePath: image.path, customerName: image.customerName)
+        }
+    }
 }
 
-// MARK: - Device Auth Callback Implementation
-private struct DeviceAuthCallbackImpl: DeviceAuthCallback {
-    let authSuccessHandler: () -> Void
-    let authFailureHandler: () -> Void
-    let showLoadingHandler: () -> Void
-    let hideLoadingHandler: () -> Void
+// Android'deki gibi response modeli
+struct DeviceAuthResponse: Codable {
+    let success: Bool
+    let message: String?
     
-    func onAuthSuccess() {
-        authSuccessHandler()
-    }
-    
-    func onAuthFailure() {
-        authFailureHandler()
-    }
-    
-    func onShowLoading() {
-        showLoadingHandler()
-    }
-    
-    func onHideLoading() {
-        hideLoadingHandler()
+    enum CodingKeys: String, CodingKey {
+        case success = "basari"
+        case message = "mesaj"
     }
 } 

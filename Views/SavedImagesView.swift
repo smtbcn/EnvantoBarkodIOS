@@ -4,8 +4,9 @@ import SwiftUI
 struct SavedImagesView: View {
     @State private var uploadedCustomers: [String] = []
     @State private var selectedCustomer: String?
-    @State private var customerImages: [String] = []
+    @State private var customerImages: [(path: String, isUploading: Bool)] = []
     @State private var isLoading = false
+    @State private var isExpanded = false
     
     var body: some View {
         NavigationView {
@@ -18,16 +19,35 @@ struct SavedImagesView: View {
                     ProgressView("Müşteri listesi yükleniyor...")
                         .scaleEffect(1.2)
                     Spacer()
-                } else if selectedCustomer == nil {
-                    // Customer List (Android style)
-                    customerListView
                 } else {
-                    // Customer Images (Android style)
-                    customerImagesView
+                    // Customer List with Expandable Images
+                    ScrollView {
+                        LazyVStack(spacing: 0) {
+                            ForEach(uploadedCustomers, id: \.self) { customer in
+                                CustomerSection(
+                                    customerName: customer,
+                                    imageCount: SQLiteManager.shared.getCustomerImageCount(musteriAdi: customer),
+                                    isExpanded: selectedCustomer == customer,
+                                    images: selectedCustomer == customer ? customerImages : [],
+                                    onHeaderTap: {
+                                        if selectedCustomer == customer {
+                                            selectedCustomer = nil
+                                            customerImages = []
+                                        } else {
+                                            selectedCustomer = customer
+                                            loadCustomerImages(customer: customer)
+                                        }
+                                    }
+                                )
+                                .animation(.easeInOut, value: selectedCustomer)
+                            }
+                        }
+                        .padding(.vertical, 8)
+                    }
                 }
             }
+            .navigationBarHidden(true)
         }
-        .navigationBarHidden(true)
         .onAppear {
             loadUploadedCustomers()
         }
@@ -37,128 +57,21 @@ struct SavedImagesView: View {
     private var headerView: some View {
         VStack(spacing: 0) {
             HStack {
-                if selectedCustomer != nil {
-                    Button(action: {
-                        selectedCustomer = nil
-                        customerImages = []
-                    }) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "arrow.left")
-                                .font(.system(size: 18, weight: .medium))
-                            Text("Geri")
-                                .font(.system(size: 16, weight: .medium))
-                        }
-                        .foregroundColor(.blue)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-                    }
-                } else {
-                    Rectangle()
-                        .fill(Color.clear)
-                        .frame(width: 80, height: 44)
-                }
-                
-                Spacer()
-                
-                Text(selectedCustomer ?? "Kaydedilen Resimler")
+                Text("Kayıtlı Resimler")
                     .font(.system(size: 20, weight: .semibold))
                     .foregroundColor(.primary)
                 
                 Spacer()
-                
-                Rectangle()
-                    .fill(Color.clear)
-                    .frame(width: 80, height: 44)
             }
-            .padding(.horizontal, 4)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
             .background(Color(UIColor.systemBackground))
             
             Divider()
         }
     }
     
-    // MARK: - Customer List View (Android UploadedCustomersAdapter equivalent)
-    private var customerListView: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            if uploadedCustomers.isEmpty {
-                VStack(spacing: 16) {
-                    Spacer()
-                    
-                    Image(systemName: "photo.stack")
-                        .font(.system(size: 48))
-                        .foregroundColor(.gray)
-                    
-                    Text("Henüz kaydedilmiş resim bulunmuyor")
-                        .font(.system(size: 16))
-                        .foregroundColor(.gray)
-                        .multilineTextAlignment(.center)
-                    
-                    Text("Barkod yükleme sayfasından resim ekleyin")
-                        .font(.system(size: 14))
-                        .foregroundColor(.gray)
-                        .multilineTextAlignment(.center)
-                    
-                    Spacer()
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, 32)
-            } else {
-                List {
-                    ForEach(uploadedCustomers, id: \.self) { customer in
-                        CustomerRowView(
-                            customerName: customer,
-                            imageCount: SQLiteManager.shared.getCustomerImageCount(musteriAdi: customer)
-                        ) {
-                            selectedCustomer = customer
-                            loadCustomerImages(customer: customer)
-                        }
-                    }
-                }
-                .listStyle(PlainListStyle())
-            }
-        }
-    }
-    
-    // MARK: - Customer Images View (Android ImagesAdapter equivalent)
-    private var customerImagesView: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            if customerImages.isEmpty {
-                VStack(spacing: 16) {
-                    Spacer()
-                    
-                    Image(systemName: "photo")
-                        .font(.system(size: 48))
-                        .foregroundColor(.gray)
-                    
-                    Text("\(selectedCustomer ?? "") müşterisine ait resim bulunamadı")
-                        .font(.system(size: 16))
-                        .foregroundColor(.gray)
-                        .multilineTextAlignment(.center)
-                    
-                    Spacer()
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, 32)
-            } else {
-                ScrollView {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
-                        ForEach(Array(customerImages.enumerated()), id: \.offset) { index, imagePath in
-                            CustomerImageView(imagePath: imagePath) {
-                                // Image tap action
-                                print("Tapped image: \(imagePath)")
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 16)
-                }
-            }
-        }
-    }
-    
     // MARK: - Helper Methods
-    
     private func loadUploadedCustomers() {
         isLoading = true
         
@@ -175,23 +88,24 @@ struct SavedImagesView: View {
     
     private func loadCustomerImages(customer: String) {
         DispatchQueue.global(qos: .background).async {
-            // Get image paths from file system (Android getCustomerImages equivalent)
             let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
             let customerDirectory = documentsPath
                 .appendingPathComponent("EnvantoBarkod")
                 .appendingPathComponent(customer)
             
-            var imagePaths: [String] = []
+            var imagePaths: [(path: String, isUploading: Bool)] = []
             
             do {
                 let files = try FileManager.default.contentsOfDirectory(at: customerDirectory, includingPropertiesForKeys: nil)
                 imagePaths = files.compactMap { url in
                     let fileName = url.lastPathComponent.lowercased()
                     if fileName.hasSuffix(".jpg") || fileName.hasSuffix(".jpeg") || fileName.hasSuffix(".png") {
-                        return url.path
+                        // Check if image is waiting for upload
+                        let isUploading = !SQLiteManager.shared.isImageUploaded(imagePath: url.path)
+                        return (url.path, isUploading)
                     }
                     return nil
-                }.sorted()
+                }.sorted(by: { $0.path < $1.path })
             } catch {
                 print("❌ Error loading customer images: \(error.localizedDescription)")
             }
@@ -204,70 +118,96 @@ struct SavedImagesView: View {
     }
 }
 
-// MARK: - Customer Row View (Android customer list item equivalent)
-struct CustomerRowView: View {
+// MARK: - Customer Section
+struct CustomerSection: View {
     let customerName: String
     let imageCount: Int
-    let onTap: () -> Void
+    let isExpanded: Bool
+    let images: [(path: String, isUploading: Bool)]
+    let onHeaderTap: () -> Void
     
     var body: some View {
-        Button(action: onTap) {
-            VStack(spacing: 0) {
+        VStack(spacing: 0) {
+            // Header
+            Button(action: onHeaderTap) {
                 HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(customerName)
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.primary)
-                            .multilineTextAlignment(.leading)
-                        
-                        Text("\(imageCount) resim")
-                            .font(.system(size: 12))
-                            .foregroundColor(.secondary)
-                    }
+                    Text(customerName)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.primary)
                     
                     Spacer()
                     
-                    Image(systemName: "chevron.right")
-                        .foregroundColor(.gray)
+                    Text("(\(imageCount))")
                         .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                    
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 14))
+                        .foregroundColor(.gray)
                 }
                 .padding(.horizontal, 16)
-                .padding(.vertical, 14)
+                .padding(.vertical, 12)
                 .background(Color(UIColor.systemBackground))
             }
+            
+            // Images Grid
+            if isExpanded {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
+                    ForEach(Array(images.enumerated()), id: \.offset) { index, image in
+                        CustomerImageCell(imagePath: image.path, isUploading: image.isUploading)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(Color(UIColor.systemBackground))
+            }
+            
+            Divider()
         }
-        .buttonStyle(PlainButtonStyle())
     }
 }
 
-// MARK: - Customer Image View (Android image grid item equivalent)
-struct CustomerImageView: View {
+// MARK: - Customer Image Cell
+struct CustomerImageCell: View {
     let imagePath: String
-    let onTap: () -> Void
+    let isUploading: Bool
     
     var body: some View {
-        Button(action: onTap) {
-            ZStack {
-                if let image = UIImage(contentsOfFile: imagePath) {
-                    Image(uiImage: image)
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
+        ZStack {
+            if let image = UIImage(contentsOfFile: imagePath) {
+                Image(uiImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 100, height: 100)
+                    .clipped()
+                    .cornerRadius(8)
+                
+                if isUploading {
+                    Color.black.opacity(0.5)
                         .frame(width: 100, height: 100)
-                        .clipped()
                         .cornerRadius(8)
-                } else {
-                    Rectangle()
-                        .fill(Color.gray.opacity(0.3))
-                        .frame(width: 100, height: 100)
-                        .cornerRadius(8)
-                        .overlay(
-                            Image(systemName: "photo")
-                                .foregroundColor(.gray)
-                        )
+                    
+                    VStack(spacing: 4) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(.yellow)
+                        Text("İnternet Bekleniyor")
+                            .font(.system(size: 10))
+                            .foregroundColor(.white)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding(4)
                 }
+            } else {
+                Rectangle()
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(width: 100, height: 100)
+                    .cornerRadius(8)
+                    .overlay(
+                        Image(systemName: "photo")
+                            .foregroundColor(.gray)
+                    )
             }
         }
-        .buttonStyle(PlainButtonStyle())
     }
 }
 
