@@ -51,10 +51,9 @@ struct BarcodeUploadView: View {
             )
         }
         .sheet(isPresented: $showingImagePicker) {
-            ImagePicker(
+            SimpleImagePicker(
                 selectedImages: $selectedImages,
                 sourceType: sourceType,
-                allowsMultipleSelection: sourceType == .photoLibrary,
                 onImagesSelected: { images in
                     handleSelectedImages(images)
                 }
@@ -422,74 +421,35 @@ struct LoadingOverlay: View {
     }
 }
 
-// MARK: - Image Picker
+// MARK: - Simple Image Picker (iOS 15+ Compatible)
 
-struct ImagePicker: UIViewControllerRepresentable {
+struct SimpleImagePicker: UIViewControllerRepresentable {
     @Binding var selectedImages: [UIImage]
     var sourceType: UIImagePickerController.SourceType
-    var allowsMultipleSelection: Bool
     var onImagesSelected: ([UIImage]) -> Void
     @Environment(\.presentationMode) var presentationMode
     
-    func makeUIViewController(context: Context) -> UIViewController {
-        if sourceType == .photoLibrary && allowsMultipleSelection {
-            // Use PHPickerViewController for multiple selection
-            var config = PHPickerConfiguration()
-            config.selectionLimit = 0 // 0 = unlimited
-            config.filter = .images
-            
-            let picker = PHPickerViewController(configuration: config)
-            picker.delegate = context.coordinator
-            return picker
-        } else {
-            // Use UIImagePickerController for single selection or camera
-            let picker = UIImagePickerController()
-            picker.sourceType = sourceType
-            picker.delegate = context.coordinator
-            return picker
-        }
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.sourceType = sourceType
+        picker.delegate = context.coordinator
+        picker.allowsEditing = false
+        return picker
     }
     
-    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
     
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
     }
     
-    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate, PHPickerViewControllerDelegate {
-        let parent: ImagePicker
+    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let parent: SimpleImagePicker
         
-        init(_ parent: ImagePicker) {
+        init(_ parent: SimpleImagePicker) {
             self.parent = parent
         }
         
-        // PHPickerViewController delegate (for multiple selection)
-        func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
-            picker.dismiss(animated: true)
-            
-            var images: [UIImage] = []
-            let group = DispatchGroup()
-            
-            for result in results {
-                group.enter()
-                result.itemProvider.loadObject(ofClass: UIImage.self) { (object, error) in
-                    if let image = object as? UIImage {
-                        DispatchQueue.main.async {
-                            images.append(image)
-                            group.leave()
-                        }
-                    } else {
-                        group.leave()
-                    }
-                }
-            }
-            
-            group.notify(queue: .main) {
-                self.parent.onImagesSelected(images)
-            }
-        }
-        
-        // UIImagePickerController delegate (for single selection or camera)
         func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
             if let image = info[.originalImage] as? UIImage {
                 parent.onImagesSelected([image])
