@@ -1,62 +1,31 @@
 import Foundation
 
 struct BarcodeResult: Identifiable, Codable {
-    var id: UUID
-    let content: String
-    let format: BarcodeFormat
+    let id: UUID
+    let barcodeValue: String
     let timestamp: Date
-    let location: BarcodeLocation?
+    let customerCode: String?
+    let imageData: Data?
     
-    enum CodingKeys: String, CodingKey {
-        case content, format, timestamp, location
-    }
-    
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
+    init(barcodeValue: String, customerCode: String? = nil, imageData: Data? = nil) {
         self.id = UUID()
-        self.content = try container.decode(String.self, forKey: .content)
-        self.format = try container.decode(BarcodeFormat.self, forKey: .format)
-        self.timestamp = try container.decode(Date.self, forKey: .timestamp)
-        self.location = try container.decodeIfPresent(BarcodeLocation.self, forKey: .location)
-    }
-    
-    enum BarcodeFormat: String, CaseIterable, Codable {
-        case qr = "QR"
-        case dataMatrix = "DataMatrix"
-        case unknown = "Unknown"
-        
-        var displayName: String {
-            switch self {
-            case .qr:
-                return "QR Kod"
-            case .dataMatrix:
-                return "Data Matrix"
-            case .unknown:
-                return "Bilinmeyen"
-            }
-        }
-    }
-    
-    struct BarcodeLocation: Codable {
-        let x: Double
-        let y: Double
-        let width: Double
-        let height: Double
-    }
-    
-    init(content: String, format: BarcodeFormat = .unknown, location: BarcodeLocation? = nil) {
-        self.id = UUID()
-        self.content = content
-        self.format = format
+        self.barcodeValue = barcodeValue
         self.timestamp = Date()
-        self.location = location
+        self.customerCode = customerCode
+        self.imageData = imageData
+    }
+}
+
+extension BarcodeResult {
+    static var empty: BarcodeResult {
+        BarcodeResult(barcodeValue: "", customerCode: nil, imageData: nil)
     }
 }
 
 // MARK: - Extensions
 extension BarcodeResult {
     var isURL: Bool {
-        return content.hasPrefix("http://") || content.hasPrefix("https://")
+        return barcodeValue.hasPrefix("http://") || barcodeValue.hasPrefix("https://")
     }
     
     var formattedTimestamp: String {
@@ -67,6 +36,6 @@ extension BarcodeResult {
     }
     
     var shortContent: String {
-        return content.count > 50 ? String(content.prefix(50)) + "..." : content
+        return barcodeValue.count > 50 ? String(barcodeValue.prefix(50)) + "..." : barcodeValue
     }
 } 
