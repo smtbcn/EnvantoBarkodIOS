@@ -237,63 +237,68 @@ extension ContinuousCameraViewController: AVCapturePhotoCaptureDelegate {
 
 struct BarcodeUploadView: View {
     @StateObject private var viewModel = BarcodeUploadViewModel()
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) private var dismiss
     @State private var selectedImages: [UIImage] = []
     @State private var showingImagePicker = false
     @State private var showingCameraView = false
     @State private var cameraKey = UUID()
     
     var body: some View {
-        ZStack {
-            // Background color (Android style)
-            Color(UIColor.systemGroupedBackground)
-                .edgesIgnoringSafeArea(.all)
-            
-            VStack(spacing: 0) {
-                // Header (Android AppBar style)
-                androidHeaderView
+        NavigationView {
+            ZStack {
+                Color(UIColor.systemGroupedBackground)
+                    .edgesIgnoringSafeArea(.all)
                 
+                ScrollView {
+                    VStack(spacing: 16) {
+                        // Customer Selection Card
+                        if viewModel.selectedCustomer == nil {
+                            customerSearchCard
+                        } else {
+                            selectedCustomerCard
+                        }
+                        
+                        // Image Upload Card
+                        imageUploadCard
+                        
+                        // Selected Images Card (Android style)
+                        if !selectedImages.isEmpty {
+                            androidSelectedImagesCard
+                        }
+                    }
+                    .padding(.vertical, 16)
+                }
+                
+                // Loading Overlay
                 if viewModel.isLoading {
-                    Spacer()
-                    LoadingOverlay(message: "Cihaz yetkilendirmesi kontrol ediliyor...")
-                    Spacer()
-                } else if viewModel.isAuthSuccess {
-                    androidContentView
-                } else {
-                    Spacer()
-                    Text("Cihaz yetkilendirme gerekli")
-                        .foregroundColor(.gray)
-                    Spacer()
+                    LoadingOverlay(message: "Lütfen bekleyin...")
+                }
+                
+                // Toast Messages
+                ToastView(message: viewModel.toastMessage, isShowing: $viewModel.showingToast)
+            }
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarItems(
+                leading: Button("Kapat") {
+                    dismiss()
+                }
+            )
+            .sheet(isPresented: $showingImagePicker) {
+                MultipleImagePicker(selectedImages: $selectedImages) { images in
+                    handleSelectedImages(images)
                 }
             }
+            .fullScreenCover(isPresented: $showingCameraView) {
+                ContinuousCameraView(
+                    onImageCaptured: handleCapturedImage,
+                    onDismiss: { showingCameraView = false }
+                )
+                .id(cameraKey) // Force refresh on capture
+            }
         }
-        .navigationBarHidden(true)
         .onAppear {
             viewModel.checkDeviceAuthorization()
         }
-
-        .sheet(isPresented: $showingImagePicker) {
-            MultipleImagePicker(
-                selectedImages: $selectedImages,
-                onImagesSelected: { images in
-                    handleSelectedImages(images)
-                }
-            )
-        }
-        .sheet(isPresented: $showingCameraView) {
-            ContinuousCameraView(
-                onImageCaptured: { image in
-                    handleCapturedImage(image)
-                },
-                onDismiss: {
-                    showingCameraView = false
-                }
-            )
-            .id(cameraKey)
-        }
-        .overlay(
-            ToastView(message: viewModel.toastMessage, isShowing: $viewModel.showingToast)
-        )
     }
     
     // MARK: - Android Style Header
@@ -301,7 +306,7 @@ struct BarcodeUploadView: View {
         VStack(spacing: 0) {
             HStack {
                 Button(action: {
-                    presentationMode.wrappedValue.dismiss()
+                    dismiss()
                 }) {
                     HStack(spacing: 8) {
                         Image(systemName: "arrow.left")
@@ -707,6 +712,174 @@ struct BarcodeUploadView: View {
         default:
             viewModel.showToast("Kamera izni gerekli - Ayarlardan izin verin")
         }
+    }
+    
+    // MARK: - Customer Search Card
+    private var customerSearchCard: some View {
+        VStack(spacing: 0) {
+            // Search Header
+            HStack {
+                Text("Müşteri Seçin")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.primary)
+                
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .padding(.bottom, 12)
+            
+            // Search TextField
+            TextField("Müşteri adı yazın (en az 2 karakter)", text: $viewModel.customerSearchText)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+                .padding(.horizontal, 16)
+                .padding(.bottom, viewModel.searchResults.isEmpty ? 16 : 8)
+                .onChange(of: viewModel.customerSearchText) { newValue in
+                    viewModel.searchCustomers(query: newValue)
+                }
+            
+            // Search Results
+            if !viewModel.searchResults.isEmpty {
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(viewModel.searchResults, id: \.self) { customer in
+                            Button(action: {
+                                selectCustomer(customer)
+                            }) {
+                                HStack {
+                                    Text(customer)
+                                        .foregroundColor(.primary)
+                                        .font(.system(size: 16))
+                                    Spacer()
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                                .background(Color(UIColor.systemBackground))
+                            }
+                            
+                            Divider()
+                                .padding(.horizontal, 16)
+                        }
+                    }
+                }
+                .frame(maxHeight: 200)
+            }
+        }
+        .background(Color(UIColor.systemBackground))
+        .cornerRadius(12)
+        .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+    }
+    
+    // MARK: - Selected Customer Card
+    private var selectedCustomerCard: some View {
+        VStack(spacing: 0) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Seçili Müşteri")
+                        .font(.system(size: 14))
+                        .foregroundColor(.secondary)
+                    
+                    Text(viewModel.selectedCustomer ?? "")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.primary)
+                }
+                
+                Spacer()
+                
+                Button("Değiştir") {
+                    clearCustomerSelection()
+                }
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.blue)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 16)
+        }
+        .background(Color(UIColor.systemBackground))
+        .cornerRadius(12)
+        .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+    }
+    
+    // MARK: - Image Upload Card
+    private var imageUploadCard: some View {
+        VStack(spacing: 16) {
+            // Card Header
+            HStack {
+                Text("Resim Yükle")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.primary)
+                
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            
+            // Upload Buttons (Android style)
+            VStack(spacing: 12) {
+                // Gallery Button
+                Button(action: {
+                    if viewModel.selectedCustomer == nil {
+                        viewModel.showToast("Önce müşteri seçin")
+                        return
+                    }
+                    showingImagePicker = true
+                }) {
+                    HStack {
+                        Image(systemName: "photo.on.rectangle")
+                            .font(.system(size: 20))
+                        
+                        Text("Galeriden Seç")
+                            .font(.system(size: 16, weight: .medium))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(Color.green)
+                    .cornerRadius(8)
+                }
+                .padding(.horizontal, 16)
+                
+                // Camera Button
+                Button(action: {
+                    if viewModel.selectedCustomer == nil {
+                        viewModel.showToast("Önce müşteri seçin")
+                        return
+                    }
+                    checkCameraPermissionAndStart()
+                }) {
+                    HStack {
+                        Image(systemName: "camera.fill")
+                            .font(.system(size: 20))
+                        
+                        Text("Resim Çek")
+                            .font(.system(size: 16, weight: .medium))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(Color.blue)
+                    .cornerRadius(8)
+                }
+                .padding(.horizontal, 16)
+                
+                // Image Count Info (Android style)
+                if !selectedImages.isEmpty {
+                    HStack {
+                        Image(systemName: "photo.stack")
+                            .foregroundColor(.green)
+                        Text("\(selectedImages.count) resim kaydedildi")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.green)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 16)
+                }
+            }
+            .padding(.bottom, 16)
+        }
+        .background(Color(UIColor.systemBackground))
+        .cornerRadius(12)
+        .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
     }
 }
 
