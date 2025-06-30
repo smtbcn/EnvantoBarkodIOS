@@ -19,6 +19,9 @@
 		AB1234567890123400000013 /* BarcodeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000014 /* BarcodeService.swift */; };
 		AB1234567890123400000015 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000016 /* Constants.swift */; };
 		AB1234567890123400000017 /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000018 /* Extensions.swift */; };
+		AB1234567890123400000030 /* DeviceAuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000031 /* DeviceAuthManager.swift */; };
+		AB1234567890123400000032 /* BarcodeUploadViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000033 /* BarcodeUploadViewModel.swift */; };
+		AB1234567890123400000034 /* BarcodeUploadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000035 /* BarcodeUploadView.swift */; };
 		AB12345678901234ASSETS002 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AB12345678901234ASSETS001 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
@@ -36,6 +39,9 @@
 		AB1234567890123400000014 /* BarcodeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeService.swift; sourceTree = "<group>"; };
 		AB1234567890123400000016 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		AB1234567890123400000018 /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
+		AB1234567890123400000031 /* DeviceAuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceAuthManager.swift; sourceTree = "<group>"; };
+		AB1234567890123400000033 /* BarcodeUploadViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeUploadViewModel.swift; sourceTree = "<group>"; };
+		AB1234567890123400000035 /* BarcodeUploadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeUploadView.swift; sourceTree = "<group>"; };
 		AB123456789012340000001A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AB12345678901234ASSETS001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -81,6 +87,7 @@
 				AB1234567890123400000006 /* MainMenuView.swift */,
 				AB1234567890123400000008 /* ScannerView.swift */,
 				AB123456789012340000000A /* SettingsView.swift */,
+				AB1234567890123400000035 /* BarcodeUploadView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -90,6 +97,7 @@
 			children = (
 				AB123456789012340000000C /* MainViewModel.swift */,
 				AB123456789012340000000E /* ScannerViewModel.swift */,
+				AB1234567890123400000033 /* BarcodeUploadViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -107,6 +115,7 @@
 			children = (
 				AB1234567890123400000012 /* CameraService.swift */,
 				AB1234567890123400000014 /* BarcodeService.swift */,
+				AB1234567890123400000031 /* DeviceAuthManager.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -201,6 +210,9 @@
 				AB1234567890123400000013 /* BarcodeService.swift in Sources */,
 				AB1234567890123400000015 /* Constants.swift in Sources */,
 				AB1234567890123400000017 /* Extensions.swift in Sources */,
+				AB1234567890123400000030 /* DeviceAuthManager.swift in Sources */,
+				AB1234567890123400000032 /* BarcodeUploadViewModel.swift in Sources */,
+				AB1234567890123400000034 /* BarcodeUploadView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
