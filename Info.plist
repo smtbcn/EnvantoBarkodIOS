@@ -44,6 +44,10 @@
     <key>NSPhotoLibraryUsageDescription</key>
     <string>Bu uygulama fotoğrafları kaydetmek için fotoğraf kütüphanesi erişimi gerektirir.</string>
     
+    <!-- API Ayarları -->
+    <key>API_BASE_URL</key>
+    <string>https://your-api-server.com/api</string>
+    
     <!-- Güvenlik -->
     <key>NSAppTransportSecurity</key>
     <dict>
