@@ -48,7 +48,7 @@ class MainViewModel: ObservableObject {
             deviceOwner = authOwner
         } else {
             // Fallback: Constants'tan al
-            deviceOwner = userDefaults.string(forKey: Constants.UserDefaults.deviceOwner) ?? ""
+        deviceOwner = userDefaults.string(forKey: Constants.UserDefaults.deviceOwner) ?? ""
         }
     }
     

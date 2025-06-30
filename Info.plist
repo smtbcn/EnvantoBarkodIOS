@@ -99,7 +99,7 @@
     </array>
     
     <!-- Minimum iOS Versiyonu -->
-    	<key>LSMinimumSystemVersion</key>
+    <key>LSMinimumSystemVersion</key>
 	<string>16.0</string>
     
     <!-- Dosya Paylaşımı -->

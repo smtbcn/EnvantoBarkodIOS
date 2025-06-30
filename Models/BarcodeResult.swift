@@ -1,31 +1,62 @@
 import Foundation
 
 struct BarcodeResult: Identifiable, Codable {
-    let id: UUID
-    let barcodeValue: String
+    var id: UUID
+    let content: String
+    let format: BarcodeFormat
     let timestamp: Date
-    let customerCode: String?
-    let imageData: Data?
+    let location: BarcodeLocation?
     
-    init(barcodeValue: String, customerCode: String? = nil, imageData: Data? = nil) {
-        self.id = UUID()
-        self.barcodeValue = barcodeValue
-        self.timestamp = Date()
-        self.customerCode = customerCode
-        self.imageData = imageData
+    enum CodingKeys: String, CodingKey {
+        case content, format, timestamp, location
     }
-}
-
-extension BarcodeResult {
-    static var empty: BarcodeResult {
-        BarcodeResult(barcodeValue: "", customerCode: nil, imageData: nil)
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = UUID()
+        self.content = try container.decode(String.self, forKey: .content)
+        self.format = try container.decode(BarcodeFormat.self, forKey: .format)
+        self.timestamp = try container.decode(Date.self, forKey: .timestamp)
+        self.location = try container.decodeIfPresent(BarcodeLocation.self, forKey: .location)
+    }
+    
+    enum BarcodeFormat: String, CaseIterable, Codable {
+        case qr = "QR"
+        case dataMatrix = "DataMatrix"
+        case unknown = "Unknown"
+        
+        var displayName: String {
+            switch self {
+            case .qr:
+                return "QR Kod"
+            case .dataMatrix:
+                return "Data Matrix"
+            case .unknown:
+                return "Bilinmeyen"
+            }
+        }
+    }
+    
+    struct BarcodeLocation: Codable {
+        let x: Double
+        let y: Double
+        let width: Double
+        let height: Double
+    }
+    
+    init(content: String, format: BarcodeFormat = .unknown, location: BarcodeLocation? = nil) {
+        self.id = UUID()
+        self.content = content
+        self.format = format
+        self.timestamp = Date()
+        self.location = location
     }
 }
 
 // MARK: - Extensions
 extension BarcodeResult {
     var isURL: Bool {
-        return barcodeValue.hasPrefix("http://") || barcodeValue.hasPrefix("https://")
+        return content.hasPrefix("http://") || content.hasPrefix("https://")
     }
     
     var formattedTimestamp: String {
@@ -36,6 +67,6 @@ extension BarcodeResult {
     }
     
     var shortContent: String {
-        return barcodeValue.count > 50 ? String(barcodeValue.prefix(50)) + "..." : barcodeValue
+        return content.count > 50 ? String(content.prefix(50)) + "..." : content
     }
 } 

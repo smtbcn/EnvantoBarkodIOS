@@ -25,7 +25,6 @@
 		AB1234567890123400000036 /* SavedImagesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000037 /* SavedImagesView.swift */; };
 		AB1234567890123400000038 /* SQLiteManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000039 /* SQLiteManager.swift */; };
 		AB12345678901234ASSETS002 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AB12345678901234ASSETS001 /* Assets.xcassets */; };
-		AB1234567890123400000040 /* BarkodResim.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000041 /* BarkodResim.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -49,7 +48,6 @@
 		AB1234567890123400000039 /* SQLiteManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLiteManager.swift; sourceTree = "<group>"; };
 		AB123456789012340000001A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		AB12345678901234ASSETS001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		AB1234567890123400000041 /* BarkodResim.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarkodResim.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -63,15 +61,7 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		AB123456789012340000001C = {
-			isa = PBXGroup;
-			children = (
-				AB123456789012340000001D /* EnvantoBarkod */,
-				AB123456789012340000001E /* Products */,
-			);
-			sourceTree = "<group>";
-		};
-		AB123456789012340000001D /* EnvantoBarkod */ = {
+		AB123456789012340000001C /* EnvantoBarkodIOS */ = {
 			isa = PBXGroup;
 			children = (
 				AB1234567890123400000002 /* EnvantoBarkodApp.swift */,
@@ -83,8 +73,8 @@
 				AB1234567890123400000023 /* Utilities */,
 				AB12345678901234ASSETS001 /* Assets.xcassets */,
 				AB123456789012340000001A /* Info.plist */,
+				AB123456789012340000001E /* Products */,
 			);
-			path = EnvantoBarkod;
 			sourceTree = "<group>";
 		};
 		AB123456789012340000001E /* Products */ = {
@@ -121,7 +111,6 @@
 			isa = PBXGroup;
 			children = (
 				AB1234567890123400000010 /* BarcodeResult.swift */,
-				AB1234567890123400000041 /* BarkodResim.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -232,7 +221,6 @@
 				AB1234567890123400000034 /* BarcodeUploadView.swift in Sources */,
 				AB1234567890123400000036 /* SavedImagesView.swift in Sources */,
 				AB1234567890123400000038 /* SQLiteManager.swift in Sources */,
-				AB1234567890123400000040 /* BarkodResim.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -243,8 +231,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -273,11 +260,8 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = "";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -295,7 +279,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;

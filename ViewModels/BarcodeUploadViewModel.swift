@@ -21,8 +21,6 @@ class BarcodeUploadViewModel: ObservableObject {
     @Published var uploadMessage = ""
     @Published var showingToast = false
     @Published var toastMessage = ""
-    @Published var savedImages: [BarkodResim] = []
-    @Published var selectedCustomerImages: [BarkodResim] = []
     
     private var customerCache: [String] = []
     private var lastCacheUpdate: Date?
@@ -30,7 +28,6 @@ class BarcodeUploadViewModel: ObservableObject {
     
     init() {
         loadCustomerCache()
-        loadSavedImages()
     }
     
     func checkDeviceAuthorization() {
@@ -242,55 +239,13 @@ class BarcodeUploadViewModel: ObservableObject {
         print("📋 Customer cache saved to UserDefaults")
     }
     
-    // MARK: - Saved Images Management
-    
-    func loadSavedImages() {
-        // Tüm kayıtlı resimleri yükle
-        savedImages = SQLiteManager.shared.getBarkodResimler()
+    func showToast(_ message: String) {
+        toastMessage = message
+        showingToast = true
         
-        // Eğer seçili müşteri varsa, onun resimlerini ayrıca yükle
-        if let selectedCustomer = selectedCustomer {
-            selectedCustomerImages = SQLiteManager.shared.getBarkodResimler(forMusteri: selectedCustomer)
-        }
-    }
-    
-    func selectCustomer(_ customer: String) {
-        selectedCustomer = customer
-        selectedCustomerImages = SQLiteManager.shared.getBarkodResimler(forMusteri: customer)
-    }
-    
-    func saveImage(imagePath: String) {
-        guard let selectedCustomer = selectedCustomer,
-              let deviceOwner = UserDefaults.standard.string(forKey: "device_owner") else {
-            showToast("Müşteri seçilmedi veya cihaz sahibi bulunamadı")
-            return
-        }
-        
-        let rowId = SQLiteManager.shared.addBarkodResim(
-            musteriAdi: selectedCustomer,
-            resimYolu: imagePath,
-            yukleyen: deviceOwner
-        )
-        
-        if rowId != -1 {
-            // Kayıt başarılı, görüntüleri yenile
-            loadSavedImages()
-            showToast("Resim başarıyla kaydedildi")
-        } else {
-            showToast("Resim kaydedilemedi")
-        }
-    }
-    
-    func updateImageUploadStatus(id: Int64, isUploaded: Bool) {
-        if SQLiteManager.shared.updateBarkodResimYuklendi(id: id, yuklendi: isUploaded) {
-            loadSavedImages() // Görüntüleri yenile
-        }
-    }
-    
-    private func showToast(_ message: String) {
-        DispatchQueue.main.async {
-            self.toastMessage = message
-            self.showingToast = true
+        // Auto hide after 2 seconds
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
+            self?.showingToast = false
         }
     }
 }
