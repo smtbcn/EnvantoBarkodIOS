@@ -324,7 +324,7 @@ struct BarcodeUploadView: View {
                         Text("Geri")
                             .font(.system(size: 16, weight: .medium))
                     }
-                    .foregroundColor(.systemBlue)
+                    .foregroundColor(.blue)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
                 }
@@ -465,7 +465,7 @@ struct BarcodeUploadView: View {
                             clearCustomerSelection()
                         }
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.systemBlue)
+                        .foregroundColor(.blue)
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
@@ -509,7 +509,7 @@ struct BarcodeUploadView: View {
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
-                    .background(Color.systemBlue)
+                    .background(Color.blue)
                     .cornerRadius(8)
                 }
                 .padding(.horizontal, 16)
