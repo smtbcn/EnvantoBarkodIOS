@@ -2,6 +2,14 @@ import Foundation
 import SwiftUI
 import UIKit
 
+// MARK: - Network Error
+enum NetworkError: Error {
+    case invalidURL
+    case serverError
+    case noData
+    case decodingError
+}
+
 // MARK: - DeviceAuthResponse Model
 struct DeviceAuthResponse: Codable {
     let success: Bool
@@ -106,7 +114,7 @@ class DeviceAuthManager {
         do {
             // API endpoint URL'i oluştur (Android'deki gibi usersperm.asp)
             guard let baseURL = Bundle.main.object(forInfoDictionaryKey: "API_BASE_URL") as? String,
-                  let url = URL(string: "\(baseURL)/usersperm.asp") else {
+                  let url = URL(string: "\(baseURL)usersperm.asp") else {
                 throw NetworkError.invalidURL
             }
             

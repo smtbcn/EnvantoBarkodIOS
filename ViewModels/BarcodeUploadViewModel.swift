@@ -1,76 +1,9 @@
 import SwiftUI
 import Foundation
 
-// MARK: - Custom Errors
-enum CustomerAPIError: Error {
-    case invalidURL
-    case serverError
-    case decodingError
-    
-    var localizedDescription: String {
-        switch self {
-        case .invalidURL:
-            return "Geçersiz URL"
-        case .serverError:
-            return "Sunucu hatası"
-        case .decodingError:
-            return "Veri dönüştürme hatası"
-        }
-    }
-}
-
-// MARK: - DeviceAuthCallback Protocol
-protocol DeviceAuthCallback {
-    func onAuthSuccess()
-    func onAuthFailure()
-    func onShowLoading()
-    func onHideLoading()
-}
-
 // MARK: - Customer Model (API'den gelen format: {"musteri_adi":"..."})
-struct Customer: Codable, Identifiable {
-    let id = UUID()
-    let name: String
-    let code: String?
-    let address: String?
-    
-    // Normal init for manual creation
-    init(name: String, code: String? = nil, address: String? = nil) {
-        self.name = name
-        self.code = code
-        self.address = address
-    }
-    
-    private enum CodingKeys: String, CodingKey {
-        case name = "musteri_adi"
-    }
-    
-    // Custom init from decoder - API'den sadece musteri_adi geliyor
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        
-        // API'den gelen musteri_adi field'ını name olarak ata
-        self.name = try container.decode(String.self, forKey: .name)
-        
-        // code ve address API'de yok, nil ata
-        self.code = nil
-        self.address = nil
-    }
-    
-    // Encoder - Sadece name field'ını encode et
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(name, forKey: .name)
-    }
-}
-
-// MARK: - SavedImage Model (Android'deki database kayıtlarına benzer)
-struct SavedImage: Identifiable, Codable {
-    let id = UUID()
-    let customerName: String
-    let imagePath: String
-    let uploadDate: Date
-    let isUploaded: Bool
+struct Customer: Codable {
+    let musteri_adi: String
 }
 
 // MARK: - BarcodeUploadViewModel
@@ -89,7 +22,6 @@ class BarcodeUploadViewModel: ObservableObject {
     @Published var showingToast = false
     @Published var toastMessage = ""
     
-    private let deviceAuthManager = DeviceAuthManager.shared
     private var customerCache: [String] = []
     private var lastCacheUpdate: Date?
     private let cacheExpirationInterval: TimeInterval = 6 * 60 * 60 // 6 hours like Android
