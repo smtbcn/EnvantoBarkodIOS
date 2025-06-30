@@ -1,5 +1,6 @@
 import SwiftUI
 import AVFoundation
+import Foundation
 
 class MainViewModel: ObservableObject, DeviceAuthCallback {
     @Published var hasRequiredPermissions = false

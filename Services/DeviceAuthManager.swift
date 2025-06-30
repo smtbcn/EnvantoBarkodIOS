@@ -2,14 +2,6 @@ import Foundation
 import SwiftUI
 import UIKit
 
-// MARK: - DeviceAuthCallback Protocol
-protocol DeviceAuthCallback {
-    func onAuthSuccess()
-    func onAuthFailure()
-    func onShowLoading()
-    func onHideLoading()
-}
-
 // MARK: - DeviceAuthResponse Model
 struct DeviceAuthResponse: Codable {
     let success: Bool
