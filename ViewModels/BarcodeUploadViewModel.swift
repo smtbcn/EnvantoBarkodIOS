@@ -19,17 +19,40 @@ enum CustomerAPIError: Error {
     }
 }
 
-// MARK: - Customer Model
+// MARK: - Customer Model (API'den gelen format: {"musteri_adi":"..."})
 struct Customer: Codable, Identifiable {
     let id = UUID()
     let name: String
     let code: String?
     let address: String?
     
+    // Normal init for manual creation
+    init(name: String, code: String? = nil, address: String? = nil) {
+        self.name = name
+        self.code = code
+        self.address = address
+    }
+    
     private enum CodingKeys: String, CodingKey {
-        case name
-        case code
-        case address
+        case name = "musteri_adi"
+    }
+    
+    // Custom init from decoder - API'den sadece musteri_adi geliyor
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        // API'den gelen musteri_adi field'ını name olarak ata
+        self.name = try container.decode(String.self, forKey: .name)
+        
+        // code ve address API'de yok, nil ata
+        self.code = nil
+        self.address = nil
+    }
+    
+    // Encoder - Sadece name field'ını encode et
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(name, forKey: .name)
     }
 }
 
@@ -199,8 +222,9 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         request.timeoutInterval = 3.0  // Android'deki gibi 3 saniye timeout
         
-        // Android'deki gibi "search" parametresi ile query gönder
-        let bodyString = "search=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
+        // API'ye uygun parametreler: action=search&query=aramakelimesi
+        let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+        let bodyString = "action=search&query=\(encodedQuery)"
         request.httpBody = bodyString.data(using: .utf8)
         
         let (data, response) = try await URLSession.shared.data(for: request)
@@ -210,7 +234,18 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
             throw CustomerAPIError.serverError
         }
         
-        return try JSONDecoder().decode([Customer].self, from: data)
+        // Debug: API response'unu logla
+        if let responseString = String(data: data, encoding: .utf8) {
+            print("🔍 API Response (search): \(responseString)")
+        }
+        
+        // JSON decode - API format: [{"musteri_adi":"..."}]
+        do {
+            return try JSONDecoder().decode([Customer].self, from: data)
+        } catch {
+            print("❌ Customer search JSON decode hatası: \(error)")
+            throw CustomerAPIError.decodingError
+        }
     }
     
     // MARK: - Offline Customer Search (Android searchOfflineCustomers metoduna benzer)
@@ -328,8 +363,8 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         request.timeoutInterval = 30.0
         
-        // Android'deki gibi "getall" parametresi ile tüm müşteri listesini getir
-        let bodyString = "getall=1"
+        // API'ye uygun parametreler: action=getall
+        let bodyString = "action=getall"
         request.httpBody = bodyString.data(using: .utf8)
         
         let (data, response) = try await URLSession.shared.data(for: request)
@@ -339,7 +374,18 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
             throw CustomerAPIError.serverError
         }
         
-        return try JSONDecoder().decode([Customer].self, from: data)
+        // Debug: API response'unu logla
+        if let responseString = String(data: data, encoding: .utf8) {
+            print("🔍 API Response (getall): \(responseString)")
+        }
+        
+        // JSON decode - API format: [{"musteri_adi":"..."}]
+        do {
+            return try JSONDecoder().decode([Customer].self, from: data)
+        } catch {
+            print("❌ Customer getall JSON decode hatası: \(error)")
+            throw CustomerAPIError.decodingError
+        }
     }
     
     // MARK: - Customer Selection
