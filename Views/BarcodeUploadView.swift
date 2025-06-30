@@ -259,7 +259,7 @@ struct BarcodeUploadView: View {
                         }
                         
                         // Image Upload Card
-                        imageUploadCard
+                        androidImageUploadCard
                         
                         // Selected Images Card (Android style)
                         if !selectedImages.isEmpty {
@@ -475,19 +475,25 @@ struct BarcodeUploadView: View {
         .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
     }
     
-    // MARK: - Android Image Upload Card (2 separate buttons like Android)
+    // MARK: - Android Image Upload Card
     private var androidImageUploadCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Resim Yükleme")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(.primary)
-                .padding(.horizontal, 16)
-                .padding(.top, 16)
+        VStack(spacing: 16) {
+            // Card Header
+            HStack {
+                Text("Resim Yükle")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.primary)
+                
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
             
+            // Upload Buttons (Android style)
             VStack(spacing: 12) {
-                // Gallery Button (Android selectImagesButton)
+                // Gallery Button
                 Button(action: {
-                    if selectedCustomer == nil {
+                    if viewModel.selectedCustomer == nil {
                         viewModel.showToast("Lütfen önce müşteri seçiniz")
                         return
                     }
@@ -508,16 +514,16 @@ struct BarcodeUploadView: View {
                 }
                 .padding(.horizontal, 16)
                 
-                // Camera Button (Android takePictureButton)
+                // Camera Button
                 Button(action: {
-                    if selectedCustomer == nil {
+                    if viewModel.selectedCustomer == nil {
                         viewModel.showToast("Lütfen önce müşteri seçiniz")
                         return
                     }
                     checkCameraPermissionAndStart()
                 }) {
                     HStack {
-                        Image(systemName: "camera")
+                        Image(systemName: "camera.fill")
                             .font(.system(size: 20))
                         
                         Text("Resim Çek")
@@ -794,88 +800,6 @@ struct BarcodeUploadView: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 16)
-        }
-        .background(Color(UIColor.systemBackground))
-        .cornerRadius(12)
-        .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
-    }
-    
-    // MARK: - Image Upload Card
-    private var imageUploadCard: some View {
-        VStack(spacing: 16) {
-            // Card Header
-            HStack {
-                Text("Resim Yükle")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.primary)
-                
-                Spacer()
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 16)
-            
-            // Upload Buttons (Android style)
-            VStack(spacing: 12) {
-                // Gallery Button
-                Button(action: {
-                    if viewModel.selectedCustomer == nil {
-                        viewModel.showToast("Önce müşteri seçin")
-                        return
-                    }
-                    showingImagePicker = true
-                }) {
-                    HStack {
-                        Image(systemName: "photo.on.rectangle")
-                            .font(.system(size: 20))
-                        
-                        Text("Galeriden Seç")
-                            .font(.system(size: 16, weight: .medium))
-                    }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(Color.green)
-                    .cornerRadius(8)
-                }
-                .padding(.horizontal, 16)
-                
-                // Camera Button
-                Button(action: {
-                    if viewModel.selectedCustomer == nil {
-                        viewModel.showToast("Önce müşteri seçin")
-                        return
-                    }
-                    checkCameraPermissionAndStart()
-                }) {
-                    HStack {
-                        Image(systemName: "camera.fill")
-                            .font(.system(size: 20))
-                        
-                        Text("Resim Çek")
-                            .font(.system(size: 16, weight: .medium))
-                    }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(Color.blue)
-                    .cornerRadius(8)
-                }
-                .padding(.horizontal, 16)
-                
-                // Image Count Info (Android style)
-                if !selectedImages.isEmpty {
-                    HStack {
-                        Image(systemName: "photo.stack")
-                            .foregroundColor(.green)
-                        Text("\(selectedImages.count) resim kaydedildi")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.green)
-                        Spacer()
-                    }
-                    .padding(.horizontal, 16)
-                }
-            }
-            .padding(.bottom, 16)
         }
         .background(Color(UIColor.systemBackground))
         .cornerRadius(12)
