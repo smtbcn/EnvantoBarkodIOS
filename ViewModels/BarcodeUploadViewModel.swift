@@ -34,25 +34,25 @@ class BarcodeUploadViewModel: ObservableObject {
         isLoading = true
         
         DeviceAuthManager.checkDeviceAuthorization(callback: DeviceAuthCallbackImpl(
-            onAuthSuccess: { [weak self] in
+            authSuccessHandler: { [weak self] in
                 DispatchQueue.main.async {
                     self?.isLoading = false
                     self?.isAuthSuccess = true
                     self?.checkAndUpdateCustomerCache()
                 }
             },
-            onAuthFailure: { [weak self] in
+            authFailureHandler: { [weak self] in
                 DispatchQueue.main.async {
                     self?.isLoading = false
                     self?.isAuthSuccess = false
                 }
             },
-            onShowLoading: { [weak self] in
+            showLoadingHandler: { [weak self] in
                 DispatchQueue.main.async {
                     self?.isLoading = true
                 }
             },
-            onHideLoading: { [weak self] in
+            hideLoadingHandler: { [weak self] in
                 DispatchQueue.main.async {
                     self?.isLoading = false
                 }
@@ -237,24 +237,24 @@ class BarcodeUploadViewModel: ObservableObject {
 
 // MARK: - Device Auth Callback Implementation
 private struct DeviceAuthCallbackImpl: DeviceAuthCallback {
-    let onAuthSuccess: () -> Void
-    let onAuthFailure: () -> Void
-    let onShowLoading: () -> Void
-    let onHideLoading: () -> Void
+    let authSuccessHandler: () -> Void
+    let authFailureHandler: () -> Void
+    let showLoadingHandler: () -> Void
+    let hideLoadingHandler: () -> Void
     
     func onAuthSuccess() {
-        onAuthSuccess()
+        authSuccessHandler()
     }
     
     func onAuthFailure() {
-        onAuthFailure()
+        authFailureHandler()
     }
     
     func onShowLoading() {
-        onShowLoading()
+        showLoadingHandler()
     }
     
     func onHideLoading() {
-        onHideLoading()
+        hideLoadingHandler()
     }
 } 

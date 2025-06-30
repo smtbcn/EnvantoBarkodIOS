@@ -240,13 +240,6 @@ class DeviceAuthManager {
     }
 }
 
-// MARK: - NetworkError
-enum NetworkError: Error {
-    case invalidURL
-    case serverError
-    case decodingError
-}
-
 // MARK: - DeviceIdentifier
 class DeviceIdentifier {
     
