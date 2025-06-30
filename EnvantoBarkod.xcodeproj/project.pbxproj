@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
+		13B07FBF1A68108700A75B9A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Assets.xcassets */; };
 		A1D8E1F02B8E721C00B9B5A1 /* DeviceAuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1D8E1EF2B8E721C00B9B5A1 /* DeviceAuthManager.swift */; };
 		A1D8E1F22B8E722C00B9B5A1 /* DeviceIdentifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1D8E1F12B8E722C00B9B5A1 /* DeviceIdentifier.swift */; };
 		A1D8E1F42B8E723C00B9B5A1 /* SQLiteManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1D8E1F32B8E723C00B9B5A1 /* SQLiteManager.swift */; };
@@ -17,8 +17,8 @@
 
 /* Begin PBXFileReference section */
 		13B07F961A680F5B00A75B9A /* EnvantoBarkod.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EnvantoBarkod.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = EnvantoBarkod/Images.xcassets; sourceTree = "<group>"; };
-		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = EnvantoBarkod/Info.plist; sourceTree = "<group>"; };
+		13B07FB51A68108700A75B9A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A1D8E1EF2B8E721C00B9B5A1 /* DeviceAuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceAuthManager.swift; sourceTree = "<group>"; };
 		A1D8E1F12B8E722C00B9B5A1 /* DeviceIdentifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceIdentifier.swift; sourceTree = "<group>"; };
 		A1D8E1F32B8E723C00B9B5A1 /* SQLiteManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLiteManager.swift; sourceTree = "<group>"; };
@@ -42,7 +42,7 @@
 			children = (
 				A1D8E1EE2B8E720C00B9B5A1 /* Services */,
 				A1D8E1ED2B8E720000B9B5A1 /* Models */,
-				13B07FB51A68108700A75B9A /* Images.xcassets */,
+				13B07FB51A68108700A75B9A /* Assets.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 			);
 			name = EnvantoBarkod;
@@ -142,7 +142,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
+				13B07FBF1A68108700A75B9A /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
