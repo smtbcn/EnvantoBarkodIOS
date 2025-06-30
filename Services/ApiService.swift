@@ -1,4 +1,5 @@
 import Foundation
+import Models
 
 struct UploadResponse: Codable {
     let success: Bool

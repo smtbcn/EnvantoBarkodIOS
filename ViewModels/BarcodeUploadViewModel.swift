@@ -1,6 +1,7 @@
 import SwiftUI
 import Foundation
 import UIKit
+import Models
 
 // MARK: - Customer Model (API'den gelen format: {"musteri_adi":"..."})
 struct Customer: Codable {
