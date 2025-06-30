@@ -406,6 +406,34 @@ struct SavedImageThumbnail: View {
     }
 }
 
+// MARK: - Loading Overlay
+struct LoadingOverlay: View {
+    let message: String
+    
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.4)
+                .ignoresSafeArea()
+            
+            VStack(spacing: 16) {
+                ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                    .scaleEffect(1.2)
+                
+                Text(message)
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(24)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.black.opacity(0.8))
+            )
+        }
+    }
+}
+
 // MARK: - Upload Progress Overlay
 struct UploadProgressOverlay: View {
     let progress: Float
