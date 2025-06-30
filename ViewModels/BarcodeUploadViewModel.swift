@@ -248,6 +248,85 @@ class BarcodeUploadViewModel: ObservableObject {
             self?.showingToast = false
         }
     }
+    
+    // MARK: - Image Upload Methods
+    
+    func uploadImages(_ images: [UIImage]) {
+        guard let selectedCustomer = selectedCustomer else {
+            showToast("Lütfen önce müşteri seçin")
+            return
+        }
+        
+        isUploading = true
+        uploadProgress = 0.0
+        uploadMessage = "Resimler kaydediliyor..."
+        
+        // Create customer directory if needed
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let customerDirectory = documentsPath
+            .appendingPathComponent("EnvantoBarkod")
+            .appendingPathComponent(selectedCustomer)
+        
+        do {
+            try FileManager.default.createDirectory(at: customerDirectory, withIntermediateDirectories: true)
+        } catch {
+            print("❌ Error creating directory: \(error.localizedDescription)")
+            showToast("Klasör oluşturma hatası")
+            isUploading = false
+            return
+        }
+        
+        // Save images
+        let totalImages = images.count
+        var savedImages = 0
+        
+        for (index, image) in images.enumerated() {
+            let timestamp = Int(Date().timeIntervalSince1970)
+            let fileName = "IMG_\(timestamp)_\(index).jpg"
+            let fileURL = customerDirectory.appendingPathComponent(fileName)
+            
+            if let imageData = image.jpegData(compressionQuality: 0.8) {
+                do {
+                    try imageData.write(to: fileURL)
+                    savedImages += 1
+                    
+                    // Update progress
+                    DispatchQueue.main.async {
+                        self.uploadProgress = Double(savedImages) / Double(totalImages)
+                        self.uploadMessage = "Resimler kaydediliyor... (\(savedImages)/\(totalImages))"
+                    }
+                } catch {
+                    print("❌ Error saving image: \(error.localizedDescription)")
+                }
+            }
+        }
+        
+        // Update SQLite database
+        SQLiteManager.shared.addCustomerImages(musteriAdi: selectedCustomer, imageCount: savedImages)
+        
+        DispatchQueue.main.async {
+            self.isUploading = false
+            self.uploadProgress = 1.0
+            self.showToast("\(savedImages) resim başarıyla kaydedildi")
+            
+            // Clear selected images after successful upload
+            NotificationCenter.default.post(name: NSNotification.Name("ClearSelectedImages"), object: nil)
+        }
+    }
+    
+    func deleteImage(at index: Int, from images: [UIImage]) {
+        guard let selectedCustomer = selectedCustomer else { return }
+        
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let customerDirectory = documentsPath
+            .appendingPathComponent("EnvantoBarkod")
+            .appendingPathComponent(selectedCustomer)
+        
+        // Update SQLite database
+        SQLiteManager.shared.updateCustomerImageCount(musteriAdi: selectedCustomer, decrease: true)
+        
+        showToast("Resim silindi")
+    }
 }
 
 // MARK: - Device Auth Callback Implementation

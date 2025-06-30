@@ -319,6 +319,24 @@ struct BarcodeUploadView: View {
                             }
                             .padding(.horizontal)
                         }
+                        
+                        // Yükleme Butonu
+                        Button(action: {
+                            viewModel.uploadImages(selectedImages)
+                        }) {
+                            HStack {
+                                Image(systemName: "arrow.up.circle.fill")
+                                Text("Resimleri Yükle")
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
+                        }
+                        .padding(.horizontal)
+                        .disabled(viewModel.selectedCustomer == nil)
+                        .opacity(viewModel.selectedCustomer == nil ? 0.5 : 1)
                     }
                     
                     // Kamera ve Galeri Butonları
@@ -366,12 +384,21 @@ struct BarcodeUploadView: View {
                     LoadingOverlay(message: "Yükleniyor...")
                 }
                 
+                if viewModel.isUploading {
+                    LoadingOverlay(message: viewModel.uploadMessage)
+                }
+                
                 if viewModel.showingToast {
                     ToastView(message: viewModel.toastMessage, isShowing: $viewModel.showingToast)
                 }
             }
             .navigationTitle("Barkod Yükleme")
             .navigationBarTitleDisplayMode(.inline)
+            .navigationBarItems(
+                trailing: NavigationLink(destination: SavedImagesView()) {
+                    Image(systemName: "photo.stack")
+                }
+            )
             .sheet(isPresented: $showingImagePicker) {
                 MultipleImagePicker(selectedImages: $selectedImages) { images in
                     selectedImages.append(contentsOf: images)
