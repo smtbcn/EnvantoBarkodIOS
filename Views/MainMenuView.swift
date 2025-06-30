@@ -5,6 +5,7 @@ struct MainMenuView: View {
     @State private var showingSettings = false
     @State private var showingPermissionAlert = false
     @State private var showingBarcodeUpload = false
+    @State private var showingSavedImages = false
     @EnvironmentObject var appState: AppStateManager
     
     var body: some View {
@@ -68,11 +69,11 @@ struct MainMenuView: View {
                         HStack(spacing: 16) {
                             // Müşteri Resimleri (Cihaz yetki kontrolü sayfa içinde)
                             GridButton(
-                                title: "Müşteri Resimleri",
+                                title: "Kaydedilen Resimler",
                                 icon: "photo.on.rectangle",
-                                color: .blue
+                                color: .purple
                             ) {
-                                // Customer images görünümüne git (cihaz kontrolü sayfa içinde)
+                                showingSavedImages = true
                             }
                             
                             // Araçtaki Ürünler (Cihaz yetki kontrolü sayfa içinde)
@@ -133,6 +134,9 @@ struct MainMenuView: View {
         }
         .sheet(isPresented: $showingBarcodeUpload) {
             BarcodeUploadView()
+        }
+        .sheet(isPresented: $showingSavedImages) {
+            SavedImagesView()
         }
         .alert("İzin Gerekli", isPresented: $showingPermissionAlert) {
             Button("Ayarlara Git") {

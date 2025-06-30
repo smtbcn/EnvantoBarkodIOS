@@ -241,7 +241,6 @@ struct BarcodeUploadView: View {
     @State private var selectedImages: [UIImage] = []
     @State private var showingImagePicker = false
     @State private var showingCameraView = false
-    @State private var showingActionSheet = false
     @State private var cameraKey = UUID()
     
     var body: some View {
@@ -272,21 +271,7 @@ struct BarcodeUploadView: View {
         .onAppear {
             viewModel.checkDeviceAuthorization()
         }
-        .actionSheet(isPresented: $showingActionSheet) {
-            ActionSheet(
-                title: Text("Resim Kaynağı Seçin"),
-                message: Text("Nereden resim eklemek istiyorsunuz?"),
-                buttons: [
-                    .default(Text("📷 Kamera")) {
-                        checkCameraPermissionAndStart()
-                    },
-                    .default(Text("🖼️ Galeri (Çoklu Seçim)")) {
-                        showingImagePicker = true
-                    },
-                    .cancel(Text("İptal"))
-                ]
-            )
-        }
+
         .sheet(isPresented: $showingImagePicker) {
             MultipleImagePicker(
                 selectedImages: $selectedImages,
@@ -485,7 +470,7 @@ struct BarcodeUploadView: View {
         .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
     }
     
-    // MARK: - Android Image Upload Card
+    // MARK: - Android Image Upload Card (2 separate buttons like Android)
     private var androidImageUploadCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Resim Yükleme")
@@ -495,15 +480,42 @@ struct BarcodeUploadView: View {
                 .padding(.top, 16)
             
             VStack(spacing: 12) {
-                // Add Image Button (Android FloatingActionButton style)
+                // Gallery Button (Android selectImagesButton)
                 Button(action: {
-                    showingActionSheet = true
+                    if selectedCustomer == nil {
+                        viewModel.showToast("Lütfen önce müşteri seçiniz")
+                        return
+                    }
+                    showingImagePicker = true
                 }) {
                     HStack {
-                        Image(systemName: "plus.circle.fill")
+                        Image(systemName: "photo.on.rectangle")
                             .font(.system(size: 20))
                         
-                        Text("Resim Ekle")
+                        Text("Galeriden Seç")
+                            .font(.system(size: 16, weight: .medium))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(Color.green)
+                    .cornerRadius(8)
+                }
+                .padding(.horizontal, 16)
+                
+                // Camera Button (Android takePictureButton)
+                Button(action: {
+                    if selectedCustomer == nil {
+                        viewModel.showToast("Lütfen önce müşteri seçiniz")
+                        return
+                    }
+                    checkCameraPermissionAndStart()
+                }) {
+                    HStack {
+                        Image(systemName: "camera")
+                            .font(.system(size: 20))
+                        
+                        Text("Resim Çek")
                             .font(.system(size: 16, weight: .medium))
                     }
                     .foregroundColor(.white)
@@ -514,12 +526,12 @@ struct BarcodeUploadView: View {
                 }
                 .padding(.horizontal, 16)
                 
-                // Image Count Info
+                // Image Count Info (Android style)
                 if !selectedImages.isEmpty {
                     HStack {
                         Image(systemName: "photo.stack")
                             .foregroundColor(.green)
-                        Text("\(selectedImages.count) resim seçildi")
+                        Text("\(selectedImages.count) resim kaydedildi")
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.green)
                         Spacer()
@@ -604,14 +616,76 @@ struct BarcodeUploadView: View {
     }
     
     private func handleSelectedImages(_ images: [UIImage]) {
-        selectedImages.append(contentsOf: images)
-        viewModel.showToast("Galeri'den \(images.count) resim eklendi")
+        // Android directSaveImages() behavior - save immediately
+        guard let customerName = viewModel.selectedCustomer else {
+            viewModel.showToast("Müşteri seçilmemiş")
+            return
+        }
+        
+        saveImagesToDevice(images: images, customerName: customerName, source: "Galeri")
     }
     
     private func handleCapturedImage(_ image: UIImage) {
-        selectedImages.append(image)
-        viewModel.showToast("Kamera'dan resim eklendi (\(selectedImages.count) toplam)")
+        // Android directSaveImage() behavior - save immediately
+        guard let customerName = viewModel.selectedCustomer else {
+            viewModel.showToast("Müşteri seçilmemiş")
+            return
+        }
+        
+        saveImagesToDevice(images: [image], customerName: customerName, source: "Kamera")
         cameraKey = UUID() // Force refresh camera
+    }
+    
+    // Android uyumlu resim kaydetme (directSaveImages equivalent)
+    private func saveImagesToDevice(images: [UIImage], customerName: String, source: String) {
+        let totalImages = images.count
+        var savedCount = 0
+        
+        for (index, image) in images.enumerated() {
+            // iOS Documents/EnvantoBarkod/customerName/IMG_timestamp_index.jpg
+            let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            let appDirectory = documentsPath.appendingPathComponent("EnvantoBarkod")
+            let customerDirectory = appDirectory.appendingPathComponent(customerName)
+            
+            // Create directory if needed
+            try? FileManager.default.createDirectory(at: customerDirectory, withIntermediateDirectories: true, attributes: nil)
+            
+            // Generate filename like Android: IMG_timestamp_index.jpg
+            let timestamp = Int(Date().timeIntervalSince1970)
+            let fileName = "IMG_\(timestamp)_\(index).jpg"
+            let fileURL = customerDirectory.appendingPathComponent(fileName)
+            
+            // Save image
+            if let imageData = image.jpegData(compressionQuality: 0.8) {
+                do {
+                    try imageData.write(to: fileURL)
+                    savedCount += 1
+                    print("✅ Resim kaydedildi: \(fileURL.path)")
+                    
+                    // Add to selectedImages for preview (Android behavior)
+                    selectedImages.append(image)
+                    
+                    // SQLite database'e kaydet (Android addBarkodResim equivalent)
+                    let dbResult = SQLiteManager.shared.addBarkodResim(musteriAdi: customerName, resimYolu: fileURL.path, yukleyen: "iOS User")
+                    
+                    if dbResult > 0 {
+                        print("✅ Database kaydı oluşturuldu: ID \(dbResult)")
+                    } else {
+                        print("❌ Database kaydı başarısız")
+                    }
+                    
+                } catch {
+                    print("❌ Resim kaydetme hatası: \(error.localizedDescription)")
+                }
+            }
+        }
+        
+        // Android style toast message
+        if savedCount > 0 {
+            viewModel.showToast("\(source)'den \(savedCount)/\(totalImages) resim kaydedildi")
+        } else {
+            viewModel.showToast("Resim kaydetme başarısız")
+        }
     }
     
     private func checkCameraPermissionAndStart() {

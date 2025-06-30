@@ -76,13 +76,20 @@ class BarcodeUploadViewModel: ObservableObject {
     }
     
     private func searchOfflineCustomers(query: String) {
+        // Android behavior: Search SQLite cache first
+        let sqliteResults = SQLiteManager.shared.searchCachedMusteriler(query: query)
+        
+        // Fallback: UserDefaults cache
         let filteredCache = customerCache.filter { customer in
             customer.lowercased().contains(query.lowercased())
         }
         
+        // Combine SQLite and UserDefaults results, removing duplicates
+        let combinedOfflineResults = Array(Set(sqliteResults + filteredCache)).sorted()
+        
         DispatchQueue.main.async { [weak self] in
-            self?.searchResults = Array(filteredCache.prefix(10)) // Limit to 10 results
-            print("📱 Offline search: Found \(filteredCache.count) customers")
+            self?.searchResults = Array(combinedOfflineResults.prefix(10)) // Limit to 10 results
+            print("📱 Offline search: Found \(combinedOfflineResults.count) customers (SQLite: \(sqliteResults.count), Cache: \(filteredCache.count))")
         }
     }
     
@@ -137,26 +144,30 @@ class BarcodeUploadViewModel: ObservableObject {
     }
     
     private func checkAndUpdateCustomerCache() {
-        let cachedCount = customerCache.count
-        print("📋 Customer cache check: \(cachedCount) customers in cache")
+        // Android behavior: Check SQLite cache first
+        let sqliteCachedCount = SQLiteManager.shared.getCachedMusteriCount()
+        let userDefaultsCachedCount = customerCache.count
         
-        // If no customers in cache, immediately fetch all
-        if cachedCount == 0 {
-            print("📋 No customers in cache, fetching all immediately...")
+        print("📋 Customer cache check: SQLite: \(sqliteCachedCount), UserDefaults: \(userDefaultsCachedCount)")
+        
+        // If no customers in SQLite cache, immediately fetch all (Android behavior)
+        if sqliteCachedCount == 0 {
+            print("📋 No customers in SQLite cache, fetching all immediately...")
             fetchAndCacheAllCustomers()
             return
         }
         
-        // Check if cache needs update (6 hours)
-        if let lastUpdate = lastCacheUpdate {
-            let timeSinceLastUpdate = Date().timeIntervalSince(lastUpdate)
+        // Check if cache needs update (6 hours) - Android CUSTOMER_CACHE_UPDATE_INTERVAL
+        let lastSQLiteUpdate = UserDefaults.standard.double(forKey: "last_customer_update")
+        if lastSQLiteUpdate > 0 {
+            let timeSinceLastUpdate = Date().timeIntervalSince1970 - lastSQLiteUpdate
             if timeSinceLastUpdate < cacheExpirationInterval {
-                print("📋 Cache is fresh (\(Int(timeSinceLastUpdate/3600)) hours old), no update needed")
+                print("📋 SQLite cache is fresh (\(Int(timeSinceLastUpdate/3600)) hours old), no update needed")
                 return
             }
         }
         
-        print("📋 Cache is stale, updating...")
+        print("📋 SQLite cache is stale, updating...")
         fetchAndCacheAllCustomers()
     }
     
@@ -194,10 +205,14 @@ class BarcodeUploadViewModel: ObservableObject {
                 let customerNames = customers.map { $0.musteri_adi }
                 
                 DispatchQueue.main.async {
+                    // Update both SQLite (primary) and UserDefaults (backup)
+                    SQLiteManager.shared.cacheMusteriler(customerNames)
+                    
                     self?.customerCache = customerNames
                     self?.lastCacheUpdate = Date()
                     self?.saveCustomerCache()
-                    print("📋 ✅ Customer cache updated: \(customers.count) customers")
+                    
+                    print("📋 ✅ Customer cache updated: \(customers.count) customers (SQLite + UserDefaults)")
                 }
             } catch {
                 print("❌ Cache JSON decode error: \(error)")
