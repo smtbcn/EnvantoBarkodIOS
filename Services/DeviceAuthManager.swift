@@ -2,7 +2,6 @@ import Foundation
 import SwiftUI
 import UIKit
 
-
 // MARK: - DeviceAuthCallback Protocol
 protocol DeviceAuthCallback {
     func onAuthSuccess()
@@ -17,6 +16,19 @@ enum NetworkError: Error {
     case serverError
     case noData
     case decodingError
+}
+
+// MARK: - DeviceAuthResponse Model
+struct DeviceAuthResponse: Codable {
+    let success: Bool
+    let message: String
+    let deviceOwner: String?
+    
+    private enum CodingKeys: String, CodingKey {
+        case success
+        case message
+        case deviceOwner = "device_owner"
+    }
 }
 
 // MARK: - DeviceAuthManager
@@ -64,7 +76,7 @@ class DeviceAuthManager {
                     }
                     
                     // Yerel veritabanına kaydet (başarılı)
-                    SQLiteManager.shared.saveCihazYetki(deviceId: deviceId, deviceOwner: authResponse.deviceOwner ?? "", isAuthorized: true)
+                    saveLocalDeviceAuth(deviceId: deviceId, deviceOwner: authResponse.deviceOwner ?? "", isAuthorized: true)
                     
                     print("✅ Cihaz yetkili: \(authResponse.message)")
                     callback.onAuthSuccess()
@@ -73,7 +85,7 @@ class DeviceAuthManager {
                     UserDefaults.standard.set(false, forKey: "device_auth_checked")
                     
                     // Yerel veritabanına kaydet (başarısız)
-                    SQLiteManager.shared.saveCihazYetki(deviceId: deviceId, deviceOwner: "", isAuthorized: false)
+                    saveLocalDeviceAuth(deviceId: deviceId, deviceOwner: "", isAuthorized: false)
                     
                     print("❌ Cihaz yetkili değil: \(authResponse.message)")
                     
@@ -84,7 +96,7 @@ class DeviceAuthManager {
                 
             case .failure(let error):
                 // Sunucu hatası - yerel veritabanından kontrol et
-                let isLocallyAuthorized = SQLiteManager.shared.isCihazOnaylanmis(deviceId)
+                let isLocallyAuthorized = checkLocalAuthorization(deviceId: deviceId)
                 
                 if isLocallyAuthorized {
                     print("🔄 Sunucu hatası, yerel veritabanında onaylı")
@@ -142,6 +154,26 @@ class DeviceAuthManager {
         }
     }
     
+    // MARK: - Yerel yetkilendirme kontrolü
+    private static func checkLocalAuthorization(deviceId: String) -> Bool {
+        // UserDefaults'tan yerel yetki durumunu kontrol et
+        // TODO: Gerçek uygulamada Core Data veya SQLite kullanılabilir
+        let key = "local_device_auth_\(deviceId)"
+        return UserDefaults.standard.bool(forKey: key)
+    }
+    
+    // MARK: - Yerel yetkilendirme kaydet
+    private static func saveLocalDeviceAuth(deviceId: String, deviceOwner: String, isAuthorized: Bool) {
+        // UserDefaults'a yerel yetki durumunu kaydet
+        // TODO: Gerçek uygulamada Core Data veya SQLite kullanılabilir
+        let key = "local_device_auth_\(deviceId)"
+        UserDefaults.standard.set(isAuthorized, forKey: key)
+        
+        if !deviceOwner.isEmpty {
+            UserDefaults.standard.set(deviceOwner, forKey: "device_owner")
+        }
+    }
+    
     // MARK: - Yetkilendirme hatası uyarısı (Android uyumlu)
     @MainActor
     private static func showAuthorizationErrorAlert(message: String, deviceId: String) {
@@ -171,22 +203,23 @@ class DeviceAuthManager {
             UIPasteboard.general.string = deviceId
             
             // Android'deki gibi toast göster
-            showToast(message: "Cihaz kimliği panoya kopyalandı")
-            
-            // Uygulamayı kapat (Android'deki gibi)
-            exit(0)
+            DispatchQueue.main.async {
+                showToast(message: "Cihaz kimliği panoya kopyalandı")
+            }
         })
         
-        // Kapat (Android'deki gibi)
-        alert.addAction(UIAlertAction(title: "Kapat", style: .cancel) { _ in
-            // Uygulamayı kapat (Android'deki gibi)
-            exit(0)
+        // Tamam (Android'deki gibi)
+        alert.addAction(UIAlertAction(title: "Tamam", style: .cancel) { _ in
+            // Ana menüye dön (Android'deki gibi finish() davranışı)
+            if let navigationController = rootViewController as? UINavigationController {
+                navigationController.popToRootViewController(animated: true)
+            }
         })
         
         rootViewController.present(alert, animated: true)
     }
     
-    // MARK: - Toast mesajı göster (Android uyumlu)
+    // MARK: - Toast göster
     @MainActor
     private static func showToast(message: String) {
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
@@ -194,40 +227,64 @@ class DeviceAuthManager {
             return
         }
         
-        let toastContainer = UIView()
-        toastContainer.backgroundColor = UIColor.black.withAlphaComponent(0.7)
-        toastContainer.layer.cornerRadius = 10
-        toastContainer.translatesAutoresizingMaskIntoConstraints = false
+        let toastLabel = UILabel()
+        toastLabel.backgroundColor = UIColor.black.withAlphaComponent(0.6)
+        toastLabel.textColor = UIColor.white
+        toastLabel.textAlignment = .center
+        toastLabel.font = UIFont.systemFont(ofSize: 12.0)
+        toastLabel.text = message
+        toastLabel.alpha = 1.0
+        toastLabel.layer.cornerRadius = 10
+        toastLabel.clipsToBounds = true
         
-        let messageLabel = UILabel()
-        messageLabel.text = message
-        messageLabel.textColor = .white
-        messageLabel.textAlignment = .center
-        messageLabel.numberOfLines = 0
-        messageLabel.translatesAutoresizingMaskIntoConstraints = false
+        let toastWidth: CGFloat = 250
+        let toastHeight: CGFloat = 35
         
-        toastContainer.addSubview(messageLabel)
-        window.addSubview(toastContainer)
+        toastLabel.frame = CGRect(
+            x: (window.frame.size.width - toastWidth) / 2,
+            y: window.frame.size.height - 100,
+            width: toastWidth,
+            height: toastHeight
+        )
         
-        NSLayoutConstraint.activate([
-            messageLabel.leadingAnchor.constraint(equalTo: toastContainer.leadingAnchor, constant: 16),
-            messageLabel.trailingAnchor.constraint(equalTo: toastContainer.trailingAnchor, constant: -16),
-            messageLabel.topAnchor.constraint(equalTo: toastContainer.topAnchor, constant: 8),
-            messageLabel.bottomAnchor.constraint(equalTo: toastContainer.bottomAnchor, constant: -8),
-            
-            toastContainer.centerXAnchor.constraint(equalTo: window.centerXAnchor),
-            toastContainer.bottomAnchor.constraint(equalTo: window.safeAreaLayoutGuide.bottomAnchor, constant: -64)
-        ])
+        window.addSubview(toastLabel)
         
-        // Android'deki gibi 2 saniye göster
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-            UIView.animate(withDuration: 0.3, animations: {
-                toastContainer.alpha = 0
-            }) { _ in
-                toastContainer.removeFromSuperview()
-            }
-        }
+        UIView.animate(withDuration: 2.0, delay: 0.1, options: .curveEaseOut, animations: {
+            toastLabel.alpha = 0.0
+        }, completion: { _ in
+            toastLabel.removeFromSuperview()
+        })
     }
 }
 
- 
+// MARK: - DeviceIdentifier
+class DeviceIdentifier {
+    
+    // MARK: - Benzersiz cihaz kimliği al
+    static func getUniqueDeviceId() -> String {
+        // iOS'da IDFV (Identifier for Vendor) kullan
+        if let idfv = UIDevice.current.identifierForVendor?.uuidString {
+            return idfv
+        }
+        
+        // Fallback: UserDefaults'tan kayıtlı UUID kullan veya yeni oluştur
+        let key = "app_device_uuid"
+        if let savedUUID = UserDefaults.standard.string(forKey: key) {
+            return savedUUID
+        }
+        
+        let newUUID = UUID().uuidString
+        UserDefaults.standard.set(newUUID, forKey: key)
+        return newUUID
+    }
+    
+    // MARK: - Okunabilir cihaz bilgileri
+    static func getReadableDeviceInfo() -> String {
+        let device = UIDevice.current
+        let systemVersion = device.systemVersion
+        let model = device.model
+        let name = device.name
+        
+        return "\(name) - \(model) - iOS \(systemVersion)"
+    }
+} 

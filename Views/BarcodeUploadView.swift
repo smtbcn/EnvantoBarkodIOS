@@ -242,311 +242,304 @@ struct BarcodeUploadView: View {
     @State private var showingImagePicker = false
     @State private var showingCameraView = false
     @State private var cameraKey = UUID()
+    @State private var showingCustomerSearch = false
+    @State private var showingImageOptions = false
+    @State private var showingSavedImages = false
     
     var body: some View {
         NavigationView {
-            ZStack {
-                Color(UIColor.systemGroupedBackground)
-                    .edgesIgnoringSafeArea(.all)
+            VStack(spacing: 20) {
+                // Müşteri Seçimi
+                customerSelectionSection
                 
-                ScrollView {
-                    VStack(spacing: 16) {
-                        // Customer Selection Card (Android style)
-                        if viewModel.selectedCustomer == nil {
-                            customerSearchCard
-                        } else {
-                            selectedCustomerCard
-                        }
-                        
-                        // Image Upload Card (Only show when customer selected)
-                        if viewModel.selectedCustomer != nil {
-                            androidImageUploadCard
-                        }
-                        
-                        // Selected Images Card (Android style)
-                        if !selectedImages.isEmpty {
-                            androidSelectedImagesCard
-                        }
-                    }
-                    .padding(.vertical, 16)
+                // Kayıtlı Resimler
+                if !viewModel.selectedCustomerImages.isEmpty {
+                    savedImagesSection
                 }
                 
-                // Loading Overlay (Android style)
-                if viewModel.isLoading {
-                    Color.black.opacity(0.4)
-                        .edgesIgnoringSafeArea(.all)
-                    
-                    VStack {
-                        ProgressView()
-                            .scaleEffect(1.2)
-                            .tint(.white)
-                        Text("Lütfen bekleyin...")
-                            .foregroundColor(.white)
-                            .padding(.top, 8)
-                    }
-                    .frame(width: 150, height: 150)
-                    .background(Color(UIColor.systemBackground).opacity(0.8))
-                    .cornerRadius(12)
-                }
+                // Resim Yükleme Seçenekleri
+                imageUploadSection
                 
-                // Toast Messages (Android style)
-                if viewModel.showingToast {
-                    VStack {
-                        Spacer()
-                        Text(viewModel.toastMessage)
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
-                            .background(Color.black.opacity(0.7))
-                            .cornerRadius(8)
-                            .padding(.bottom, 32)
-                    }
-                    .transition(.move(edge: .bottom))
-                    .animation(.easeInOut, value: viewModel.showingToast)
-                }
+                Spacer()
             }
+            .padding()
+            .navigationTitle("Barkod Yükleme")
             .navigationBarTitleDisplayMode(.inline)
-            .navigationBarItems(
-                leading: Button("Kapat") {
-                    dismiss()
+            .sheet(isPresented: $showingImagePicker) {
+                MultipleImagePicker(selectedImages: $selectedImages) { images in
+                    handleSelectedImages(images)
                 }
-            )
-        }
-        .sheet(isPresented: $showingImagePicker) {
-            ImagePicker(selectedImages: $selectedImages) { images in
-                handleSelectedImages(images)
+            }
+            .fullScreenCover(isPresented: $showingCameraView) {
+                ContinuousCameraView(
+                    onImageCaptured: handleCapturedImage,
+                    onDismiss: { showingCameraView = false }
+                )
+                .id(cameraKey) // Force refresh on capture
+            }
+            .overlay {
+                if viewModel.isLoading {
+                    LoadingOverlay(message: "Yükleniyor...")
+                }
+                
+                ToastView(message: viewModel.toastMessage, isShowing: $viewModel.showingToast)
             }
         }
-        .fullScreenCover(isPresented: $showingCameraView) {
-            CameraView { image in
-                handleCapturedImage(image)
-            }
-            .id(cameraKey)
+        .onAppear {
+            viewModel.checkDeviceAuthorization()
         }
     }
     
-    // MARK: - Customer Search Card (Android style)
-    private var customerSearchCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Müşteri Ara")
-                .font(.system(size: 18, weight: .semibold))
-                .padding(.horizontal, 16)
-                .padding(.top, 16)
-            
-            TextField("Müşteri adı yazın...", text: $viewModel.customerSearchText)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .padding(.horizontal, 16)
-                .onChange(of: viewModel.customerSearchText) { newValue in
-                    viewModel.searchCustomers(query: newValue)
-                }
-            
-            if !viewModel.searchResults.isEmpty {
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 0) {
-                        ForEach(viewModel.searchResults, id: \.self) { customer in
-                            Button(action: {
-                                selectCustomer(customer)
-                            }) {
-                                Text(customer)
-                                    .foregroundColor(.primary)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .padding(.vertical, 12)
-                                    .padding(.horizontal, 16)
-                            }
-                            .background(Color(UIColor.systemBackground))
-                            
-                            Divider()
-                        }
-                    }
-                }
-                .frame(maxHeight: 200)
-            }
-        }
-        .background(Color(UIColor.systemBackground))
-        .cornerRadius(12)
-        .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
-    }
+    // MARK: - UI Components
     
-    // MARK: - Selected Customer Card (Android style)
-    private var selectedCustomerCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Seçili Müşteri:")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(.secondary)
-                .padding(.horizontal, 16)
-                .padding(.top, 16)
+    private var customerSelectionSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Müşteri Seçimi")
+                .font(.headline)
             
             HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(viewModel.selectedCustomer!)
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.primary)
+                if let selectedCustomer = viewModel.selectedCustomer {
+                    Text(selectedCustomer)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color.blue.opacity(0.1))
+                        .cornerRadius(8)
                     
-                    Text("Müşteri seçildi")
-                        .font(.system(size: 12))
-                        .foregroundColor(.green)
+                    Spacer()
+                    
+                    Button(action: {
+                        viewModel.selectedCustomer = nil
+                        viewModel.selectedCustomerImages = []
+                    }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.gray)
+                    }
+                } else {
+                    Button(action: {
+                        showingCustomerSearch = true
+                    }) {
+                        HStack {
+                            Image(systemName: "magnifyingglass")
+                            Text("Müşteri Ara")
+                        }
+                        .foregroundColor(.blue)
+                    }
                 }
-                
-                Spacer()
-                
-                Button("Değiştir") {
-                    clearCustomerSelection()
-                }
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(.blue)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(Color.blue.opacity(0.05))
-            .cornerRadius(8)
-            .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(Color.blue.opacity(0.3), lineWidth: 1)
-            )
-            .padding(.horizontal, 16)
-            .padding(.bottom, 16)
+            .sheet(isPresented: $showingCustomerSearch) {
+                customerSearchSheet
+            }
         }
-        .background(Color(UIColor.systemBackground))
-        .cornerRadius(12)
-        .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
     }
     
-    // MARK: - Image Upload Card (Android style)
-    private var androidImageUploadCard: some View {
-        VStack(spacing: 16) {
+    private var savedImagesSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("Resim Yükle")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.primary)
+                Text("Kayıtlı Resimler")
+                    .font(.headline)
                 
                 Spacer()
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 16)
-            
-            VStack(spacing: 12) {
-                Button(action: {
-                    showingImagePicker = true
-                }) {
-                    HStack {
-                        Image(systemName: "photo.on.rectangle")
-                            .font(.system(size: 20))
-                        
-                        Text("Galeriden Seç")
-                            .font(.system(size: 16, weight: .medium))
-                    }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(Color.green)
-                    .cornerRadius(8)
-                }
-                .padding(.horizontal, 16)
                 
-                Button(action: {
-                    showingCameraView = true
-                }) {
-                    HStack {
-                        Image(systemName: "camera")
-                            .font(.system(size: 20))
-                        
-                        Text("Kamera")
-                            .font(.system(size: 16, weight: .medium))
-                    }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(Color.blue)
-                    .cornerRadius(8)
-                }
-                .padding(.horizontal, 16)
+                Text("\(viewModel.selectedCustomerImages.count) resim")
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
             }
-            .padding(.bottom, 16)
-        }
-        .background(Color(UIColor.systemBackground))
-        .cornerRadius(12)
-        .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
-    }
-    
-    // MARK: - Selected Images Card (Android style)
-    private var androidSelectedImagesCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Seçilen Resimler")
-                .font(.system(size: 18, weight: .semibold))
-                .padding(.horizontal, 16)
-                .padding(.top, 16)
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
-                    ForEach(selectedImages.indices, id: \.self) { index in
-                        VStack {
-                            Image(uiImage: selectedImages[index])
-                                .resizable()
-                                .scaledToFill()
-                                .frame(width: 100, height: 100)
-                                .cornerRadius(8)
-                                .overlay(
-                                    Button(action: {
-                                        selectedImages.remove(at: index)
-                                    }) {
-                                        Image(systemName: "xmark.circle.fill")
-                                            .foregroundColor(.white)
-                                            .background(Color.black.opacity(0.6))
-                                            .clipShape(Circle())
-                                    }
-                                    .padding(4),
-                                    alignment: .topTrailing
-                                )
-                            
-                            Text("Resim \(index + 1)")
-                                .font(.system(size: 12))
-                                .foregroundColor(.secondary)
+                    ForEach(viewModel.selectedCustomerImages) { resim in
+                        savedImageCell(resim)
+                    }
+                }
+            }
+            .frame(height: 120)
+        }
+    }
+    
+    private func savedImageCell(_ resim: BarkodResim) -> some View {
+        VStack {
+            if let image = loadImage(from: resim.resimYolu) {
+                Image(uiImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 100, height: 100)
+                    .cornerRadius(8)
+                    .overlay(
+                        Group {
+                            if resim.yuklendi {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(.green)
+                                    .padding(4)
+                                    .background(Color.white)
+                                    .clipShape(Circle())
+                                    .padding(4)
+                            }
+                        },
+                        alignment: .topTrailing
+                    )
+            } else {
+                Color.gray
+                    .frame(width: 100, height: 100)
+                    .cornerRadius(8)
+                    .overlay(
+                        Image(systemName: "photo")
+                            .foregroundColor(.white)
+                    )
+            }
+            
+            Text(resim.formattedTarih)
+                .font(.caption)
+                .foregroundColor(.gray)
+        }
+    }
+    
+    private var imageUploadSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Resim Yükleme")
+                .font(.headline)
+            
+            HStack(spacing: 15) {
+                Button(action: {
+                    if viewModel.selectedCustomer == nil {
+                        viewModel.showToast("Lütfen önce müşteri seçiniz")
+                        return
+                    }
+                    showingCameraView = true
+                }) {
+                    VStack {
+                        Image(systemName: "camera.fill")
+                            .font(.system(size: 24))
+                        Text("Kamera")
+                            .font(.caption)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(Color.blue.opacity(0.1))
+                    .cornerRadius(8)
+                    .foregroundColor(.blue)
+                }
+                
+                Button(action: {
+                    if viewModel.selectedCustomer == nil {
+                        viewModel.showToast("Lütfen önce müşteri seçiniz")
+                        return
+                    }
+                    showingImagePicker = true
+                }) {
+                    VStack {
+                        Image(systemName: "photo.on.rectangle.angled")
+                            .font(.system(size: 24))
+                        Text("Galeri")
+                            .font(.caption)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(Color.blue.opacity(0.1))
+                    .cornerRadius(8)
+                    .foregroundColor(.blue)
+                }
+            }
+            .disabled(viewModel.selectedCustomer == nil)
+            .opacity(viewModel.selectedCustomer == nil ? 0.5 : 1)
+        }
+    }
+    
+    private var customerSearchSheet: some View {
+        NavigationView {
+            VStack {
+                SearchBar(text: $viewModel.customerSearchText)
+                    .padding(.horizontal)
+                
+                if viewModel.isSearching {
+                    ProgressView()
+                        .padding()
+                } else {
+                    List(viewModel.searchResults, id: \.self) { customer in
+                        Button(action: {
+                            viewModel.selectCustomer(customer)
+                            showingCustomerSearch = false
+                        }) {
+                            Text(customer)
                         }
                     }
                 }
-                .padding(.horizontal, 16)
             }
-            .padding(.bottom, 16)
+            .navigationTitle("Müşteri Ara")
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarItems(trailing: Button("Kapat") {
+                showingCustomerSearch = false
+            })
         }
-        .background(Color(UIColor.systemBackground))
-        .cornerRadius(12)
-        .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+        .onChange(of: viewModel.customerSearchText) { newValue in
+            viewModel.searchCustomers(query: newValue)
+        }
     }
     
-    // MARK: - Helper Methods (Android Compatible)
-    private func selectCustomer(_ customer: String) {
-        viewModel.selectedCustomer = customer
-        viewModel.customerSearchText = ""
-        viewModel.searchResults = []
-        viewModel.showToast("Müşteri seçildi: \(customer)")
-    }
-    
-    private func clearCustomerSelection() {
-        viewModel.selectedCustomer = nil
-        viewModel.customerSearchText = ""
-        viewModel.searchResults = []
-        viewModel.showToast("Müşteri seçimi temizlendi")
-    }
+    // MARK: - Helper Functions
     
     private func handleSelectedImages(_ images: [UIImage]) {
-        guard let customerName = viewModel.selectedCustomer else {
-            viewModel.showToast("Müşteri seçilmemiş")
-            return
-        }
+        guard let selectedCustomer = viewModel.selectedCustomer else { return }
         
-        selectedImages.append(contentsOf: images)
-        viewModel.saveImages(images: images, customerName: customerName, source: "Galeri")
+        for image in images {
+            if let imagePath = saveImageToDocuments(image, for: selectedCustomer) {
+                viewModel.saveImage(imagePath: imagePath)
+            }
+        }
     }
     
     private func handleCapturedImage(_ image: UIImage) {
-        guard let customerName = viewModel.selectedCustomer else {
-            viewModel.showToast("Müşteri seçilmemiş")
-            return
+        guard let selectedCustomer = viewModel.selectedCustomer else { return }
+        
+        if let imagePath = saveImageToDocuments(image, for: selectedCustomer) {
+            viewModel.saveImage(imagePath: imagePath)
         }
         
-        selectedImages.append(image)
-        viewModel.saveImages(images: [image], customerName: customerName, source: "Kamera")
-        cameraKey = UUID()
+        cameraKey = UUID() // Force refresh camera
+    }
+    
+    private func saveImageToDocuments(_ image: UIImage, for customer: String) -> String? {
+        let fileName = "\(customer)_\(UUID().uuidString).jpg"
+        let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let fileURL = documentsDirectory.appendingPathComponent(fileName)
+        
+        if let imageData = image.jpegData(compressionQuality: 0.8) {
+            do {
+                try imageData.write(to: fileURL)
+                return fileURL.path
+            } catch {
+                print("Error saving image: \(error)")
+                return nil
+            }
+        }
+        return nil
+    }
+    
+    private func loadImage(from path: String) -> UIImage? {
+        return UIImage(contentsOfFile: path)
+    }
+}
+
+// MARK: - SearchBar
+struct SearchBar: View {
+    @Binding var text: String
+    
+    var body: some View {
+        HStack {
+            Image(systemName: "magnifyingglass")
+                .foregroundColor(.gray)
+            
+            TextField("Müşteri adı girin...", text: $text)
+                .textFieldStyle(RoundedBorderTextFieldStyle())
+            
+            if !text.isEmpty {
+                Button(action: {
+                    text = ""
+                }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundColor(.gray)
+                }
+            }
+        }
     }
 }
 
