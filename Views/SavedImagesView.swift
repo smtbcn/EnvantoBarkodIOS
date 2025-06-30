@@ -4,269 +4,270 @@ import SwiftUI
 struct SavedImagesView: View {
     @State private var uploadedCustomers: [String] = []
     @State private var selectedCustomer: String?
-    @State private var expandedCustomer: String?
-    @State private var customerImages: [String: [CustomerImage]] = [:]
+    @State private var customerImages: [String] = []
     @State private var isLoading = false
-    @Environment(\.dismiss) private var dismiss
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Header
-            HStack {
-                Button(action: { dismiss() }) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.primary)
-                        .padding(8)
-                }
+        NavigationView {
+            VStack(spacing: 0) {
+                // Header
+                headerView
                 
-                Spacer()
-                
-                Text("Kayıtlı Resimler")
-                    .font(.system(size: 18, weight: .semibold))
-                
-                Spacer()
-                
-                // Sağ tarafta boş alan için
-                Color.clear
-                    .frame(width: 32, height: 32)
-            }
-            .padding(.horizontal)
-            .padding(.vertical, 8)
-            .background(Color(UIColor.systemBackground))
-            
-            Divider()
-            
-            if isLoading {
-                Spacer()
-                ProgressView("Yükleniyor...")
-                Spacer()
-            } else if uploadedCustomers.isEmpty {
-                emptyStateView
-            } else {
-                ScrollView {
-                    LazyVStack(spacing: 8) {
-                        ForEach(uploadedCustomers, id: \.self) { customer in
-                            CustomerImagesCard(
-                                customerName: customer,
-                                isExpanded: expandedCustomer == customer,
-                                images: customerImages[customer] ?? [],
-                                onExpandTap: {
-                                    withAnimation {
-                                        if expandedCustomer == customer {
-                                            expandedCustomer = nil
-                                        } else {
-                                            expandedCustomer = customer
-                                            loadImagesForCustomer(customer)
-                                        }
-                                    }
-                                },
-                                onDeleteTap: { imagePath in
-                                    deleteImage(imagePath, for: customer)
-                                }
-                            )
-                        }
-                    }
-                    .padding(.horizontal)
-                    .padding(.vertical, 8)
+                if isLoading {
+                    Spacer()
+                    ProgressView("Müşteri listesi yükleniyor...")
+                        .scaleEffect(1.2)
+                    Spacer()
+                } else if selectedCustomer == nil {
+                    // Customer List (Android style)
+                    customerListView
+                } else {
+                    // Customer Images (Android style)
+                    customerImagesView
                 }
             }
         }
+        .navigationBarHidden(true)
         .onAppear {
             loadUploadedCustomers()
         }
     }
     
-    private var emptyStateView: some View {
-        VStack(spacing: 16) {
-            Spacer()
+    // MARK: - Header View
+    private var headerView: some View {
+        VStack(spacing: 0) {
+            HStack {
+                if selectedCustomer != nil {
+                    Button(action: {
+                        selectedCustomer = nil
+                        customerImages = []
+                    }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "arrow.left")
+                                .font(.system(size: 18, weight: .medium))
+                            Text("Geri")
+                                .font(.system(size: 16, weight: .medium))
+                        }
+                        .foregroundColor(.blue)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                    }
+                } else {
+                    Rectangle()
+                        .fill(Color.clear)
+                        .frame(width: 80, height: 44)
+                }
+                
+                Spacer()
+                
+                Text(selectedCustomer ?? "Kaydedilen Resimler")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                Rectangle()
+                    .fill(Color.clear)
+                    .frame(width: 80, height: 44)
+            }
+            .padding(.horizontal, 4)
+            .padding(.vertical, 8)
+            .background(Color(UIColor.systemBackground))
             
-            Image(systemName: "photo.stack")
-                .font(.system(size: 64))
-                .foregroundColor(.gray)
-            
-            Text("Henüz Resim Yok")
-                .font(.title2)
-                .foregroundColor(.primary)
-            
-            Text("Kaydedilen resimler burada görünecek")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-            
-            Spacer()
+            Divider()
         }
-        .padding()
     }
+    
+    // MARK: - Customer List View (Android UploadedCustomersAdapter equivalent)
+    private var customerListView: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if uploadedCustomers.isEmpty {
+                VStack(spacing: 16) {
+                    Spacer()
+                    
+                    Image(systemName: "photo.stack")
+                        .font(.system(size: 48))
+                        .foregroundColor(.gray)
+                    
+                    Text("Henüz kaydedilmiş resim bulunmuyor")
+                        .font(.system(size: 16))
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                    
+                    Text("Barkod yükleme sayfasından resim ekleyin")
+                        .font(.system(size: 14))
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                    
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 32)
+            } else {
+                List {
+                    ForEach(uploadedCustomers, id: \.self) { customer in
+                        CustomerRowView(
+                            customerName: customer,
+                            imageCount: SQLiteManager.shared.getCustomerImageCount(musteriAdi: customer)
+                        ) {
+                            selectedCustomer = customer
+                            loadCustomerImages(customer: customer)
+                        }
+                    }
+                }
+                .listStyle(PlainListStyle())
+            }
+        }
+    }
+    
+    // MARK: - Customer Images View (Android ImagesAdapter equivalent)
+    private var customerImagesView: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if customerImages.isEmpty {
+                VStack(spacing: 16) {
+                    Spacer()
+                    
+                    Image(systemName: "photo")
+                        .font(.system(size: 48))
+                        .foregroundColor(.gray)
+                    
+                    Text("\(selectedCustomer ?? "") müşterisine ait resim bulunamadı")
+                        .font(.system(size: 16))
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                    
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 32)
+            } else {
+                ScrollView {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
+                        ForEach(Array(customerImages.enumerated()), id: \.offset) { index, imagePath in
+                            CustomerImageView(imagePath: imagePath) {
+                                // Image tap action
+                                print("Tapped image: \(imagePath)")
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 16)
+                }
+            }
+        }
+    }
+    
+    // MARK: - Helper Methods
     
     private func loadUploadedCustomers() {
         isLoading = true
         
-        DispatchQueue.global(qos: .userInitiated).async {
+        DispatchQueue.global(qos: .background).async {
             let customers = SQLiteManager.shared.getUploadedCustomers()
             
             DispatchQueue.main.async {
                 self.uploadedCustomers = customers
                 self.isLoading = false
-                
-                // Her müşteri için resim sayısını yükle
-                for customer in customers {
-                    loadImagesForCustomer(customer)
-                }
+                print("📋 Loaded \(customers.count) uploaded customers")
             }
         }
     }
     
-    private func loadImagesForCustomer(_ customer: String) {
-        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        let customerDirectory = documentsPath
-            .appendingPathComponent("EnvantoBarkod")
-            .appendingPathComponent(customer)
-        
-        do {
-            let files = try FileManager.default.contentsOfDirectory(at: customerDirectory, includingPropertiesForKeys: [.contentModificationDateKey])
+    private func loadCustomerImages(customer: String) {
+        DispatchQueue.global(qos: .background).async {
+            // Get image paths from file system (Android getCustomerImages equivalent)
+            let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            let customerDirectory = documentsPath
+                .appendingPathComponent("EnvantoBarkod")
+                .appendingPathComponent(customer)
             
-            let images = try files.compactMap { url -> CustomerImage? in
-                let attributes = try url.resourceValues(forKeys: [.contentModificationDateKey])
-                let modificationDate = attributes.contentModificationDate ?? Date()
-                
-                if url.pathExtension.lowercased() == "jpg" || url.pathExtension.lowercased() == "jpeg" {
-                    return CustomerImage(
-                        id: url.lastPathComponent,
-                        path: url.path,
-                        date: modificationDate,
-                        isUploading: false
-                    )
-                }
-                return nil
+            var imagePaths: [String] = []
+            
+            do {
+                let files = try FileManager.default.contentsOfDirectory(at: customerDirectory, includingPropertiesForKeys: nil)
+                imagePaths = files.compactMap { url in
+                    let fileName = url.lastPathComponent.lowercased()
+                    if fileName.hasSuffix(".jpg") || fileName.hasSuffix(".jpeg") || fileName.hasSuffix(".png") {
+                        return url.path
+                    }
+                    return nil
+                }.sorted()
+            } catch {
+                print("❌ Error loading customer images: \(error.localizedDescription)")
             }
-            .sorted { $0.date > $1.date }
             
             DispatchQueue.main.async {
-                self.customerImages[customer] = images
+                self.customerImages = imagePaths
+                print("📋 Loaded \(imagePaths.count) images for customer: \(customer)")
             }
-        } catch {
-            print("❌ Error loading images for \(customer): \(error)")
-        }
-    }
-    
-    private func deleteImage(_ path: String, for customer: String) {
-        do {
-            try FileManager.default.removeItem(atPath: path)
-            
-            // Güncelle UI'ı
-            if var images = customerImages[customer] {
-                images.removeAll { $0.path == path }
-                customerImages[customer] = images
-                
-                // Eğer müşterinin son resmi silindiyse
-                if images.isEmpty {
-                    uploadedCustomers.removeAll { $0 == customer }
-                }
-            }
-            
-            // SQLite'ı güncelle
-            SQLiteManager.shared.updateCustomerImageCount(musteriAdi: customer, decrease: true)
-        } catch {
-            print("❌ Error deleting image: \(error)")
         }
     }
 }
 
-struct CustomerImage: Identifiable {
-    let id: String
-    let path: String
-    let date: Date
-    var isUploading: Bool
-}
-
-struct CustomerImagesCard: View {
+// MARK: - Customer Row View (Android customer list item equivalent)
+struct CustomerRowView: View {
     let customerName: String
-    let isExpanded: Bool
-    let images: [CustomerImage]
-    let onExpandTap: () -> Void
-    let onDeleteTap: (String) -> Void
+    let imageCount: Int
+    let onTap: () -> Void
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Müşteri başlığı
-            Button(action: onExpandTap) {
+        Button(action: onTap) {
+            VStack(spacing: 0) {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(customerName)
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(.primary)
+                            .multilineTextAlignment(.leading)
                         
-                        Text("\(images.count) resim")
-                            .font(.system(size: 14))
+                        Text("\(imageCount) resim")
+                            .font(.system(size: 12))
                             .foregroundColor(.secondary)
                     }
                     
                     Spacer()
                     
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                    Image(systemName: "chevron.right")
                         .foregroundColor(.gray)
                         .font(.system(size: 14))
                 }
-                .padding()
-                .background(Color(UIColor.secondarySystemGroupedBackground))
-                .cornerRadius(10)
-            }
-            
-            // Resim listesi
-            if isExpanded {
-                VStack(spacing: 8) {
-                    ForEach(images) { image in
-                        HStack {
-                            // Resim
-                            if let uiImage = UIImage(contentsOfFile: image.path) {
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(width: 60, height: 60)
-                                    .cornerRadius(8)
-                                    .clipped()
-                            }
-                            
-                            // Resim bilgileri
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(image.id)
-                                    .font(.system(size: 14))
-                                    .foregroundColor(.primary)
-                                
-                                if image.isUploading {
-                                    Text("İnternet Bekleniyor")
-                                        .font(.system(size: 12))
-                                        .foregroundColor(.orange)
-                                } else {
-                                    Text(image.date, style: .date)
-                                        .font(.system(size: 12))
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-                            
-                            Spacer()
-                            
-                            // Silme butonu
-                            Button(action: { onDeleteTap(image.path) }) {
-                                Image(systemName: "trash")
-                                    .foregroundColor(.red)
-                                    .padding(8)
-                            }
-                        }
-                        .padding(.horizontal)
-                        .padding(.vertical, 4)
-                        
-                        if image.id != images.last?.id {
-                            Divider()
-                                .padding(.leading, 84)
-                        }
-                    }
-                }
-                .padding(.vertical, 8)
-                .background(Color(UIColor.secondarySystemGroupedBackground))
-                .cornerRadius(10)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+                .background(Color(UIColor.systemBackground))
             }
         }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+// MARK: - Customer Image View (Android image grid item equivalent)
+struct CustomerImageView: View {
+    let imagePath: String
+    let onTap: () -> Void
+    
+    var body: some View {
+        Button(action: onTap) {
+            ZStack {
+                if let image = UIImage(contentsOfFile: imagePath) {
+                    Image(uiImage: image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 100, height: 100)
+                        .clipped()
+                        .cornerRadius(8)
+                } else {
+                    Rectangle()
+                        .fill(Color.gray.opacity(0.3))
+                        .frame(width: 100, height: 100)
+                        .cornerRadius(8)
+                        .overlay(
+                            Image(systemName: "photo")
+                                .foregroundColor(.gray)
+                        )
+                }
+            }
+        }
+        .buttonStyle(PlainButtonStyle())
     }
 }
 
