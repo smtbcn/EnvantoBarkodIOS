@@ -1,11 +1,22 @@
 import SwiftUI
 import Foundation
 
-// MARK: - Network Error
-enum NetworkError: Error {
+// MARK: - Custom Errors
+enum CustomerAPIError: Error {
     case invalidURL
     case serverError
-    case noData
+    case decodingError
+    
+    var localizedDescription: String {
+        switch self {
+        case .invalidURL:
+            return "Geçersiz URL"
+        case .serverError:
+            return "Sunucu hatası"
+        case .decodingError:
+            return "Veri dönüştürme hatası"
+        }
+    }
 }
 
 // MARK: - Customer Model
@@ -180,7 +191,7 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
     private func searchCustomersOnline(query: String) async throws -> [Customer] {
         guard let baseURL = Bundle.main.object(forInfoDictionaryKey: "API_BASE_URL") as? String,
               let url = URL(string: "\(baseURL)/customers.asp") else {
-            throw NetworkError.invalidURL
+            throw CustomerAPIError.invalidURL
         }
         
         var request = URLRequest(url: url)
@@ -196,7 +207,7 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         
         guard let httpResponse = response as? HTTPURLResponse,
               httpResponse.statusCode == 200 else {
-            throw NetworkError.serverError
+            throw CustomerAPIError.serverError
         }
         
         return try JSONDecoder().decode([Customer].self, from: data)
@@ -309,7 +320,7 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
     private func fetchAllCustomersFromServer() async throws -> [Customer] {
         guard let baseURL = Bundle.main.object(forInfoDictionaryKey: "API_BASE_URL") as? String,
               let url = URL(string: "\(baseURL)/customers.asp") else {
-            throw NetworkError.invalidURL
+            throw CustomerAPIError.invalidURL
         }
         
         var request = URLRequest(url: url)
@@ -325,7 +336,7 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         
         guard let httpResponse = response as? HTTPURLResponse,
               httpResponse.statusCode == 200 else {
-            throw NetworkError.serverError
+            throw CustomerAPIError.serverError
         }
         
         return try JSONDecoder().decode([Customer].self, from: data)
