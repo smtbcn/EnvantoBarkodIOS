@@ -229,34 +229,4 @@ class DeviceAuthManager {
     }
 }
 
-// MARK: - DeviceIdentifier
-class DeviceIdentifier {
-    
-    // MARK: - Benzersiz cihaz kimliği al
-    static func getUniqueDeviceId() -> String {
-        // iOS'da IDFV (Identifier for Vendor) kullan
-        if let idfv = UIDevice.current.identifierForVendor?.uuidString {
-            return idfv
-        }
-        
-        // Fallback: UserDefaults'tan kayıtlı UUID kullan veya yeni oluştur
-        let key = "app_device_uuid"
-        if let savedUUID = UserDefaults.standard.string(forKey: key) {
-            return savedUUID
-        }
-        
-        let newUUID = UUID().uuidString
-        UserDefaults.standard.set(newUUID, forKey: key)
-        return newUUID
-    }
-    
-    // MARK: - Okunabilir cihaz bilgileri
-    static func getReadableDeviceInfo() -> String {
-        let device = UIDevice.current
-        let systemVersion = device.systemVersion
-        let model = device.model
-        let name = device.name
-        
-        return "\(name) - \(model) - iOS \(systemVersion)"
-    }
-} 
+ 

@@ -228,13 +228,4 @@ class BarcodeUploadViewModel: ObservableObject {
     }
 }
 
-// Android'deki gibi response modeli
-struct DeviceAuthResponse: Codable {
-    let success: Bool
-    let message: String?
-    
-    enum CodingKeys: String, CodingKey {
-        case success = "basari"
-        case message = "mesaj"
-    }
-} 
+// Android'deki gibi response modeli artık Models/BarcodeResult.swift'te 

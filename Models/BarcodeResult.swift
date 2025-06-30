@@ -6,10 +6,10 @@ struct DeviceAuthResponse: Codable {
     let message: String
     let deviceOwner: String?
     
-    private enum CodingKeys: String, CodingKey {
-        case success
-        case message
-        case deviceOwner = "device_owner"
+    enum CodingKeys: String, CodingKey {
+        case success = "basari"
+        case message = "mesaj"
+        case deviceOwner = "cihaz_sahibi"
     }
 }
 

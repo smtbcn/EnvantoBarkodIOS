@@ -12,25 +12,6 @@ struct UploadResponse: Codable {
     }
 }
 
-struct DeviceAuthResponse: Codable {
-    let success: Bool
-    let message: String
-    let deviceOwner: String?
-    
-    enum CodingKeys: String, CodingKey {
-        case success = "basari"
-        case message = "mesaj"
-        case deviceOwner = "cihaz_sahibi"
-    }
-    
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        success = try container.decode(Bool.self, forKey: .success)
-        message = try container.decode(String.self, forKey: .message)
-        deviceOwner = try container.decodeIfPresent(String.self, forKey: .deviceOwner)
-    }
-}
-
 struct Customer: Codable {
     let musteriAdi: String
     
