@@ -13,6 +13,11 @@
 		A1D8E1F42B8E723C00B9B5A1 /* SQLiteManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1D8E1F32B8E723C00B9B5A1 /* SQLiteManager.swift */; };
 		A1D8E1F62B8E724C00B9B5A1 /* ApiService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1D8E1F52B8E724C00B9B5A1 /* ApiService.swift */; };
 		A1D8E1F82B8E725C00B9B5A1 /* BarcodeResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1D8E1F72B8E725C00B9B5A1 /* BarcodeResult.swift */; };
+		/* Models */
+		1234567890ABCDEF1234567 /* BarcodeResult.swift in Sources */ = {
+			isa = PBXBuildFile;
+			fileRef = 1234567890ABCDEF1234568 /* BarcodeResult.swift */;
+		};
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -24,6 +29,7 @@
 		A1D8E1F32B8E723C00B9B5A1 /* SQLiteManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLiteManager.swift; sourceTree = "<group>"; };
 		A1D8E1F52B8E724C00B9B5A1 /* ApiService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApiService.swift; sourceTree = "<group>"; };
 		A1D8E1F72B8E725C00B9B5A1 /* BarcodeResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeResult.swift; sourceTree = "<group>"; };
+		1234567890ABCDEF1234568 /* BarcodeResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeResult.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -70,7 +76,7 @@
 		A1D8E1ED2B8E720000B9B5A1 /* Models */ = {
 			isa = PBXGroup;
 			children = (
-				A1D8E1F72B8E725C00B9B5A1 /* BarcodeResult.swift */,
+				1234567890ABCDEF1234568 /* BarcodeResult.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -84,6 +90,14 @@
 				A1D8E1F52B8E724C00B9B5A1 /* ApiService.swift */,
 			);
 			path = Services;
+			sourceTree = "<group>";
+		};
+		1234567890ABCDEF1234569 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				1234567890ABCDEF1234568 /* BarcodeResult.swift */,
+			);
+			path = Models;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -158,6 +172,15 @@
 				A1D8E1F42B8E723C00B9B5A1 /* SQLiteManager.swift in Sources */,
 				A1D8E1F62B8E724C00B9B5A1 /* ApiService.swift in Sources */,
 				A1D8E1F82B8E725C00B9B5A1 /* BarcodeResult.swift in Sources */,
+				1234567890ABCDEF1234567 /* BarcodeResult.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1234567890ABCDEF123456A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1234567890ABCDEF1234567 /* BarcodeResult.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
