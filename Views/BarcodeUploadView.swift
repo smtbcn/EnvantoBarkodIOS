@@ -30,7 +30,9 @@ struct BarcodeUploadView: View {
                 // Loading overlay
                 if viewModel.isLoading {
                     LoadingOverlay(
-                        message: "Cihaz yetkilendirme kontrolü yapılıyor..."
+                        message: viewModel.isDeviceAuthorized ? 
+                            "Müşteri listesi güncelleniyor..." : 
+                            "Cihaz yetkilendirme kontrolü yapılıyor..."
                     )
                 }
                 

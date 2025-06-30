@@ -1,6 +1,13 @@
 import SwiftUI
 import Foundation
 
+// MARK: - Network Error
+enum NetworkError: Error {
+    case invalidURL
+    case serverError
+    case noData
+}
+
 // MARK: - Customer Model
 struct Customer: Codable, Identifiable {
     let id = UUID()
@@ -13,6 +20,15 @@ struct Customer: Codable, Identifiable {
         case code
         case address
     }
+}
+
+// MARK: - SavedImage Model (Android'deki database kayıtlarına benzer)
+struct SavedImage: Identifiable, Codable {
+    let id = UUID()
+    let customerName: String
+    let imagePath: String
+    let uploadDate: Date
+    let isUploaded: Bool
 }
 
 // MARK: - BarcodeUploadViewModel
@@ -82,8 +98,8 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
     
     // MARK: - Sayfa özel cihaz yetkilendirme metodları (Android template)
     private func onDeviceAuthSuccess() {
-        // Müşteri listesini yükle
-        loadCustomerCache()
+        // Android'deki gibi: cihaz yetkilendirme başarılı olunca müşteri cache'ini kontrol et
+        checkAndUpdateCustomerCache()
         loadSavedImages()
     }
     
@@ -109,10 +125,14 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
             return
         }
         
+        // Android'deki gibi minimum 2 karakter kontrolü
         if searchText.count < 2 {
+            customers = []
+            showDropdown = false
             return
         }
         
+        print("🔍 Müşteri arama başlatıldı: '\(searchText)'")
         isSearching = true
         showDropdown = true
         
@@ -123,41 +143,52 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
     
     @MainActor
     private func performCustomerSearch() async {
-        do {
-            // Önce offline arama yap
-            let offlineResults = searchOfflineCustomers(query: searchText)
-            
-            if !offlineResults.isEmpty {
-                customers = offlineResults
-                isSearching = false
-                return
+        // Android'deki gibi önce hemen offline arama yap
+        let offlineResults = searchOfflineCustomers(query: searchText)
+        customers = offlineResults
+        
+        print("🔍 Offline arama: \(offlineResults.count) müşteri bulundu")
+        
+        // Paralel olarak online arama yap (Android'deki gibi)
+        Task {
+            do {
+                let onlineResults = try await searchCustomersOnline(query: searchText)
+                print("🌐 Online arama: \(onlineResults.count) müşteri bulundu")
+                
+                // Online sonuçlar varsa, offline sonuçları güncelle (Android'deki gibi)
+                if !onlineResults.isEmpty {
+                    await MainActor.run {
+                        customers = onlineResults
+                        print("✅ Online sonuçlar ile güncellendi")
+                    }
+                } else {
+                    print("📱 Online sonuç boş, offline sonuçlar korunuyor")
+                }
+                
+            } catch {
+                print("🔍 Online arama hatası: \(error.localizedDescription)")
+                print("📱 Offline sonuçlar korunuyor")
             }
             
-            // Online arama
-            let onlineResults = try await searchCustomersOnline(query: searchText)
-            customers = onlineResults
-            isSearching = false
-            
-        } catch {
-            print("🔍 Müşteri arama hatası: \(error.localizedDescription)")
-            // Fallback: Offline arama
-            customers = searchOfflineCustomers(query: searchText)
-            isSearching = false
+            await MainActor.run {
+                isSearching = false
+            }
         }
     }
     
-    // MARK: - Online Customer Search
+    // MARK: - Online Customer Search (Android searchCustomers metoduna benzer)
     private func searchCustomersOnline(query: String) async throws -> [Customer] {
         guard let baseURL = Bundle.main.object(forInfoDictionaryKey: "API_BASE_URL") as? String,
-              let url = URL(string: "\(baseURL)/customers_search.php") else {
+              let url = URL(string: "\(baseURL)/customers.asp") else {
             throw NetworkError.invalidURL
         }
         
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = 10.0
+        request.timeoutInterval = 3.0  // Android'deki gibi 3 saniye timeout
         
+        // Android'deki gibi "search" parametresi ile query gönder
         let bodyString = "search=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
         request.httpBody = bodyString.data(using: .utf8)
         
@@ -171,7 +202,7 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         return try JSONDecoder().decode([Customer].self, from: data)
     }
     
-    // MARK: - Offline Customer Search
+    // MARK: - Offline Customer Search (Android searchOfflineCustomers metoduna benzer)
     private func searchOfflineCustomers(query: String) -> [Customer] {
         // UserDefaults'tan cache'lenmiş müşterileri al
         guard let data = UserDefaults.standard.data(forKey: "cached_customers"),
@@ -180,35 +211,82 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         }
         
         let lowercaseQuery = query.lowercased()
-        return cachedCustomers.filter { customer in
+        let results = cachedCustomers.filter { customer in
             customer.name.lowercased().contains(lowercaseQuery) ||
             customer.code?.lowercased().contains(lowercaseQuery) == true
         }
-    }
-    
-    // MARK: - Load Customer Cache
-    private func loadCustomerCache() {
-        // İlk açılışta müşteri cache'ini kontrol et
-        checkAndUpdateCustomerCache()
-    }
-    
-    private func checkAndUpdateCustomerCache() {
-        let lastCacheTime = UserDefaults.standard.double(forKey: "customer_cache_time")
-        let currentTime = Date().timeIntervalSince1970
-        let cacheAge = currentTime - lastCacheTime
         
-        // 1 saat = 3600 saniye cache süresi
-        if cacheAge > 3600 {
-            Task {
-                await fetchAndCacheAllCustomers()
-            }
+        // Android'deki gibi alfabetik sırala ve en fazla 50 sonuç döndür
+        return Array(results.sorted { $0.name < $1.name }.prefix(50))
+    }
+    
+
+    
+    // MARK: - Customer Cache Management (Android checkAndUpdateCustomerCache metoduna benzer)
+    private func checkAndUpdateCustomerCache() {
+        Task {
+            await performCustomerCacheCheck()
         }
     }
     
     @MainActor
+    private func performCustomerCacheCheck() async {
+        // Android'deki gibi: önce cache'de kaç müşteri var kontrol et
+        let cachedCustomerCount = getCachedCustomerCount()
+        print("📦 Cache'de \(cachedCustomerCount) müşteri var")
+        
+        if cachedCustomerCount == 0 {
+            // Android'deki gibi: hiç müşteri yoksa ilk kez yükle
+            print("📦 Hiç müşteri yok, ilk kez yükleniyor...")
+            await fetchAndCacheAllCustomers()
+        } else {
+            // Android'deki gibi: belirli aralıklarla güncelle (6 saat geçmişse)
+            let lastCacheTime = UserDefaults.standard.double(forKey: "customer_cache_time")
+            let currentTime = Date().timeIntervalSince1970
+            let cacheAge = currentTime - lastCacheTime
+            
+            print("📦 Son güncelleme: \(Date(timeIntervalSince1970: lastCacheTime))")
+            print("📦 Şu anki zaman: \(Date())")
+            print("📦 Geçen süre: \(Int(cacheAge/60)) dakika")
+            
+            // Android'deki gibi 6 saat = 21600 saniye (Android'de CUSTOMER_CACHE_UPDATE_INTERVAL)
+            let updateIntervalSeconds: Double = 6 * 60 * 60 // 6 saat
+            
+            if cacheAge > updateIntervalSeconds {
+                print("📦 6 saat geçti, müşteri listesi güncelleniyor...")
+                await fetchAndCacheAllCustomers()
+            } else {
+                let remainingTime = updateIntervalSeconds - cacheAge
+                let remainingHours = Int(remainingTime / 3600)
+                let remainingMinutes = Int((remainingTime.truncatingRemainder(dividingBy: 3600)) / 60)
+                print("📦 Müşteri listesi güncel. Sonraki güncelleme: \(remainingHours) saat \(remainingMinutes) dakika sonra")
+            }
+        }
+    }
+    
+    // Android'deki getCachedMusteriCount metoduna benzer
+    private func getCachedCustomerCount() -> Int {
+        guard let data = UserDefaults.standard.data(forKey: "cached_customers"),
+              let cachedCustomers = try? JSONDecoder().decode([Customer].self, from: data) else {
+            return 0
+        }
+        return cachedCustomers.count
+    }
+    
+    @MainActor
     private func fetchAndCacheAllCustomers() async {
+        // Android'deki gibi progress göster
+        isLoading = true
+        updateProgress(current: 0, total: 100)
+        
         do {
+            print("📦 Tüm müşteri listesi getiriliyor ve cache'e alınıyor...")
+            updateProgress(current: 30, total: 100)
+            
             let allCustomers = try await fetchAllCustomersFromServer()
+            updateProgress(current: 70, total: 100)
+            
+            print("📦 \(allCustomers.count) müşteri alındı, cache'e kaydediliyor")
             
             // Cache'e kaydet
             if let data = try? JSONEncoder().encode(allCustomers) {
@@ -216,21 +294,32 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
                 UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "customer_cache_time")
             }
             
-            print("📦 \(allCustomers.count) müşteri cache'e kaydedildi")
+            updateProgress(current: 100, total: 100)
+            print("📦 \(allCustomers.count) müşteri başarıyla cache'e kaydedildi")
             
         } catch {
             print("🔍 Müşteri cache güncelleme hatası: \(error.localizedDescription)")
         }
+        
+        // Android'deki gibi progress'i gizle
+        isLoading = false
     }
     
+    // MARK: - Fetch All Customers (Android fetchAndCacheAllCustomers metoduna benzer)
     private func fetchAllCustomersFromServer() async throws -> [Customer] {
         guard let baseURL = Bundle.main.object(forInfoDictionaryKey: "API_BASE_URL") as? String,
-              let url = URL(string: "\(baseURL)/customers_all.php") else {
+              let url = URL(string: "\(baseURL)/customers.asp") else {
             throw NetworkError.invalidURL
         }
         
         var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         request.timeoutInterval = 30.0
+        
+        // Android'deki gibi "getall" parametresi ile tüm müşteri listesini getir
+        let bodyString = "getall=1"
+        request.httpBody = bodyString.data(using: .utf8)
         
         let (data, response) = try await URLSession.shared.data(for: request)
         
@@ -327,13 +416,4 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         errorMessage = message
         showingError = true
     }
-}
-
-// MARK: - SavedImage Model
-struct SavedImage: Identifiable {
-    let id = UUID()
-    let customerName: String
-    let imagePath: String
-    let uploadDate: Date
-    let isUploaded: Bool
 } 
