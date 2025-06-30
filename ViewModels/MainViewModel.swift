@@ -2,50 +2,14 @@ import SwiftUI
 import AVFoundation
 import Foundation
 
-class MainViewModel: ObservableObject, DeviceAuthCallback {
+class MainViewModel: ObservableObject {
     @Published var hasRequiredPermissions = false
     @Published var deviceOwner = ""
-    @Published var isLoading = false
-    @Published var isDeviceAuthorized = false
     
     private let userDefaults = UserDefaults.standard
     
     init() {
         loadDeviceOwner()
-        checkDeviceAuthorization()
-    }
-    
-    // MARK: - Cihaz yetkilendirme kontrolü (Android template ile aynı)
-    func checkDeviceAuthorization() {
-        DeviceAuthManager.checkDeviceAuthorization(callback: self)
-    }
-    
-    // MARK: - DeviceAuthCallback implementasyonu
-    func onAuthSuccess() {
-        DispatchQueue.main.async {
-            self.isDeviceAuthorized = true
-            self.loadDeviceOwner() // Güncel cihaz sahibini yükle
-            self.checkPermissions() // İzinleri kontrol et
-        }
-    }
-    
-    func onAuthFailure() {
-        DispatchQueue.main.async {
-            self.isDeviceAuthorized = false
-            // Activity kapanacak veya ana menüde kalacak
-        }
-    }
-    
-    func onShowLoading() {
-        DispatchQueue.main.async {
-            self.isLoading = true
-        }
-    }
-    
-    func onHideLoading() {
-        DispatchQueue.main.async {
-            self.isLoading = false
-        }
     }
     
     // MARK: - Kamera izinleri kontrolü

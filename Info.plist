@@ -46,7 +46,7 @@
     
     <!-- API Ayarları -->
     <key>API_BASE_URL</key>
-    <string>https://your-api-server.com/api</string>
+    <string>https://envanto.app/barkod_yukle_android/</string>
     
     <!-- Güvenlik -->
     <key>NSAppTransportSecurity</key>

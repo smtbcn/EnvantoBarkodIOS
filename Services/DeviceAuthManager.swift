@@ -104,9 +104,9 @@ class DeviceAuthManager {
     // MARK: - Sunucu yetkilendirme kontrolü
     private static func checkServerAuthorization(deviceId: String) async -> Result<DeviceAuthResponse, Error> {
         do {
-            // API endpoint URL'i oluştur
+            // API endpoint URL'i oluştur (Android'deki gibi usersperm.asp)
             guard let baseURL = Bundle.main.object(forInfoDictionaryKey: "API_BASE_URL") as? String,
-                  let url = URL(string: "\(baseURL)/check_device_auth.php") else {
+                  let url = URL(string: "\(baseURL)/usersperm.asp") else {
                 throw NetworkError.invalidURL
             }
             
@@ -116,8 +116,8 @@ class DeviceAuthManager {
             request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
             request.timeoutInterval = 3.0 // 3 saniyelik timeout (Android'deki gibi)
             
-            // Body parametreleri
-            let bodyString = "action=check&device_id=\(deviceId)"
+            // Body parametreleri (Android ApiService ile aynı)
+            let bodyString = "action=check&cihaz_bilgisi=\(deviceId)"
             request.httpBody = bodyString.data(using: .utf8)
             
             // API çağrısı yap
