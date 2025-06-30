@@ -2,6 +2,14 @@ import Foundation
 import SwiftUI
 import UIKit
 
+// MARK: - DeviceAuthCallback Protocol
+protocol DeviceAuthCallback {
+    func onAuthSuccess()
+    func onAuthFailure()
+    func onShowLoading()
+    func onHideLoading()
+}
+
 // MARK: - Network Error
 enum NetworkError: Error {
     case invalidURL
