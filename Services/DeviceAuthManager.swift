@@ -174,7 +174,7 @@ class DeviceAuthManager {
         }
     }
     
-    // MARK: - Yetkilendirme hatası uyarısı
+    // MARK: - Yetkilendirme hatası uyarısı (Android uyumlu)
     @MainActor
     private static func showAuthorizationErrorAlert(message: String, deviceId: String) {
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
@@ -183,25 +183,34 @@ class DeviceAuthManager {
             return
         }
         
+        // Android'deki gibi detaylı mesaj
+        let detailedMessage = """
+        \(message)
+        
+        Cihaz Kimliği: \(deviceId)
+        
+        Lütfen bu kimliği sistem yöneticisine iletin.
+        """
+        
         let alert = UIAlertController(
-            title: "Yetkilendirme Hatası",
-            message: message,
+            title: "Cihaz Yetkilendirme Gerekli",
+            message: detailedMessage,
             preferredStyle: .alert
         )
         
-        // Cihaz ID kopyala
-        alert.addAction(UIAlertAction(title: "Cihaz ID Kopyala", style: .default) { _ in
+        // Cihaz ID'yi kopyala (Android'deki gibi)
+        alert.addAction(UIAlertAction(title: "Cihaz Kimliği Kopyala", style: .default) { _ in
             UIPasteboard.general.string = deviceId
             
-            // Toast benzeri bildirim göster
+            // Android'deki gibi toast göster
             DispatchQueue.main.async {
-                showToast(message: "Cihaz kimliği kopyalandı")
+                showToast(message: "Cihaz kimliği panoya kopyalandı")
             }
         })
         
-        // Kapat
-        alert.addAction(UIAlertAction(title: "Kapat", style: .cancel) { _ in
-            // Ana menüye dön veya uygulamayı kapat
+        // Tamam (Android'deki gibi)
+        alert.addAction(UIAlertAction(title: "Tamam", style: .cancel) { _ in
+            // Ana menüye dön (Android'deki gibi finish() davranışı)
             if let navigationController = rootViewController as? UINavigationController {
                 navigationController.popToRootViewController(animated: true)
             }
