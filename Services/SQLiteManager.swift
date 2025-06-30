@@ -204,4 +204,98 @@ class SQLiteManager {
         sqlite3_finalize(statement)
         return count
     }
+    
+    // MARK: - Müşteri Resim İşlemleri
+    
+    func addCustomerImages(musteriAdi: String, imageCount: Int) {
+        // Önce müşteriyi müşteriler tablosuna ekle (eğer yoksa)
+        let insertCustomerSQL = """
+        INSERT OR IGNORE INTO \(SQLiteManager.TABLE_MUSTERILER)
+        (\(SQLiteManager.COLUMN_MUSTERI_ADI))
+        VALUES (?)
+        """
+        
+        var statement: OpaquePointer?
+        
+        if sqlite3_prepare_v2(db, insertCustomerSQL, -1, &statement, nil) == SQLITE_OK {
+            sqlite3_bind_text(statement, 1, musteriAdi, -1, nil)
+            sqlite3_step(statement)
+        }
+        sqlite3_finalize(statement)
+        
+        // Resim sayısını güncelle
+        let deviceOwner = UserDefaults.standard.string(forKey: "device_owner") ?? "unknown"
+        
+        let insertImageSQL = """
+        INSERT INTO \(SQLiteManager.TABLE_BARKOD_RESIMLER)
+        (\(SQLiteManager.COLUMN_MUSTERI_ADI), \(SQLiteManager.COLUMN_RESIM_YOLU), \(SQLiteManager.COLUMN_YUKLEYEN))
+        VALUES (?, ?, ?)
+        """
+        
+        if sqlite3_prepare_v2(db, insertImageSQL, -1, &statement, nil) == SQLITE_OK {
+            for _ in 0..<imageCount {
+                sqlite3_bind_text(statement, 1, musteriAdi, -1, nil)
+                sqlite3_bind_text(statement, 2, "temp_path", -1, nil) // Geçici yol
+                sqlite3_bind_text(statement, 3, deviceOwner, -1, nil)
+                sqlite3_step(statement)
+                sqlite3_reset(statement)
+            }
+        }
+        sqlite3_finalize(statement)
+    }
+    
+    func updateCustomerImageCount(musteriAdi: String, decrease: Bool) {
+        if decrease {
+            // Resim sayısını azalt
+            let deleteSQL = """
+            DELETE FROM \(SQLiteManager.TABLE_BARKOD_RESIMLER)
+            WHERE \(SQLiteManager.COLUMN_MUSTERI_ADI) = ?
+            AND \(SQLiteManager.COLUMN_ID) = (
+                SELECT \(SQLiteManager.COLUMN_ID)
+                FROM \(SQLiteManager.TABLE_BARKOD_RESIMLER)
+                WHERE \(SQLiteManager.COLUMN_MUSTERI_ADI) = ?
+                ORDER BY \(SQLiteManager.COLUMN_ID) DESC
+                LIMIT 1
+            )
+            """
+            
+            var statement: OpaquePointer?
+            
+            if sqlite3_prepare_v2(db, deleteSQL, -1, &statement, nil) == SQLITE_OK {
+                sqlite3_bind_text(statement, 1, musteriAdi, -1, nil)
+                sqlite3_bind_text(statement, 2, musteriAdi, -1, nil)
+                sqlite3_step(statement)
+            }
+            sqlite3_finalize(statement)
+            
+            // Eğer müşterinin hiç resmi kalmadıysa müşteriler tablosundan da sil
+            let checkSQL = """
+            SELECT COUNT(*)
+            FROM \(SQLiteManager.TABLE_BARKOD_RESIMLER)
+            WHERE \(SQLiteManager.COLUMN_MUSTERI_ADI) = ?
+            """
+            
+            if sqlite3_prepare_v2(db, checkSQL, -1, &statement, nil) == SQLITE_OK {
+                sqlite3_bind_text(statement, 1, musteriAdi, -1, nil)
+                
+                if sqlite3_step(statement) == SQLITE_ROW {
+                    let count = sqlite3_column_int(statement, 0)
+                    if count == 0 {
+                        let deleteCustomerSQL = """
+                        DELETE FROM \(SQLiteManager.TABLE_MUSTERILER)
+                        WHERE \(SQLiteManager.COLUMN_MUSTERI_ADI) = ?
+                        """
+                        
+                        var deleteStatement: OpaquePointer?
+                        if sqlite3_prepare_v2(db, deleteCustomerSQL, -1, &deleteStatement, nil) == SQLITE_OK {
+                            sqlite3_bind_text(deleteStatement, 1, musteriAdi, -1, nil)
+                            sqlite3_step(deleteStatement)
+                        }
+                        sqlite3_finalize(deleteStatement)
+                    }
+                }
+            }
+            sqlite3_finalize(statement)
+        }
+    }
 }
