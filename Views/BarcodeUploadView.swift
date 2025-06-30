@@ -2,6 +2,7 @@ import SwiftUI
 import UIKit
 import Photos
 import AVFoundation
+import PhotosUI
 
 struct BarcodeUploadView: View {
     @StateObject private var viewModel = BarcodeUploadViewModel()
@@ -42,7 +43,7 @@ struct BarcodeUploadView: View {
                     .default(Text("📷 Kamera")) {
                         checkCameraPermissionAndStart()
                     },
-                    .default(Text("🖼️ Galeri")) {
+                    .default(Text("🖼️ Galeri (Çoklu)")) {
                         sourceType = .photoLibrary
                         showingImagePicker = true
                     },
@@ -51,9 +52,8 @@ struct BarcodeUploadView: View {
             )
         }
         .sheet(isPresented: $showingImagePicker) {
-            SimpleImagePicker(
+            MultipleImagePicker(
                 selectedImages: $selectedImages,
-                sourceType: sourceType,
                 onImagesSelected: { images in
                     handleSelectedImages(images)
                 }
@@ -421,44 +421,67 @@ struct LoadingOverlay: View {
     }
 }
 
-// MARK: - Simple Image Picker (iOS 15+ Compatible)
+// MARK: - Multiple Image Picker (iOS 16+)
 
-struct SimpleImagePicker: UIViewControllerRepresentable {
+struct MultipleImagePicker: UIViewControllerRepresentable {
     @Binding var selectedImages: [UIImage]
-    var sourceType: UIImagePickerController.SourceType
     var onImagesSelected: ([UIImage]) -> Void
     @Environment(\.presentationMode) var presentationMode
     
-    func makeUIViewController(context: Context) -> UIImagePickerController {
-        let picker = UIImagePickerController()
-        picker.sourceType = sourceType
+    func makeUIViewController(context: Context) -> PHPickerViewController {
+        var config = PHPickerConfiguration()
+        config.selectionLimit = 0 // 0 = unlimited selection
+        config.filter = .images
+        config.preferredAssetRepresentationMode = .current
+        
+        let picker = PHPickerViewController(configuration: config)
         picker.delegate = context.coordinator
-        picker.allowsEditing = false
         return picker
     }
     
-    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+    func updateUIViewController(_ uiViewController: PHPickerViewController, context: Context) {}
     
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
     }
     
-    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
-        let parent: SimpleImagePicker
+    class Coordinator: NSObject, PHPickerViewControllerDelegate {
+        let parent: MultipleImagePicker
         
-        init(_ parent: SimpleImagePicker) {
+        init(_ parent: MultipleImagePicker) {
             self.parent = parent
         }
         
-        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
-            if let image = info[.originalImage] as? UIImage {
-                parent.onImagesSelected([image])
+        func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
+            picker.dismiss(animated: true)
+            
+            guard !results.isEmpty else {
+                return
             }
-            picker.dismiss(animated: true)
-        }
-        
-        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-            picker.dismiss(animated: true)
+            
+            var images: [UIImage] = []
+            let group = DispatchGroup()
+            
+            for result in results {
+                group.enter()
+                
+                result.itemProvider.loadObject(ofClass: UIImage.self) { (object, error) in
+                    defer { group.leave() }
+                    
+                    if let image = object as? UIImage {
+                        DispatchQueue.main.async {
+                            images.append(image)
+                        }
+                    } else {
+                        print("❌ Failed to load image: \(error?.localizedDescription ?? "Unknown error")")
+                    }
+                }
+            }
+            
+            group.notify(queue: .main) {
+                print("📸 Loaded \(images.count)/\(results.count) images from gallery")
+                self.parent.onImagesSelected(images)
+            }
         }
     }
 }

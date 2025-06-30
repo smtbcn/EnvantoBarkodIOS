@@ -99,8 +99,8 @@
     </array>
     
     <!-- Minimum iOS Versiyonu -->
-    <key>LSMinimumSystemVersion</key>
-    <string>15.0</string>
+    	<key>LSMinimumSystemVersion</key>
+	<string>16.0</string>
     
     <!-- Dosya Paylaşımı -->
     <key>UIFileSharingEnabled</key>

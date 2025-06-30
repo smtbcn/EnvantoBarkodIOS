@@ -19,6 +19,14 @@ enum CustomerAPIError: Error {
     }
 }
 
+// MARK: - DeviceAuthCallback Protocol
+protocol DeviceAuthCallback {
+    func onAuthSuccess()
+    func onAuthFailure()
+    func onShowLoading()
+    func onHideLoading()
+}
+
 // MARK: - Customer Model (API'den gelen format: {"musteri_adi":"..."})
 struct Customer: Codable, Identifiable {
     let id = UUID()
@@ -93,7 +101,7 @@ class BarcodeUploadViewModel: ObservableObject {
     func checkDeviceAuthorization() {
         isLoading = true
         
-        deviceAuthManager.checkDeviceAuthorization(callback: DeviceAuthCallbackImpl(
+        DeviceAuthManager.checkDeviceAuthorization(callback: DeviceAuthCallbackImpl(
             onAuthSuccess: { [weak self] in
                 DispatchQueue.main.async {
                     self?.isLoading = false
@@ -177,19 +185,19 @@ class BarcodeUploadViewModel: ObservableObject {
             
             print("📡 Search API response: \(String(data: data, encoding: .utf8) ?? "Invalid data")")
             
-                         do {
-                 let customers = try JSONDecoder().decode([Customer].self, from: data)
-                 let customerNames = customers.map { $0.musteri_adi }
-                 
-                 DispatchQueue.main.async {
-                     // Merge with offline results, removing duplicates
-                     let combinedResults = Array(Set(self?.searchResults ?? [] + customerNames))
-                         .sorted()
-                         .prefix(10)
-                     
-                     self?.searchResults = Array(combinedResults)
-                     print("🌐 Online search: Found \(customers.count) customers, total results: \(combinedResults.count)")
-                 }
+            do {
+                let customers = try JSONDecoder().decode([Customer].self, from: data)
+                let customerNames = customers.map { $0.musteri_adi }
+                
+                DispatchQueue.main.async {
+                    // Merge with offline results, removing duplicates
+                    let combinedResults = Array(Set(self?.searchResults ?? [] + customerNames))
+                        .sorted()
+                        .prefix(10)
+                    
+                    self?.searchResults = Array(combinedResults)
+                    print("🌐 Online search: Found \(customers.count) customers, total results: \(combinedResults.count)")
+                }
             } catch {
                 print("❌ JSON decode error: \(error)")
             }
@@ -249,16 +257,16 @@ class BarcodeUploadViewModel: ObservableObject {
             
             print("📡 Cache API response size: \(data.count) bytes")
             
-                         do {
-                 let customers = try JSONDecoder().decode([Customer].self, from: data)
-                 let customerNames = customers.map { $0.musteri_adi }
-                 
-                 DispatchQueue.main.async {
-                     self?.customerCache = customerNames
-                     self?.lastCacheUpdate = Date()
-                     self?.saveCustomerCache()
-                     print("📋 ✅ Customer cache updated: \(customers.count) customers")
-                 }
+            do {
+                let customers = try JSONDecoder().decode([Customer].self, from: data)
+                let customerNames = customers.map { $0.musteri_adi }
+                
+                DispatchQueue.main.async {
+                    self?.customerCache = customerNames
+                    self?.lastCacheUpdate = Date()
+                    self?.saveCustomerCache()
+                    print("📋 ✅ Customer cache updated: \(customers.count) customers")
+                }
             } catch {
                 print("❌ Cache JSON decode error: \(error)")
             }
