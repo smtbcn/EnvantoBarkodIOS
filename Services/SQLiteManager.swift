@@ -37,7 +37,7 @@ class SQLiteManager {
             print("✅ Database opened successfully")
             createTables()
         } else {
-            print("❌ Error opening database")
+            print("❌ Database open error: \(String(cString: sqlite3_errmsg(db)))")
         }
     }
     
@@ -47,185 +47,246 @@ class SQLiteManager {
     
     private func createTables() {
         // Android'deki gibi barkod_resimler tablosu
-        let createTableSQL = """
-        CREATE TABLE IF NOT EXISTS barkod_resimler (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            musteri_adi TEXT,
-            resim_yolu TEXT,
-            tarih DATETIME DEFAULT CURRENT_TIMESTAMP,
-            yukleyen TEXT,
-            yuklendi INTEGER DEFAULT 0
-        );
+        let barcodeImagesSQL = """
+            CREATE TABLE IF NOT EXISTS barkod_resimler (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                musteri_adi TEXT NOT NULL,
+                resim_yolu TEXT NOT NULL,
+                tarih DATETIME DEFAULT CURRENT_TIMESTAMP,
+                yukleyen TEXT NOT NULL,
+                yuklendi INTEGER DEFAULT 0
+            );
+        """
+        
+        // Android'deki gibi cihaz_yetki tablosu
+        let deviceAuthSQL = """
+            CREATE TABLE IF NOT EXISTS cihaz_yetki (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                cihaz_bilgisi TEXT NOT NULL UNIQUE,
+                cihaz_sahibi TEXT,
+                onaylanmis INTEGER DEFAULT 0,
+                son_kontrol DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+        """
+        
+        if sqlite3_exec(db, barcodeImagesSQL, nil, nil, nil) == SQLITE_OK {
+            print("✅ barkod_resimler table created successfully")
+        } else {
+            print("❌ barkod_resimler table creation error: \(String(cString: sqlite3_errmsg(db)))")
+        }
+        
+        if sqlite3_exec(db, deviceAuthSQL, nil, nil, nil) == SQLITE_OK {
+            print("✅ cihaz_yetki table created successfully")
+        } else {
+            print("❌ cihaz_yetki table creation error: \(String(cString: sqlite3_errmsg(db)))")
+        }
+    }
+    
+    // MARK: - Cihaz Yetki İşlemleri (Android uyumlu)
+    
+    func saveCihazYetki(deviceId: String, deviceOwner: String, isAuthorized: Bool) {
+        let sql = """
+            INSERT OR REPLACE INTO cihaz_yetki (cihaz_bilgisi, cihaz_sahibi, onaylanmis, son_kontrol)
+            VALUES (?, ?, ?, CURRENT_TIMESTAMP);
         """
         
         var statement: OpaquePointer?
         
-        if sqlite3_prepare_v2(db, createTableSQL, -1, &statement, nil) == SQLITE_OK {
+        if sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK {
+            sqlite3_bind_text(statement, 1, (deviceId as NSString).utf8String, -1, nil)
+            sqlite3_bind_text(statement, 2, (deviceOwner as NSString).utf8String, -1, nil)
+            sqlite3_bind_int(statement, 3, isAuthorized ? 1 : 0)
+            
             if sqlite3_step(statement) == SQLITE_DONE {
-                print("✅ Table created successfully")
+                print("✅ Device auth saved successfully")
             } else {
-                print("❌ Error creating table")
+                print("❌ Device auth save error: \(String(cString: sqlite3_errmsg(db)))")
             }
         } else {
-            print("❌ Error preparing create table statement")
+            print("❌ Device auth prepare error: \(String(cString: sqlite3_errmsg(db)))")
         }
         
         sqlite3_finalize(statement)
+    }
+    
+    func isCihazOnaylanmis(_ deviceId: String) -> Bool {
+        let sql = "SELECT onaylanmis FROM cihaz_yetki WHERE cihaz_bilgisi = ? LIMIT 1;"
+        var statement: OpaquePointer?
+        var isAuthorized = false
+        
+        if sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK {
+            sqlite3_bind_text(statement, 1, (deviceId as NSString).utf8String, -1, nil)
+            
+            if sqlite3_step(statement) == SQLITE_ROW {
+                isAuthorized = sqlite3_column_int(statement, 0) == 1
+                print("📱 Device auth status from local DB: \(isAuthorized)")
+            } else {
+                print("❌ Device not found in local DB")
+            }
+        } else {
+            print("❌ Device auth check error: \(String(cString: sqlite3_errmsg(db)))")
+        }
+        
+        sqlite3_finalize(statement)
+        return isAuthorized
+    }
+    
+    func getCihazSahibi(_ deviceId: String) -> String? {
+        let sql = "SELECT cihaz_sahibi FROM cihaz_yetki WHERE cihaz_bilgisi = ? LIMIT 1;"
+        var statement: OpaquePointer?
+        var deviceOwner: String?
+        
+        if sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK {
+            sqlite3_bind_text(statement, 1, (deviceId as NSString).utf8String, -1, nil)
+            
+            if sqlite3_step(statement) == SQLITE_ROW {
+                if let cString = sqlite3_column_text(statement, 0) {
+                    deviceOwner = String(cString: cString)
+                    print("📱 Device owner from local DB: \(deviceOwner ?? "nil")")
+                }
+            } else {
+                print("❌ Device owner not found in local DB")
+            }
+        } else {
+            print("❌ Device owner check error: \(String(cString: sqlite3_errmsg(db)))")
+        }
+        
+        sqlite3_finalize(statement)
+        return deviceOwner
     }
     
     // MARK: - Barkod Resim İşlemleri
-    func addBarkodResim(musteriAdi: String, resimYolu: String, yukleyen: String) -> Int64 {
-        let insertSQL = """
-        INSERT INTO barkod_resimler (musteri_adi, resim_yolu, yukleyen)
-        VALUES (?, ?, ?);
+    
+    func saveImage(customerName: String, imagePath: String, uploader: String) -> Bool {
+        let sql = """
+            INSERT INTO barkod_resimler (musteri_adi, resim_yolu, yukleyen)
+            VALUES (?, ?, ?);
         """
         
         var statement: OpaquePointer?
-        var lastId: Int64 = 0
+        var success = false
         
-        if sqlite3_prepare_v2(db, insertSQL, -1, &statement, nil) == SQLITE_OK {
-            sqlite3_bind_text(statement, 1, (musteriAdi as NSString).utf8String, -1, nil)
-            sqlite3_bind_text(statement, 2, (resimYolu as NSString).utf8String, -1, nil)
-            sqlite3_bind_text(statement, 3, (yukleyen as NSString).utf8String, -1, nil)
+        if sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK {
+            sqlite3_bind_text(statement, 1, (customerName as NSString).utf8String, -1, nil)
+            sqlite3_bind_text(statement, 2, (imagePath as NSString).utf8String, -1, nil)
+            sqlite3_bind_text(statement, 3, (uploader as NSString).utf8String, -1, nil)
             
             if sqlite3_step(statement) == SQLITE_DONE {
-                lastId = sqlite3_last_insert_rowid(db)
-                print("✅ Image record added successfully: \(lastId)")
+                print("✅ Image saved successfully")
+                success = true
             } else {
-                print("❌ Error adding image record")
+                print("❌ Image save error: \(String(cString: sqlite3_errmsg(db)))")
             }
         } else {
-            print("❌ Error preparing insert statement")
+            print("❌ Image save prepare error: \(String(cString: sqlite3_errmsg(db)))")
         }
         
         sqlite3_finalize(statement)
-        return lastId
+        return success
     }
     
-    func updateBarkodResimStatus(resimYolu: String, yuklendi: Bool) {
-        let updateSQL = """
-        UPDATE barkod_resimler
-        SET yuklendi = ?
-        WHERE resim_yolu = ?;
-        """
-        
+    func markImageAsUploaded(imagePath: String) -> Bool {
+        let sql = "UPDATE barkod_resimler SET yuklendi = 1 WHERE resim_yolu = ?;"
         var statement: OpaquePointer?
+        var success = false
         
-        if sqlite3_prepare_v2(db, updateSQL, -1, &statement, nil) == SQLITE_OK {
-            sqlite3_bind_int(statement, 1, yuklendi ? 1 : 0)
-            sqlite3_bind_text(statement, 2, (resimYolu as NSString).utf8String, -1, nil)
+        if sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK {
+            sqlite3_bind_text(statement, 1, (imagePath as NSString).utf8String, -1, nil)
             
             if sqlite3_step(statement) == SQLITE_DONE {
-                print("✅ Image status updated successfully")
+                print("✅ Image marked as uploaded")
+                success = true
             } else {
-                print("❌ Error updating image status")
+                print("❌ Image update error: \(String(cString: sqlite3_errmsg(db)))")
             }
         } else {
-            print("❌ Error preparing update statement")
+            print("❌ Image update prepare error: \(String(cString: sqlite3_errmsg(db)))")
         }
         
         sqlite3_finalize(statement)
+        return success
     }
     
-    func getUnuploadedImages() -> [(id: Int64, musteriAdi: String, resimYolu: String, yukleyen: String)] {
-        var images: [(id: Int64, musteriAdi: String, resimYolu: String, yukleyen: String)] = []
-        
-        let selectSQL = """
-        SELECT id, musteri_adi, resim_yolu, yukleyen
-        FROM barkod_resimler
-        WHERE yuklendi = 0
-        ORDER BY tarih ASC;
+    func getUnuploadedImages() -> [(id: Int64, customerName: String, imagePath: String, date: String, uploader: String)] {
+        let sql = """
+            SELECT id, musteri_adi, resim_yolu, datetime(tarih, 'localtime'), yukleyen
+            FROM barkod_resimler
+            WHERE yuklendi = 0
+            ORDER BY tarih DESC;
         """
         
         var statement: OpaquePointer?
+        var results: [(id: Int64, customerName: String, imagePath: String, date: String, uploader: String)] = []
         
-        if sqlite3_prepare_v2(db, selectSQL, -1, &statement, nil) == SQLITE_OK {
+        if sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK {
             while sqlite3_step(statement) == SQLITE_ROW {
                 let id = sqlite3_column_int64(statement, 0)
-                let musteriAdi = String(cString: sqlite3_column_text(statement, 1))
-                let resimYolu = String(cString: sqlite3_column_text(statement, 2))
-                let yukleyen = String(cString: sqlite3_column_text(statement, 3))
                 
-                images.append((id: id, musteriAdi: musteriAdi, resimYolu: resimYolu, yukleyen: yukleyen))
-            }
-        }
-        
-        sqlite3_finalize(statement)
-        return images
-    }
-    
-    func getCustomerImages(musteriAdi: String) -> [(resimYolu: String, yuklendi: Bool)] {
-        var images: [(resimYolu: String, yuklendi: Bool)] = []
-        
-        let selectSQL = """
-        SELECT resim_yolu, yuklendi
-        FROM barkod_resimler
-        WHERE musteri_adi = ?
-        ORDER BY tarih DESC;
-        """
-        
-        var statement: OpaquePointer?
-        
-        if sqlite3_prepare_v2(db, selectSQL, -1, &statement, nil) == SQLITE_OK {
-            sqlite3_bind_text(statement, 1, (musteriAdi as NSString).utf8String, -1, nil)
-            
-            while sqlite3_step(statement) == SQLITE_ROW {
-                let resimYolu = String(cString: sqlite3_column_text(statement, 0))
-                let yuklendi = sqlite3_column_int(statement, 1) == 1
+                let customerName = String(cString: sqlite3_column_text(statement, 1))
+                let imagePath = String(cString: sqlite3_column_text(statement, 2))
+                let date = String(cString: sqlite3_column_text(statement, 3))
+                let uploader = String(cString: sqlite3_column_text(statement, 4))
                 
-                images.append((resimYolu: resimYolu, yuklendi: yuklendi))
-            }
-        }
-        
-        sqlite3_finalize(statement)
-        return images
-    }
-    
-    func deleteImage(resimYolu: String) {
-        let deleteSQL = """
-        DELETE FROM barkod_resimler
-        WHERE resim_yolu = ?;
-        """
-        
-        var statement: OpaquePointer?
-        
-        if sqlite3_prepare_v2(db, deleteSQL, -1, &statement, nil) == SQLITE_OK {
-            sqlite3_bind_text(statement, 1, (resimYolu as NSString).utf8String, -1, nil)
-            
-            if sqlite3_step(statement) == SQLITE_DONE {
-                print("✅ Image record deleted successfully")
-                // Also delete the file
-                try? FileManager.default.removeItem(atPath: resimYolu)
-            } else {
-                print("❌ Error deleting image record")
+                results.append((id: id, customerName: customerName, imagePath: imagePath, date: date, uploader: uploader))
             }
         } else {
-            print("❌ Error preparing delete statement")
+            print("❌ Get unuploaded images error: \(String(cString: sqlite3_errmsg(db)))")
         }
         
         sqlite3_finalize(statement)
+        return results
     }
     
-    func getCustomerList() -> [String] {
-        var customers: [String] = []
-        
-        let selectSQL = """
-        SELECT DISTINCT musteri_adi
-        FROM barkod_resimler
-        ORDER BY musteri_adi;
+    func getUploadedImages() -> [(id: Int64, customerName: String, imagePath: String, date: String, uploader: String)] {
+        let sql = """
+            SELECT id, musteri_adi, resim_yolu, datetime(tarih, 'localtime'), yukleyen
+            FROM barkod_resimler
+            WHERE yuklendi = 1
+            ORDER BY tarih DESC;
         """
         
         var statement: OpaquePointer?
+        var results: [(id: Int64, customerName: String, imagePath: String, date: String, uploader: String)] = []
         
-        if sqlite3_prepare_v2(db, selectSQL, -1, &statement, nil) == SQLITE_OK {
+        if sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK {
             while sqlite3_step(statement) == SQLITE_ROW {
-                let musteriAdi = String(cString: sqlite3_column_text(statement, 0))
-                customers.append(musteriAdi)
+                let id = sqlite3_column_int64(statement, 0)
+                
+                let customerName = String(cString: sqlite3_column_text(statement, 1))
+                let imagePath = String(cString: sqlite3_column_text(statement, 2))
+                let date = String(cString: sqlite3_column_text(statement, 3))
+                let uploader = String(cString: sqlite3_column_text(statement, 4))
+                
+                results.append((id: id, customerName: customerName, imagePath: imagePath, date: date, uploader: uploader))
             }
+        } else {
+            print("❌ Get uploaded images error: \(String(cString: sqlite3_errmsg(db)))")
         }
         
         sqlite3_finalize(statement)
-        return customers
+        return results
+    }
+    
+    func deleteImage(id: Int64) -> Bool {
+        let sql = "DELETE FROM barkod_resimler WHERE id = ?;"
+        var statement: OpaquePointer?
+        var success = false
+        
+        if sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK {
+            sqlite3_bind_int64(statement, 1, id)
+            
+            if sqlite3_step(statement) == SQLITE_DONE {
+                print("✅ Image deleted successfully")
+                success = true
+            } else {
+                print("❌ Image delete error: \(String(cString: sqlite3_errmsg(db)))")
+            }
+        } else {
+            print("❌ Image delete prepare error: \(String(cString: sqlite3_errmsg(db)))")
+        }
+        
+        sqlite3_finalize(statement)
+        return success
     }
     
     // MARK: - Müşteri Cache İşlemleri (Android uyumlu)

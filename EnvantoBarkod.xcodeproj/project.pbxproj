@@ -7,53 +7,31 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		AB1234567890123400000001 /* EnvantoBarkodApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000002 /* EnvantoBarkodApp.swift */; };
-		AB1234567890123400000003 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000004 /* ContentView.swift */; };
-		AB1234567890123400000005 /* MainMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000006 /* MainMenuView.swift */; };
-		AB1234567890123400000007 /* ScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000008 /* ScannerView.swift */; };
-		AB1234567890123400000009 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB123456789012340000000A /* SettingsView.swift */; };
-		AB123456789012340000000B /* MainViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB123456789012340000000C /* MainViewModel.swift */; };
-		AB123456789012340000000D /* ScannerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB123456789012340000000E /* ScannerViewModel.swift */; };
-		AB123456789012340000000F /* BarcodeResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000010 /* BarcodeResult.swift */; };
-		AB1234567890123400000011 /* CameraService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000012 /* CameraService.swift */; };
-		AB1234567890123400000013 /* BarcodeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000014 /* BarcodeService.swift */; };
-		AB1234567890123400000015 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000016 /* Constants.swift */; };
-		AB1234567890123400000017 /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000018 /* Extensions.swift */; };
-		AB1234567890123400000030 /* DeviceAuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000031 /* DeviceAuthManager.swift */; };
-		AB1234567890123400000032 /* BarcodeUploadViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000033 /* BarcodeUploadViewModel.swift */; };
-		AB1234567890123400000034 /* BarcodeUploadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000035 /* BarcodeUploadView.swift */; };
-		AB1234567890123400000036 /* SavedImagesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000037 /* SavedImagesView.swift */; };
-		AB1234567890123400000038 /* SQLiteManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000039 /* SQLiteManager.swift */; };
-		AB1234567890123400000040 /* ApiService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000041 /* ApiService.swift */; };
-		AB12345678901234ASSETS002 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AB12345678901234ASSETS001 /* Assets.xcassets */; };
+		13B07FBC1A68108700A75B9A /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB01A68108700A75B9A /* AppDelegate.swift */; };
+		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
+		13B07FC11A68108700A75B9A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB71A68108700A75B9A /* main.m */; };
+		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
+		A1D8E1F02B8E721C00B9B5A1 /* DeviceAuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1D8E1EF2B8E721C00B9B5A1 /* DeviceAuthManager.swift */; };
+		A1D8E1F22B8E722C00B9B5A1 /* DeviceIdentifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1D8E1F12B8E722C00B9B5A1 /* DeviceIdentifier.swift */; };
+		A1D8E1F42B8E723C00B9B5A1 /* SQLiteManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1D8E1F32B8E723C00B9B5A1 /* SQLiteManager.swift */; };
+		A1D8E1F62B8E724C00B9B5A1 /* ApiService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1D8E1F52B8E724C00B9B5A1 /* ApiService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		AB1234567890123400000019 /* EnvantoBarkod.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EnvantoBarkod.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		AB1234567890123400000002 /* EnvantoBarkodApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnvantoBarkodApp.swift; sourceTree = "<group>"; };
-		AB1234567890123400000004 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		AB1234567890123400000006 /* MainMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainMenuView.swift; sourceTree = "<group>"; };
-		AB1234567890123400000008 /* ScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerView.swift; sourceTree = "<group>"; };
-		AB123456789012340000000A /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
-		AB123456789012340000000C /* MainViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewModel.swift; sourceTree = "<group>"; };
-		AB123456789012340000000E /* ScannerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerViewModel.swift; sourceTree = "<group>"; };
-		AB1234567890123400000010 /* BarcodeResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeResult.swift; sourceTree = "<group>"; };
-		AB1234567890123400000012 /* CameraService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraService.swift; sourceTree = "<group>"; };
-		AB1234567890123400000014 /* BarcodeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeService.swift; sourceTree = "<group>"; };
-		AB1234567890123400000016 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
-		AB1234567890123400000018 /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
-		AB1234567890123400000031 /* DeviceAuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceAuthManager.swift; sourceTree = "<group>"; };
-		AB1234567890123400000033 /* BarcodeUploadViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeUploadViewModel.swift; sourceTree = "<group>"; };
-		AB1234567890123400000035 /* BarcodeUploadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeUploadView.swift; sourceTree = "<group>"; };
-		AB1234567890123400000037 /* SavedImagesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedImagesView.swift; sourceTree = "<group>"; };
-		AB1234567890123400000039 /* SQLiteManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLiteManager.swift; sourceTree = "<group>"; };
-		AB1234567890123400000041 /* ApiService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApiService.swift; sourceTree = "<group>"; };
-		AB123456789012340000001A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		AB12345678901234ASSETS001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		13B07F961A680F5B00A75B9A /* EnvantoBarkod.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EnvantoBarkod.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		13B07FB01A68108700A75B9A /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = EnvantoBarkod/AppDelegate.swift; sourceTree = "<group>"; };
+		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = EnvantoBarkod/Images.xcassets; sourceTree = "<group>"; };
+		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = EnvantoBarkod/Info.plist; sourceTree = "<group>"; };
+		13B07FB71A68108700A75B9A /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = EnvantoBarkod/main.m; sourceTree = "<group>"; };
+		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = EnvantoBarkod/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		A1D8E1EF2B8E721C00B9B5A1 /* DeviceAuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceAuthManager.swift; sourceTree = "<group>"; };
+		A1D8E1F12B8E722C00B9B5A1 /* DeviceIdentifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceIdentifier.swift; sourceTree = "<group>"; };
+		A1D8E1F32B8E723C00B9B5A1 /* SQLiteManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLiteManager.swift; sourceTree = "<group>"; };
+		A1D8E1F52B8E724C00B9B5A1 /* ApiService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApiService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		AB123456789012340000001B /* Frameworks */ = {
+		13B07F8C1A680F5B00A75B9A /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -63,90 +41,59 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		AB123456789012340000001C /* EnvantoBarkodIOS */ = {
+		13B07FAE1A68108700A75B9A /* EnvantoBarkod */ = {
 			isa = PBXGroup;
 			children = (
-				AB1234567890123400000002 /* EnvantoBarkodApp.swift */,
-				AB1234567890123400000004 /* ContentView.swift */,
-				AB123456789012340000001F /* Views */,
-				AB1234567890123400000020 /* ViewModels */,
-				AB1234567890123400000021 /* Models */,
-				AB1234567890123400000022 /* Services */,
-				AB1234567890123400000023 /* Utilities */,
-				AB12345678901234ASSETS001 /* Assets.xcassets */,
-				AB123456789012340000001A /* Info.plist */,
-				AB123456789012340000001E /* Products */,
+				A1D8E1EE2B8E720C00B9B5A1 /* Services */,
+				13B07FB01A68108700A75B9A /* AppDelegate.swift */,
+				13B07FB51A68108700A75B9A /* Images.xcassets */,
+				13B07FB61A68108700A75B9A /* Info.plist */,
+				13B07FB71A68108700A75B9A /* main.m */,
+				81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */,
 			);
+			name = EnvantoBarkod;
 			sourceTree = "<group>";
 		};
-		AB123456789012340000001E /* Products */ = {
+		83CBB9F61A601CBA00E9B192 = {
 			isa = PBXGroup;
 			children = (
-				AB1234567890123400000019 /* EnvantoBarkod.app */,
+				13B07FAE1A68108700A75B9A /* EnvantoBarkod */,
+				83CBBA001A601CBA00E9B192 /* Products */,
+			);
+			indentWidth = 2;
+			sourceTree = "<group>";
+			tabWidth = 2;
+			usesTabs = 0;
+		};
+		83CBBA001A601CBA00E9B192 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				13B07F961A680F5B00A75B9A /* EnvantoBarkod.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		AB123456789012340000001F /* Views */ = {
+		A1D8E1EE2B8E720C00B9B5A1 /* Services */ = {
 			isa = PBXGroup;
 			children = (
-				AB1234567890123400000006 /* MainMenuView.swift */,
-				AB1234567890123400000008 /* ScannerView.swift */,
-				AB123456789012340000000A /* SettingsView.swift */,
-				AB1234567890123400000035 /* BarcodeUploadView.swift */,
-				AB1234567890123400000037 /* SavedImagesView.swift */,
-			);
-			path = Views;
-			sourceTree = "<group>";
-		};
-		AB1234567890123400000020 /* ViewModels */ = {
-			isa = PBXGroup;
-			children = (
-				AB123456789012340000000C /* MainViewModel.swift */,
-				AB123456789012340000000E /* ScannerViewModel.swift */,
-				AB1234567890123400000033 /* BarcodeUploadViewModel.swift */,
-			);
-			path = ViewModels;
-			sourceTree = "<group>";
-		};
-		AB1234567890123400000021 /* Models */ = {
-			isa = PBXGroup;
-			children = (
-				AB1234567890123400000010 /* BarcodeResult.swift */,
-			);
-			path = Models;
-			sourceTree = "<group>";
-		};
-		AB1234567890123400000022 /* Services */ = {
-			isa = PBXGroup;
-			children = (
-				AB1234567890123400000012 /* CameraService.swift */,
-				AB1234567890123400000014 /* BarcodeService.swift */,
-				AB1234567890123400000031 /* DeviceAuthManager.swift */,
-				AB1234567890123400000039 /* SQLiteManager.swift */,
+				A1D8E1EF2B8E721C00B9B5A1 /* DeviceAuthManager.swift */,
+				A1D8E1F12B8E722C00B9B5A1 /* DeviceIdentifier.swift */,
+				A1D8E1F32B8E723C00B9B5A1 /* SQLiteManager.swift */,
+				A1D8E1F52B8E724C00B9B5A1 /* ApiService.swift */,
 			);
 			path = Services;
-			sourceTree = "<group>";
-		};
-		AB1234567890123400000023 /* Utilities */ = {
-			isa = PBXGroup;
-			children = (
-				AB1234567890123400000016 /* Constants.swift */,
-				AB1234567890123400000018 /* Extensions.swift */,
-			);
-			path = Utilities;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		AB1234567890123400000024 /* EnvantoBarkod */ = {
+		13B07F861A680F5B00A75B9A /* EnvantoBarkod */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = AB1234567890123400000025 /* Build configuration list for PBXNativeTarget "EnvantoBarkod" */;
+			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "EnvantoBarkod" */;
 			buildPhases = (
-				AB1234567890123400000026 /* Sources */,
-				AB123456789012340000001B /* Frameworks */,
-				AB1234567890123400000027 /* Resources */,
+				13B07F871A680F5B00A75B9A /* Sources */,
+				13B07F8C1A680F5B00A75B9A /* Frameworks */,
+				13B07F8E1A680F5B00A75B9A /* Resources */,
 			);
 			buildRules = (
 			);
@@ -154,99 +101,134 @@
 			);
 			name = EnvantoBarkod;
 			productName = EnvantoBarkod;
-			productReference = AB1234567890123400000019 /* EnvantoBarkod.app */;
+			productReference = 13B07F961A680F5B00A75B9A /* EnvantoBarkod.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		AB1234567890123400000028 /* Project object */ = {
+		83CBB9F71A601CBA00E9B192 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1500;
-				LastUpgradeCheck = 1500;
+				LastUpgradeCheck = 1210;
 				TargetAttributes = {
-					AB1234567890123400000024 = {
-						CreatedOnToolsVersion = 15.0;
+					13B07F861A680F5B00A75B9A = {
+						LastSwiftMigration = 1120;
 					};
 				};
 			};
-			buildConfigurationList = AB1234567890123400000029 /* Build configuration list for PBXProject "EnvantoBarkod" */;
+			buildConfigurationList = 83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "EnvantoBarkod" */;
 			compatibilityVersion = "Xcode 14.0";
-			developmentRegion = tr;
+			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
-				tr,
 				en,
+				Base,
 			);
-			mainGroup = AB123456789012340000001C /* EnvantoBarkodIOS */;
-			productRefGroup = AB123456789012340000001E /* Products */;
+			mainGroup = 83CBB9F61A601CBA00E9B192;
+			productRefGroup = 83CBBA001A601CBA00E9B192 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				AB1234567890123400000024 /* EnvantoBarkod */,
+				13B07F861A680F5B00A75B9A /* EnvantoBarkod */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		AB1234567890123400000027 /* Resources */ = {
+		13B07F8E1A680F5B00A75B9A /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AB12345678901234ASSETS002 /* Assets.xcassets in Resources */,
+				81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */,
+				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		AB1234567890123400000026 /* Sources */ = {
+		13B07F871A680F5B00A75B9A /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AB1234567890123400000001 /* EnvantoBarkodApp.swift in Sources */,
-				AB1234567890123400000003 /* ContentView.swift in Sources */,
-				AB1234567890123400000005 /* MainMenuView.swift in Sources */,
-				AB1234567890123400000007 /* ScannerView.swift in Sources */,
-				AB1234567890123400000009 /* SettingsView.swift in Sources */,
-				AB123456789012340000000B /* MainViewModel.swift in Sources */,
-				AB123456789012340000000D /* ScannerViewModel.swift in Sources */,
-				AB123456789012340000000F /* BarcodeResult.swift in Sources */,
-				AB1234567890123400000011 /* CameraService.swift in Sources */,
-				AB1234567890123400000013 /* BarcodeService.swift in Sources */,
-				AB1234567890123400000015 /* Constants.swift in Sources */,
-				AB1234567890123400000017 /* Extensions.swift in Sources */,
-				AB1234567890123400000030 /* DeviceAuthManager.swift in Sources */,
-				AB1234567890123400000032 /* BarcodeUploadViewModel.swift in Sources */,
-				AB1234567890123400000034 /* BarcodeUploadView.swift in Sources */,
-				AB1234567890123400000036 /* SavedImagesView.swift in Sources */,
-				AB1234567890123400000038 /* SQLiteManager.swift in Sources */,
+				13B07FBC1A68108700A75B9A /* AppDelegate.swift in Sources */,
+				13B07FC11A68108700A75B9A /* main.m in Sources */,
+				A1D8E1F02B8E721C00B9B5A1 /* DeviceAuthManager.swift in Sources */,
+				A1D8E1F22B8E722C00B9B5A1 /* DeviceIdentifier.swift in Sources */,
+				A1D8E1F42B8E723C00B9B5A1 /* SQLiteManager.swift in Sources */,
+				A1D8E1F62B8E724C00B9B5A1 /* ApiService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		AB123456789012340000002A /* Debug */ = {
+		13B07F941A680F5B00A75B9A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_BITCODE = NO;
+				INFOPLIST_FILE = EnvantoBarkod/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+					"-lc++",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "org.reactjs.native.example.$(PRODUCT_NAME:rfc1034identifier)";
+				PRODUCT_NAME = EnvantoBarkod;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = Debug;
+		};
+		13B07F951A680F5B00A75B9A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = EnvantoBarkod/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-ObjC",
+					"-lc++",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "org.reactjs.native.example.$(PRODUCT_NAME:rfc1034identifier)";
+				PRODUCT_NAME = EnvantoBarkod;
+				SWIFT_VERSION = 5.0;
+				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = Release;
+		};
+		83CBBA201A601CBA00E9B192 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				CLANG_ANALYZER_NONNULL = YES;
-				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
+				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
-				CLANG_ENABLE_OBJC_WEAK = YES;
 				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INFINITE_RECURSION = YES;
@@ -259,15 +241,14 @@
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
 				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
-				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = NO;
-				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu17;
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = i386;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
@@ -275,41 +256,52 @@
 					"DEBUG=1",
 					"$(inherited)",
 				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
-				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
-				MTL_FAST_MATH = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					/usr/lib/swift,
+					"$(inherited)",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"\"$(SDKROOT)/usr/lib/swift\"",
+					"\"$(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)\"",
+					"\"$(inherited)\"",
+				);
+				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
+				OTHER_CFLAGS = "$(inherited)";
+				OTHER_CPLUSPLUSFLAGS = (
+					"$(OTHER_CFLAGS)",
+					"-DFOLLY_NO_CONFIG",
+					"-DFOLLY_MOBILE=1",
+					"-DFOLLY_USE_LIBCPP=1",
+				);
+				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
-				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
 		};
-		AB123456789012340000002B /* Release */ = {
+		83CBBA211A601CBA00E9B192 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
-				CLANG_ANALYZER_NONNULL = YES;
-				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "c++17";
+				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
-				CLANG_ENABLE_OBJC_WEAK = YES;
 				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
 				CLANG_WARN_BOOL_CONVERSION = YES;
 				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INFINITE_RECURSION = YES;
@@ -322,15 +314,14 @@
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
 				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
-				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				COPY_PHASE_STRIP = NO;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = YES;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu17;
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = i386;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
@@ -338,100 +329,52 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
-				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					/usr/lib/swift,
+					"$(inherited)",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"\"$(SDKROOT)/usr/lib/swift\"",
+					"\"$(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)\"",
+					"\"$(inherited)\"",
+				);
 				MTL_ENABLE_DEBUG_INFO = NO;
-				MTL_FAST_MATH = YES;
+				OTHER_CFLAGS = "$(inherited)";
+				OTHER_CPLUSPLUSFLAGS = (
+					"$(OTHER_CFLAGS)",
+					"-DFOLLY_NO_CONFIG",
+					"-DFOLLY_MOBILE=1",
+					"-DFOLLY_USE_LIBCPP=1",
+				);
+				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
-				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
-			};
-			name = Release;
-		};
-		AB123456789012340000002C /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = Info.plist;
-				INFOPLIST_KEY_NSCameraUsageDescription = "Bu uygulama barkod taramak için kamera kullanır.";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.envanto.barcode.ios;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-		AB123456789012340000002D /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = Info.plist;
-				INFOPLIST_KEY_NSCameraUsageDescription = "Bu uygulama barkod taramak için kamera kullanır.";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.envanto.barcode.ios;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		AB1234567890123400000025 /* Build configuration list for PBXNativeTarget "EnvantoBarkod" */ = {
+		13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "EnvantoBarkod" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				AB123456789012340000002C /* Debug */,
-				AB123456789012340000002D /* Release */,
+				13B07F941A680F5B00A75B9A /* Debug */,
+				13B07F951A680F5B00A75B9A /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		AB1234567890123400000029 /* Build configuration list for PBXProject "EnvantoBarkod" */ = {
+		83CBB9FA1A601CBA00E9B192 /* Build configuration list for PBXProject "EnvantoBarkod" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				AB123456789012340000002A /* Debug */,
-				AB123456789012340000002B /* Release */,
+				83CBBA201A601CBA00E9B192 /* Debug */,
+				83CBBA211A601CBA00E9B192 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
-	rootObject = AB1234567890123400000028 /* Project object */;
+	rootObject = 83CBB9F71A601CBA00E9B192 /* Project object */;
 } 

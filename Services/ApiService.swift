@@ -14,11 +14,20 @@ struct UploadResponse: Codable {
 
 struct DeviceAuthResponse: Codable {
     let success: Bool
-    let message: String?
+    let message: String
+    let deviceOwner: String?
     
     enum CodingKeys: String, CodingKey {
         case success = "basari"
         case message = "mesaj"
+        case deviceOwner = "cihaz_sahibi"
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        success = try container.decode(Bool.self, forKey: .success)
+        message = try container.decode(String.self, forKey: .message)
+        deviceOwner = try container.decodeIfPresent(String.self, forKey: .deviceOwner)
     }
 }
 
@@ -177,9 +186,12 @@ class ApiService {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = 3.0 // Android'deki gibi 3 saniye timeout
         
         let parameters = "action=check&cihaz_bilgisi=\(deviceId)"
         request.httpBody = parameters.data(using: .utf8)
+        
+        print("🔐 Device auth request - Device ID: \(deviceId)")
         
         let task = URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
@@ -194,8 +206,14 @@ class ApiService {
                 return
             }
             
+            // Log response (Android behavior)
+            if let responseString = String(data: data, encoding: .utf8) {
+                print("🔐 Device auth response: \(responseString)")
+            }
+            
             do {
                 let response = try JSONDecoder().decode(DeviceAuthResponse.self, from: data)
+                print("✅ Device auth success: \(response.success), Message: \(response.message), Owner: \(response.deviceOwner ?? "nil")")
                 completion(.success(response))
             } catch {
                 print("❌ Auth JSON decode error: \(error.localizedDescription)")
