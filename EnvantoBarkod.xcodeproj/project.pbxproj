@@ -63,7 +63,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		AB123456789012340000001C /* EnvantoBarkodIOS */ = {
+		AB123456789012340000001C = {
+			isa = PBXGroup;
+			children = (
+				AB123456789012340000001D /* EnvantoBarkod */,
+				AB123456789012340000001E /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		AB123456789012340000001D /* EnvantoBarkod */ = {
 			isa = PBXGroup;
 			children = (
 				AB1234567890123400000002 /* EnvantoBarkodApp.swift */,
@@ -75,8 +83,8 @@
 				AB1234567890123400000023 /* Utilities */,
 				AB12345678901234ASSETS001 /* Assets.xcassets */,
 				AB123456789012340000001A /* Info.plist */,
-				AB123456789012340000001E /* Products */,
 			);
+			name = EnvantoBarkod;
 			sourceTree = "<group>";
 		};
 		AB123456789012340000001E /* Products */ = {
