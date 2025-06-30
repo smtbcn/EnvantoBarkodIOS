@@ -7,29 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		13B07FBF1A68108700A75B9A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Assets.xcassets */; };
-		A1D8E1F02B8E721C00B9B5A1 /* DeviceAuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1D8E1EF2B8E721C00B9B5A1 /* DeviceAuthManager.swift */; };
-		A1D8E1F22B8E722C00B9B5A1 /* DeviceIdentifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1D8E1F12B8E722C00B9B5A1 /* DeviceIdentifier.swift */; };
-		A1D8E1F42B8E723C00B9B5A1 /* SQLiteManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1D8E1F32B8E723C00B9B5A1 /* SQLiteManager.swift */; };
 		A1D8E1F62B8E724C00B9B5A1 /* ApiService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1D8E1F52B8E724C00B9B5A1 /* ApiService.swift */; };
 		A1D8E1F82B8E725C00B9B5A1 /* BarcodeResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1D8E1F72B8E725C00B9B5A1 /* BarcodeResult.swift */; };
-		/* Models */
-		1234567890ABCDEF1234567 /* BarcodeResult.swift in Sources */ = {
-			isa = PBXBuildFile;
-			fileRef = 1234567890ABCDEF1234568 /* BarcodeResult.swift */;
-		};
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		13B07F961A680F5B00A75B9A /* EnvantoBarkod.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EnvantoBarkod.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		13B07FB51A68108700A75B9A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		A1D8E1EF2B8E721C00B9B5A1 /* DeviceAuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceAuthManager.swift; sourceTree = "<group>"; };
-		A1D8E1F12B8E722C00B9B5A1 /* DeviceIdentifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceIdentifier.swift; sourceTree = "<group>"; };
-		A1D8E1F32B8E723C00B9B5A1 /* SQLiteManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SQLiteManager.swift; sourceTree = "<group>"; };
 		A1D8E1F52B8E724C00B9B5A1 /* ApiService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApiService.swift; sourceTree = "<group>"; };
-		A1D8E1F72B8E725C00B9B5A1 /* BarcodeResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeResult.swift; sourceTree = "<group>"; };
-		1234567890ABCDEF1234568 /* BarcodeResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeResult.swift; sourceTree = "<group>"; };
+		A1D8E1F72B8E725C00B9B5A1 /* BarcodeResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = BarcodeResult.swift; path = Models/BarcodeResult.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -76,7 +60,7 @@
 		A1D8E1ED2B8E720000B9B5A1 /* Models */ = {
 			isa = PBXGroup;
 			children = (
-				1234567890ABCDEF1234568 /* BarcodeResult.swift */,
+				A1D8E1F72B8E725C00B9B5A1 /* BarcodeResult.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -92,10 +76,10 @@
 			path = Services;
 			sourceTree = "<group>";
 		};
-		1234567890ABCDEF1234569 /* Models */ = {
+		A1D8E1F92B8E726000B9B5A1 /* Models */ = {
 			isa = PBXGroup;
 			children = (
-				1234567890ABCDEF1234568 /* BarcodeResult.swift */,
+				A1D8E1F72B8E725C00B9B5A1 /* BarcodeResult.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";

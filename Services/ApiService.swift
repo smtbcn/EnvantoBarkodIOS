@@ -1,5 +1,6 @@
 import Foundation
 
+// MARK: - API Response Models
 struct UploadResponse: Codable {
     let success: Bool
     let message: String?

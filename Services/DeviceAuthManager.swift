@@ -2,8 +2,6 @@ import Foundation
 import SwiftUI
 import UIKit
 
-// Import DeviceAuthResponse
-import Models
 
 // MARK: - DeviceAuthCallback Protocol
 protocol DeviceAuthCallback {
