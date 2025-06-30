@@ -249,51 +249,145 @@ struct BarcodeUploadView: View {
                 Color(UIColor.systemGroupedBackground)
                     .edgesIgnoringSafeArea(.all)
                 
-                ScrollView {
-                    VStack(spacing: 16) {
-                        // Customer Selection Card
-                        if viewModel.selectedCustomer == nil {
-                            customerSearchCard
-                        } else {
-                            selectedCustomerCard
-                        }
+                VStack(spacing: 16) {
+                    // Müşteri Arama Bölümü
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Müşteri Ara")
+                            .font(.headline)
+                            .padding(.horizontal)
                         
-                        // Image Upload Card
-                        androidImageUploadCard
+                        TextField("Müşteri adı yazın...", text: $viewModel.customerSearchText)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .padding(.horizontal)
+                            .onChange(of: viewModel.customerSearchText) { newValue in
+                                viewModel.searchCustomers(query: newValue)
+                            }
                         
-                        // Selected Images Card (Android style)
-                        if !selectedImages.isEmpty {
-                            androidSelectedImagesCard
+                        // Müşteri Sonuçları
+                        if !viewModel.searchResults.isEmpty {
+                            ScrollView {
+                                LazyVStack(alignment: .leading, spacing: 8) {
+                                    ForEach(viewModel.searchResults, id: \.self) { customer in
+                                        Button(action: {
+                                            viewModel.selectedCustomer = customer
+                                            viewModel.customerSearchText = customer
+                                        }) {
+                                            Text(customer)
+                                                .foregroundColor(.primary)
+                                                .padding(.vertical, 8)
+                                                .padding(.horizontal)
+                                                .frame(maxWidth: .infinity, alignment: .leading)
+                                                .background(
+                                                    viewModel.selectedCustomer == customer ?
+                                                    Color.blue.opacity(0.1) :
+                                                    Color.clear
+                                                )
+                                        }
+                                        Divider()
+                                    }
+                                }
+                            }
+                            .frame(maxHeight: 200)
+                            .background(Color.white)
+                            .cornerRadius(8)
+                            .shadow(radius: 2)
+                            .padding(.horizontal)
                         }
                     }
-                    .padding(.vertical, 16)
+                    
+                    // Seçilen Resimler
+                    if !selectedImages.isEmpty {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 12) {
+                                ForEach(selectedImages.indices, id: \.self) { index in
+                                    VStack {
+                                        Image(uiImage: selectedImages[index])
+                                            .resizable()
+                                            .scaledToFill()
+                                            .frame(width: 100, height: 100)
+                                            .cornerRadius(8)
+                                            .clipped()
+                                        
+                                        Button(action: {
+                                            selectedImages.remove(at: index)
+                                        }) {
+                                            Image(systemName: "trash")
+                                                .foregroundColor(.red)
+                                        }
+                                    }
+                                }
+                            }
+                            .padding(.horizontal)
+                        }
+                    }
+                    
+                    // Kamera ve Galeri Butonları
+                    HStack(spacing: 20) {
+                        Button(action: {
+                            showingCameraView = true
+                        }) {
+                            VStack {
+                                Image(systemName: "camera.fill")
+                                    .font(.system(size: 24))
+                                Text("Kamera")
+                                    .font(.caption)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
+                        }
+                        
+                        Button(action: {
+                            showingImagePicker = true
+                        }) {
+                            VStack {
+                                Image(systemName: "photo.on.rectangle")
+                                    .font(.system(size: 24))
+                                Text("Galeri")
+                                    .font(.caption)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.green)
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
+                        }
+                    }
+                    .padding(.horizontal)
+                    
+                    Spacer()
                 }
+                .padding(.top)
                 
-                // Loading Overlay
+                // Loading ve Toast Overlays
                 if viewModel.isLoading {
-                    LoadingOverlay(message: "Lütfen bekleyin...")
+                    LoadingOverlay(message: "Yükleniyor...")
                 }
                 
-                // Toast Messages
-                ToastView(message: viewModel.toastMessage, isShowing: $viewModel.showingToast)
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .navigationBarItems(
-                leading: Button("Kapat") {
-                    dismiss()
+                if viewModel.showingToast {
+                    ToastView(message: viewModel.toastMessage, isShowing: $viewModel.showingToast)
                 }
-            )
+            }
+            .navigationTitle("Barkod Yükleme")
+            .navigationBarTitleDisplayMode(.inline)
             .sheet(isPresented: $showingImagePicker) {
                 MultipleImagePicker(selectedImages: $selectedImages) { images in
-                    handleSelectedImages(images)
+                    selectedImages.append(contentsOf: images)
                 }
             }
             .fullScreenCover(isPresented: $showingCameraView) {
                 ContinuousCameraView(
-                    onImageCaptured: handleCapturedImage,
-                    onDismiss: { showingCameraView = false }
+                    onImageCaptured: { image in
+                        selectedImages.append(image)
+                        showingCameraView = false
+                    },
+                    onDismiss: {
+                        showingCameraView = false
+                    }
                 )
-                .id(cameraKey) // Force refresh on capture
+                .id(cameraKey)
             }
         }
         .onAppear {
