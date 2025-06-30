@@ -6,6 +6,7 @@ struct BarcodeUploadView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var selectedItems: [PhotosPickerItem] = []
     @State private var selectedImages: [UIImage] = []
+    @State private var showingImagePicker = false
     
     var body: some View {
         NavigationView {
@@ -55,7 +56,18 @@ struct BarcodeUploadView: View {
             }
         }
         .onChange(of: selectedItems) { _ in
-            loadSelectedImages()
+            if #available(iOS 16.0, *) {
+                loadSelectedImages()
+            }
+        }
+        .sheet(isPresented: $showingImagePicker) {
+            if #available(iOS 16.0, *) {
+                // iOS 16+ için PhotosPicker zaten var
+                EmptyView()
+            } else {
+                // iOS 15 için UIImagePickerController wrapper
+                ImagePickerLegacy(selectedImages: $selectedImages)
+            }
         }
         .onAppear {
             if !viewModel.isDeviceAuthorized {
@@ -167,24 +179,43 @@ struct BarcodeUploadView: View {
             
             // Yükleme butonları
             HStack(spacing: 12) {
-                // Fotoğraf seç
-                PhotosPicker(
-                    selection: $selectedItems,
-                    maxSelectionCount: 10,
-                    matching: .images
-                ) {
-                    HStack {
-                        Image(systemName: "photo.on.rectangle")
-                        Text("Galeri")
-                            .fontWeight(.medium)
+                // Fotoğraf seç - iOS 16+ PhotosPicker veya iOS 15 UIImagePickerController
+                if #available(iOS 16.0, *) {
+                    PhotosPicker(
+                        selection: $selectedItems,
+                        maxSelectionCount: 10,
+                        matching: .images
+                    ) {
+                        HStack {
+                            Image(systemName: "photo.on.rectangle")
+                            Text("Galeri")
+                                .fontWeight(.medium)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(8)
+                    .disabled(viewModel.selectedCustomer == nil || viewModel.isUploading)
+                } else {
+                    // iOS 15 için fallback button
+                    Button(action: {
+                        showingImagePicker = true
+                    }) {
+                        HStack {
+                            Image(systemName: "photo.on.rectangle")
+                            Text("Galeri")
+                                .fontWeight(.medium)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
+                    }
+                    .disabled(viewModel.selectedCustomer == nil || viewModel.isUploading)
                 }
-                .disabled(viewModel.selectedCustomer == nil || viewModel.isUploading)
                 
                 // Kamera
                 Button(action: {
@@ -339,6 +370,7 @@ struct BarcodeUploadView: View {
     }
     
     // MARK: - Load Selected Images
+    @available(iOS 16.0, *)
     private func loadSelectedImages() {
         selectedImages.removeAll()
         
@@ -453,6 +485,45 @@ struct UploadProgressOverlay: View {
                 RoundedRectangle(cornerRadius: 16)
                     .fill(Color.black.opacity(0.8))
             )
+        }
+    }
+}
+
+// MARK: - iOS 15 Legacy Image Picker
+struct ImagePickerLegacy: UIViewControllerRepresentable {
+    @Binding var selectedImages: [UIImage]
+    @Environment(\.presentationMode) var presentationMode
+    
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.delegate = context.coordinator
+        picker.sourceType = .photoLibrary
+        picker.allowsEditing = false
+        return picker
+    }
+    
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let parent: ImagePickerLegacy
+        
+        init(_ parent: ImagePickerLegacy) {
+            self.parent = parent
+        }
+        
+        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+            if let image = info[.originalImage] as? UIImage {
+                parent.selectedImages.append(image)
+            }
+            parent.presentationMode.wrappedValue.dismiss()
+        }
+        
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            parent.presentationMode.wrappedValue.dismiss()
         }
     }
 }
