@@ -1,5 +1,19 @@
 import Foundation
 
+// MARK: - DeviceAuthResponse Model
+struct DeviceAuthResponse: Codable {
+    let success: Bool
+    let message: String
+    let deviceOwner: String?
+    
+    private enum CodingKeys: String, CodingKey {
+        case success
+        case message
+        case deviceOwner = "device_owner"
+    }
+}
+
+// MARK: - BarcodeResult Model
 struct BarcodeResult: Identifiable, Codable {
     var id: UUID
     let content: String
