@@ -10,7 +10,7 @@ struct ScannerView: View {
     var body: some View {
         ZStack {
             // Kamera önizlemesi
-            CameraPreview(session: viewModel.captureSession)
+            ScannerCameraPreview(session: viewModel.captureSession)
                 .ignoresSafeArea()
             
             // Scanner overlay
@@ -133,7 +133,7 @@ struct ScannerView: View {
     }
 }
 
-struct CameraPreview: UIViewRepresentable {
+struct ScannerCameraPreview: UIViewRepresentable {
     let session: AVCaptureSession
     
     func makeUIView(context: Context) -> UIView {
