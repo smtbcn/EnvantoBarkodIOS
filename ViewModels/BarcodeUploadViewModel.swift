@@ -390,6 +390,17 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
             print("🗑️ Resim silme hatası: \(error.localizedDescription)")
         }
     }
+    
+    // MARK: - Handle Captured Image (Kamera için)
+    func handleCapturedImage(_ image: UIImage, customer: Customer) async {
+        await MainActor.run {
+            isUploading = true
+            uploadProgress = 0.0
+            showingCamera = false
+        }
+        
+        await performImageUpload(images: [image], customer: customer)
+    }
 }
 
 // MARK: - SavedImage Model

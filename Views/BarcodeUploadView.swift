@@ -1,6 +1,39 @@
 import SwiftUI
 import PhotosUI
 
+// Basit kamera view (geçici implementasyon)
+struct CameraView: View {
+    let onImageCaptured: (UIImage) -> Void
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        VStack {
+            Text("Kamera Çekim")
+                .font(.title)
+                .padding()
+            
+            Text("Geçici kamera implementasyonu")
+                .foregroundColor(.secondary)
+                .padding()
+            
+            Button("Test Resim Çek") {
+                // Test için dummy resim
+                if let testImage = UIImage(systemName: "photo") {
+                    onImageCaptured(testImage)
+                }
+                dismiss()
+            }
+            .buttonStyle(.borderedProminent)
+            .padding()
+            
+            Button("İptal") {
+                dismiss()
+            }
+            .padding()
+        }
+    }
+}
+
 struct BarcodeUploadView: View {
     @StateObject private var viewModel = BarcodeUploadViewModel()
     @State private var selectedPhotos: [PhotosPickerItem] = []
@@ -42,6 +75,16 @@ struct BarcodeUploadView: View {
                 if !message.isEmpty {
                     alertMessage = message
                     showingAlert = true
+                }
+            }
+            .sheet(isPresented: $viewModel.showingCamera) {
+                CameraView { capturedImage in
+                    // Çekilen resmi işle
+                    if let customer = viewModel.selectedCustomer {
+                        Task {
+                            await viewModel.handleCapturedImage(capturedImage, customer: customer)
+                        }
+                    }
                 }
             }
         }
