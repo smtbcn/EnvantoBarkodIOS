@@ -32,38 +32,7 @@ class BarcodeUploadViewModel: ObservableObject {
         loadCustomerCache()
     }
     
-    func checkDeviceAuthorization() {
-        isCheckingAuth = true
-        isLoading = true
-        
-        DeviceAuthManager.checkDeviceAuthorization(callback: DeviceAuthCallbackImpl(
-            authSuccessHandler: { [weak self] in
-                DispatchQueue.main.async {
-                    self?.isCheckingAuth = false
-                    self?.isLoading = false
-                    self?.isAuthSuccess = true
-                    self?.checkAndUpdateCustomerCache()
-                }
-            },
-            authFailureHandler: { [weak self] in
-                DispatchQueue.main.async {
-                    self?.isCheckingAuth = false
-                    self?.isLoading = false
-                    self?.isAuthSuccess = false
-                }
-            },
-            showLoadingHandler: { [weak self] in
-                DispatchQueue.main.async {
-                    self?.isLoading = true
-                }
-            },
-            hideLoadingHandler: { [weak self] in
-                DispatchQueue.main.async {
-                    self?.isLoading = false
-                }
-            }
-        ))
-    }
+
     
     func searchCustomers(query: String) {
         guard query.count >= 2 else { 

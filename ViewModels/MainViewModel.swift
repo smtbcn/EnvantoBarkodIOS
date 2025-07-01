@@ -43,13 +43,18 @@ class MainViewModel: ObservableObject {
     }
     
     private func loadDeviceOwner() {
-        // DeviceAuthManager'dan gelen cihaz sahibini al
-        if let authOwner = userDefaults.string(forKey: "device_owner"), !authOwner.isEmpty {
-            deviceOwner = authOwner
+        // Android benzeri: Cihaz sahibini SQLite'dan al
+        let deviceId = DeviceIdentifier.getUniqueDeviceId()
+        let sqliteOwner = SQLiteManager.shared.getCihazSahibi(deviceId: deviceId)
+        
+        if !sqliteOwner.isEmpty {
+            deviceOwner = sqliteOwner
         } else {
-            // Fallback: Constants'tan al
-        deviceOwner = userDefaults.string(forKey: Constants.UserDefaults.deviceOwner) ?? ""
+            // Fallback: UserDefaults'tan al
+            deviceOwner = userDefaults.string(forKey: Constants.UserDefaults.deviceOwner) ?? ""
         }
+        
+        print("📱 Device Owner loaded: \(deviceOwner)")
     }
     
     func updateDeviceOwner(_ owner: String) {

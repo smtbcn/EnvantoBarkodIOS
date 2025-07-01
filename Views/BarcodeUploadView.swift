@@ -322,7 +322,8 @@ struct BarcodeUploadView: View {
             if !isViewLoaded {
                 // Sanal PC performansı için lazy initialization
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    viewModel.checkDeviceAuthorization()
+                    // Android BarcodeUploadActivity onCreate benzeri cihaz kontrolü
+                    checkDeviceAuthorization()
                     isViewLoaded = true
                 }
             }
@@ -805,6 +806,80 @@ struct BarcodeUploadView: View {
             viewModel.showToast("\(source)'den \(savedCount)/\(totalImages) \(type.rawValue.lowercased()) kaydedildi")
         } else {
             viewModel.showToast("Resim kaydetme başarısız")
+        }
+    }
+    
+    // MARK: - Device Authorization Methods (Android Template ile aynı)
+    
+    /**
+     * Cihaz yetkilendirme kontrolü yapar (Android checkDeviceAuthorization ile aynı)
+     */
+    private func checkDeviceAuthorization() {
+        DeviceAuthManager.checkDeviceAuthorization(callback: DeviceAuthCallbackImpl(
+            authSuccessHandler: { [weak self] in
+                DispatchQueue.main.async {
+                    self?.onDeviceAuthSuccess()
+                }
+            },
+            authFailureHandler: { [weak self] in
+                DispatchQueue.main.async {
+                    self?.onDeviceAuthFailure()
+                }
+            },
+            showLoadingHandler: { [weak self] in
+                DispatchQueue.main.async {
+                    self?.onDeviceAuthShowLoading()
+                }
+            },
+            hideLoadingHandler: { [weak self] in
+                DispatchQueue.main.async {
+                    self?.onDeviceAuthHideLoading()
+                }
+            }
+        ))
+    }
+    
+    /**
+     * Cihaz yetkilendirme başarılı olduğunda çalışır (Android onDeviceAuthSuccess ile aynı)
+     */
+    private func onDeviceAuthSuccess() {
+        // Yetkilendirme başarılı - sayfa özel işlemleri
+        viewModel.isAuthSuccess = true
+        viewModel.isCheckingAuth = false
+        viewModel.isLoading = false
+        
+        // Android BarcodeUploadActivity benzeri: Müşteri cache'ini kontrol et
+        viewModel.checkAndUpdateCustomerCache()
+    }
+    
+    /**
+     * Cihaz yetkilendirme başarısız olduğunda çalışır (Android onDeviceAuthFailure ile aynı)
+     */
+    private func onDeviceAuthFailure() {
+        // Yetkilendirme başarısız - sayfa özel işlemleri  
+        viewModel.isAuthSuccess = false
+        viewModel.isCheckingAuth = false
+        viewModel.isLoading = false
+        
+        // Android gibi activity zaten kapanacak (dialog'da dismiss)
+    }
+    
+    /**
+     * Cihaz yetkilendirme yükleme başladığında çalışır (Android onDeviceAuthShowLoading ile aynı)
+     */
+    private func onDeviceAuthShowLoading() {
+        // Android BarcodeUploadActivity gibi detaylı progress
+        viewModel.isCheckingAuth = true
+        viewModel.isLoading = true
+    }
+    
+    /**
+     * Cihaz yetkilendirme yükleme bittiğinde çalışır (Android onDeviceAuthHideLoading ile aynı)
+     */
+    private func onDeviceAuthHideLoading() {
+        // Android handler.postDelayed benzeri kısa delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            self.viewModel.isLoading = false
         }
     }
 }

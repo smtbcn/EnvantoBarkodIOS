@@ -297,116 +297,115 @@ class SQLiteManager {
         return count
     }
     
-    // MARK: - Cihaz Yetkilendirme İşlemleri (Android DatabaseHelper ile birebir aynı)
+    // MARK: - Cihaz Yetkilendirme Metodları (Android DatabaseHelper ile aynı)
     
-    func saveCihazYetki(cihazBilgisi: String, cihazSahibi: String, cihazOnay: Int) -> Bool {
-        // Önce var mı kontrol et
-        let checkSQL = """
-        SELECT \(SQLiteManager.COLUMN_CIHAZ_ID)
-        FROM \(SQLiteManager.TABLE_CIHAZ_YETKI)
-        WHERE \(SQLiteManager.COLUMN_CIHAZ_BILGISI) = ?
-        """
-        
-        var checkStatement: OpaquePointer?
-        var exists = false
-        
-        if sqlite3_prepare_v2(db, checkSQL, -1, &checkStatement, nil) == SQLITE_OK {
-            sqlite3_bind_text(checkStatement, 1, cihazBilgisi, -1, nil)
-            if sqlite3_step(checkStatement) == SQLITE_ROW {
-                exists = true
-            }
-        }
-        sqlite3_finalize(checkStatement)
-        
-        let currentTimestamp = getCurrentTimestamp()
-        
-        if exists {
-            // Varsa güncelle
-            let updateSQL = """
-            UPDATE \(SQLiteManager.TABLE_CIHAZ_YETKI)
-            SET \(SQLiteManager.COLUMN_CIHAZ_SAHIBI) = ?, 
-                \(SQLiteManager.COLUMN_CIHAZ_ONAY) = ?,
-                \(SQLiteManager.COLUMN_CIHAZ_SON_KONTROL) = ?
-            WHERE \(SQLiteManager.COLUMN_CIHAZ_BILGISI) = ?
-            """
-            
-            var statement: OpaquePointer?
-            
-            if sqlite3_prepare_v2(db, updateSQL, -1, &statement, nil) == SQLITE_OK {
-                sqlite3_bind_text(statement, 1, cihazSahibi, -1, nil)
-                sqlite3_bind_int(statement, 2, Int32(cihazOnay))
-                sqlite3_bind_text(statement, 3, currentTimestamp, -1, nil)
-                sqlite3_bind_text(statement, 4, cihazBilgisi, -1, nil)
-                
-                let result = sqlite3_step(statement) == SQLITE_DONE
-                sqlite3_finalize(statement)
-                return result
-            }
-            sqlite3_finalize(statement)
-        } else {
-            // Yoksa ekle
-            let insertSQL = """
-            INSERT INTO \(SQLiteManager.TABLE_CIHAZ_YETKI)
-            (\(SQLiteManager.COLUMN_CIHAZ_BILGISI), \(SQLiteManager.COLUMN_CIHAZ_SAHIBI), \(SQLiteManager.COLUMN_CIHAZ_ONAY), \(SQLiteManager.COLUMN_CIHAZ_SON_KONTROL))
-            VALUES (?, ?, ?, ?)
-            """
-            
-            var statement: OpaquePointer?
-            
-            if sqlite3_prepare_v2(db, insertSQL, -1, &statement, nil) == SQLITE_OK {
-                sqlite3_bind_text(statement, 1, cihazBilgisi, -1, nil)
-                sqlite3_bind_text(statement, 2, cihazSahibi, -1, nil)
-                sqlite3_bind_int(statement, 3, Int32(cihazOnay))
-                sqlite3_bind_text(statement, 4, currentTimestamp, -1, nil)
-                
-                let result = sqlite3_step(statement) == SQLITE_DONE
-                sqlite3_finalize(statement)
-                return result
-            }
-            sqlite3_finalize(statement)
-        }
-        
-        return false
-    }
-    
-    func getCihazYetki(cihazBilgisi: String) -> (cihazSahibi: String, cihazOnay: Int, sonKontrol: String)? {
-        let querySQL = """
-        SELECT \(SQLiteManager.COLUMN_CIHAZ_SAHIBI), \(SQLiteManager.COLUMN_CIHAZ_ONAY), \(SQLiteManager.COLUMN_CIHAZ_SON_KONTROL)
-        FROM \(SQLiteManager.TABLE_CIHAZ_YETKI)
-        WHERE \(SQLiteManager.COLUMN_CIHAZ_BILGISI) = ?
+    /**
+     * Cihaz yetkilendirme bilgilerini kaydet (Android saveCihazYetki ile aynı)
+     */
+    func saveCihazYetki(deviceId: String, deviceOwner: String, isAuthorized: Bool) -> Bool {
+        let query = """
+            INSERT OR REPLACE INTO cihaz_yetki 
+            (cihaz_bilgisi, cihaz_sahibi, cihaz_onay, son_kontrol) 
+            VALUES (?, ?, ?, datetime('now'))
         """
         
         var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK else {
+            print("❌ SQLite saveCihazYetki prepare error: \(String(cString: sqlite3_errmsg(db)))")
+            return false
+        }
         
-        if sqlite3_prepare_v2(db, querySQL, -1, &statement, nil) == SQLITE_OK {
-            sqlite3_bind_text(statement, 1, cihazBilgisi, -1, nil)
-            
-            if sqlite3_step(statement) == SQLITE_ROW {
-                let cihazSahibi = sqlite3_column_text(statement, 0) != nil ? String(cString: sqlite3_column_text(statement, 0)) : ""
-                let cihazOnay = Int(sqlite3_column_int(statement, 1))
-                let sonKontrol = sqlite3_column_text(statement, 2) != nil ? String(cString: sqlite3_column_text(statement, 2)) : ""
-                
-                sqlite3_finalize(statement)
-                return (cihazSahibi: cihazSahibi, cihazOnay: cihazOnay, sonKontrol: sonKontrol)
+        sqlite3_bind_text(statement, 1, deviceId, -1, nil)
+        sqlite3_bind_text(statement, 2, deviceOwner, -1, nil)
+        sqlite3_bind_int(statement, 3, isAuthorized ? 1 : 0)
+        
+        let result = sqlite3_step(statement) == SQLITE_DONE
+        sqlite3_finalize(statement)
+        
+        if result {
+            print("✅ Cihaz yetki kaydedildi: \(deviceId) - Onay: \(isAuthorized) - Sahibi: \(deviceOwner)")
+        } else {
+            print("❌ Cihaz yetki kaydetme hatası: \(String(cString: sqlite3_errmsg(db)))")
+        }
+        
+        return result
+    }
+    
+    /**
+     * Cihaz onay durumunu kontrol et (Android isCihazOnaylanmis ile aynı)
+     */
+    func isCihazOnaylanmis(deviceId: String) -> Bool {
+        let query = "SELECT cihaz_onay FROM cihaz_yetki WHERE cihaz_bilgisi = ?"
+        
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK else {
+            print("❌ SQLite isCihazOnaylanmis prepare error: \(String(cString: sqlite3_errmsg(db)))")
+            return false
+        }
+        
+        sqlite3_bind_text(statement, 1, deviceId, -1, nil)
+        
+        var isAuthorized = false
+        if sqlite3_step(statement) == SQLITE_ROW {
+            let onayValue = sqlite3_column_int(statement, 0)
+            isAuthorized = onayValue == 1
+        }
+        
+        sqlite3_finalize(statement)
+        
+        print("📋 Cihaz onay kontrolü: \(deviceId) = \(isAuthorized)")
+        return isAuthorized
+    }
+    
+    /**
+     * Cihaz sahibini getir (Android getCihazSahibi ile aynı)
+     */
+    func getCihazSahibi(deviceId: String) -> String {
+        let query = "SELECT cihaz_sahibi FROM cihaz_yetki WHERE cihaz_bilgisi = ?"
+        
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK else {
+            print("❌ SQLite getCihazSahibi prepare error: \(String(cString: sqlite3_errmsg(db)))")
+            return ""
+        }
+        
+        sqlite3_bind_text(statement, 1, deviceId, -1, nil)
+        
+        var deviceOwner = ""
+        if sqlite3_step(statement) == SQLITE_ROW {
+            if let ownerPtr = sqlite3_column_text(statement, 0) {
+                deviceOwner = String(cString: ownerPtr)
             }
         }
         
         sqlite3_finalize(statement)
-        return nil
+        
+        print("📋 Cihaz sahibi: \(deviceId) = \(deviceOwner)")
+        return deviceOwner
     }
     
-    func isCihazOnaylanmis(cihazBilgisi: String) -> Bool {
-        if let cihazYetki = getCihazYetki(cihazBilgisi: cihazBilgisi) {
-            return cihazYetki.cihazOnay == 1
+    /**
+     * Cihaz yetkilendirme kaydını temizle (Android clearDeviceAuth ile aynı)
+     */
+    func clearDeviceAuth(deviceId: String) -> Bool {
+        let query = "DELETE FROM cihaz_yetki WHERE cihaz_bilgisi = ?"
+        
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(db, query, -1, &statement, nil) == SQLITE_OK else {
+            print("❌ SQLite clearDeviceAuth prepare error: \(String(cString: sqlite3_errmsg(db)))")
+            return false
         }
-        return false
-    }
-    
-    func getCihazSahibi(cihazBilgisi: String) -> String {
-        if let cihazYetki = getCihazYetki(cihazBilgisi: cihazBilgisi) {
-            return cihazYetki.cihazSahibi
+        
+        sqlite3_bind_text(statement, 1, deviceId, -1, nil)
+        
+        let result = sqlite3_step(statement) == SQLITE_DONE
+        sqlite3_finalize(statement)
+        
+        if result {
+            print("✅ Cihaz yetki kaydı temizlendi: \(deviceId)")
         }
-        return ""
+        
+        return result
     }
     
     // MARK: - Müşteri Resimleri İşlemleri (Android DatabaseHelper ile birebir aynı)

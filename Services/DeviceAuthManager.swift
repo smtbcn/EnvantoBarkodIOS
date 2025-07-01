@@ -14,8 +14,7 @@ protocol DeviceAuthCallback {
 enum NetworkError: Error {
     case invalidURL
     case serverError
-    case noData
-    case decodingError
+    case timeout
 }
 
 // MARK: - DeviceAuthResponse Model
@@ -28,6 +27,18 @@ struct DeviceAuthResponse: Codable {
         case success
         case message
         case deviceOwner = "device_owner"
+    }
+    
+    func isSuccess() -> Bool {
+        return success
+    }
+    
+    func getMessage() -> String {
+        return message
+    }
+    
+    func getDeviceOwner() -> String {
+        return deviceOwner ?? ""
     }
 }
 
@@ -130,31 +141,32 @@ class DeviceAuthManager {
             
             switch result {
             case .success(let authResponse):
-                if authResponse.success {
-                    // Cihaz yetkili
+                if authResponse.isSuccess() {
+                    // Cihaz yetkili, normal kullanıma devam et (Android success path)
                     UserDefaults.standard.set(true, forKey: "device_auth_checked")
                     
-                    // Cihaz sahibini kaydet
-                    if let deviceOwner = authResponse.deviceOwner {
-                        UserDefaults.standard.set(deviceOwner, forKey: "device_owner")
-                    }
+                    // Cihaz sahibini al
+                    let serverDeviceOwner = authResponse.getDeviceOwner()
                     
-                    // Yerel veritabanına kaydet (başarılı)
-                    saveLocalDeviceAuth(deviceId: deviceId, deviceOwner: authResponse.deviceOwner ?? "", isAuthorized: true)
+                    // Yerel veritabanına kaydet (Android dbHelper.saveCihazYetki)
+                    SQLiteManager.shared.saveCihazYetki(deviceId: deviceId, deviceOwner: serverDeviceOwner, isAuthorized: true)
                     
-                    print("✅ Cihaz yetkili: \(authResponse.message)")
+                    print("\(TAG): Cihaz yetkili: \(authResponse.getMessage())")
+                    print("\(TAG): Cihaz sahibi: \(serverDeviceOwner)")
+                    
+                    // Başarı callback'i çağır
                     callback.onAuthSuccess()
                 } else {
-                    // Cihaz yetkili değil
+                    // Cihaz yetkili değil, uyarı göster (Android failure path)
                     UserDefaults.standard.set(false, forKey: "device_auth_checked")
                     
-                    // Yerel veritabanına kaydet (başarısız)
-                    saveLocalDeviceAuth(deviceId: deviceId, deviceOwner: "", isAuthorized: false)
+                    // Yerel veritabanına kaydet (onaysız olarak - Android gibi)
+                    SQLiteManager.shared.saveCihazYetki(deviceId: deviceId, deviceOwner: "", isAuthorized: false)
                     
-                    print("❌ Cihaz yetkili değil: \(authResponse.message)")
+                    print("\(TAG): Cihaz yetkili değil: \(authResponse.getMessage())")
                     
-                    // Uyarı diyaloğu göster
-                    showAuthorizationErrorAlert(message: authResponse.message, deviceId: deviceId)
+                    // Uyarı diyaloğu göster (Android showAuthorizationErrorDialog)
+                    showAuthorizationErrorAlert(message: authResponse.getMessage(), deviceId: deviceId)
                     callback.onAuthFailure()
                 }
                 
@@ -217,26 +229,7 @@ class DeviceAuthManager {
             return .failure(error)
         }
     }
-    
-    // MARK: - Yerel yetkilendirme kontrolü
-    private static func checkLocalAuthorization(deviceId: String) -> Bool {
-        // UserDefaults'tan yerel yetki durumunu kontrol et
-        // TODO: Gerçek uygulamada Core Data veya SQLite kullanılabilir
-        let key = "local_device_auth_\(deviceId)"
-        return UserDefaults.standard.bool(forKey: key)
-    }
-    
-    // MARK: - Yerel yetkilendirme kaydet
-    private static func saveLocalDeviceAuth(deviceId: String, deviceOwner: String, isAuthorized: Bool) {
-        // UserDefaults'a yerel yetki durumunu kaydet
-        // TODO: Gerçek uygulamada Core Data veya SQLite kullanılabilir
-        let key = "local_device_auth_\(deviceId)"
-        UserDefaults.standard.set(isAuthorized, forKey: key)
-        
-        if !deviceOwner.isEmpty {
-            UserDefaults.standard.set(deviceOwner, forKey: "device_owner")
-        }
-    }
+
     
     // MARK: - Yetkilendirme hatası uyarısı (Android uyumlu)
     @MainActor
