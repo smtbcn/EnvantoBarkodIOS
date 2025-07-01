@@ -38,11 +38,10 @@ struct MainMenuView: View {
                 
                 Spacer()
                 
-                // Ana menü butonları - sadece cihaz yetkiliyse göster
-                if viewModel.isDeviceAuthorized {
-                    VStack(spacing: 16) {
+                // Ana menü butonları - Main ve Barkod Tara için cihaz yetkilendirme muafiyeti
+                VStack(spacing: 16) {
                         HStack(spacing: 16) {
-                            // Barkod Tara
+                            // Barkod Tara - Cihaz yetkilendirme muafiyeti
                             GridButton(
                                 title: "Barkod Tara",
                                 icon: "qrcode.viewfinder",
@@ -56,43 +55,58 @@ struct MainMenuView: View {
                                 }
                             }
                             
-                            // Barkod Yükle
+                            // Barkod Yükle - Cihaz yetkilendirme gerekli
                             GridButton(
                                 title: "Barkod Yükle",
                                 icon: "square.and.arrow.up",
                                 color: .orange
                             ) {
-                                if viewModel.hasRequiredPermissions {
-                                    showingBarcodeUpload = true
+                                if viewModel.isDeviceAuthorized {
+                                    if viewModel.hasRequiredPermissions {
+                                        showingBarcodeUpload = true
+                                    } else {
+                                        showingPermissionAlert = true
+                                    }
                                 } else {
+                                    // Cihaz yetkilendirme gerekli uyarısı
                                     showingPermissionAlert = true
                                 }
                             }
                         }
                         
                         HStack(spacing: 16) {
-                            // Müşteri Resimleri
+                            // Müşteri Resimleri - Cihaz yetkilendirme gerekli
                             GridButton(
                                 title: "Müşteri Resimleri",
                                 icon: "photo.on.rectangle",
                                 color: .blue
                             ) {
-                                if viewModel.hasRequiredPermissions {
-                                    // Customer images görünümüne git
+                                if viewModel.isDeviceAuthorized {
+                                    if viewModel.hasRequiredPermissions {
+                                        // Customer images görünümüne git
+                                    } else {
+                                        showingPermissionAlert = true
+                                    }
                                 } else {
+                                    // Cihaz yetkilendirme gerekli uyarısı
                                     showingPermissionAlert = true
                                 }
                             }
                             
-                            // Araçtaki Ürünler
+                            // Araçtaki Ürünler - Cihaz yetkilendirme gerekli
                             GridButton(
                                 title: "Araçtaki Ürünler",
                                 icon: "car.fill",
                                 color: .green
                             ) {
-                                if viewModel.hasRequiredPermissions {
-                                    // Vehicle products görünümüne git
+                                if viewModel.isDeviceAuthorized {
+                                    if viewModel.hasRequiredPermissions {
+                                        // Vehicle products görünümüne git
+                                    } else {
+                                        showingPermissionAlert = true
+                                    }
                                 } else {
+                                    // Cihaz yetkilendirme gerekli uyarısı
                                     showingPermissionAlert = true
                                 }
                             }
@@ -101,36 +115,10 @@ struct MainMenuView: View {
                     .padding(.horizontal, 20)
                     .opacity(viewModel.isLoading ? 0.5 : 1.0)
                     .animation(.easeInOut(duration: 0.3), value: viewModel.isLoading)
-                } else if !viewModel.isLoading {
-                    // Cihaz yetkili değilse uyarı metni göster
-                    VStack(spacing: 16) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.system(size: 48))
-                            .foregroundColor(.orange)
-                        
-                        Text("Cihaz Yetkilendirme Gerekli")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.primary)
-                        
-                        Text("Bu cihaz henüz yetkilendirilmemiş. Lütfen yöneticinizle iletişime geçin.")
-                            .font(.body)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 40)
-                        
-                        Button("Tekrar Dene") {
-                            viewModel.checkDeviceAuthorization()
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .tint(.blue)
-                    }
-                    .padding(.horizontal, 40)
-                }
                 
                 Spacer()
                 
-                // Uygulama Ayarları butonu - sadece cihaz yetkiliyse aktif
+                // Uygulama Ayarları butonu - her zaman aktif
                 Button(action: {
                     showingSettings = true
                 }) {
@@ -147,10 +135,10 @@ struct MainMenuView: View {
                     .padding(.vertical, 16)
                     .background(
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(viewModel.isDeviceAuthorized ? Color.blue : Color.gray)
+                            .fill(Color.blue)
                     )
                 }
-                .disabled(!viewModel.isDeviceAuthorized || viewModel.isLoading)
+                .disabled(viewModel.isLoading)
                 .padding(.horizontal, 40)
                 
                 // Alt bilgiler
@@ -182,17 +170,24 @@ struct MainMenuView: View {
             BarcodeUploadView()
         }
         .alert("İzin Gerekli", isPresented: $showingPermissionAlert) {
-            Button("Ayarlara Git") {
-                viewModel.openSettings()
+            if viewModel.isDeviceAuthorized {
+                Button("Ayarlara Git") {
+                    viewModel.openSettings()
+                }
+                Button("İptal", role: .cancel) { }
+            } else {
+                Button("Tamam", role: .cancel) { }
             }
-            Button("İptal", role: .cancel) { }
         } message: {
-            Text("Bu özelliği kullanmak için kamera izni gerekli.")
+            if viewModel.isDeviceAuthorized {
+                Text("Bu özelliği kullanmak için kamera izni gerekli.")
+            } else {
+                Text("Bu özelliği kullanmak için cihaz yetkilendirmesi gerekli. Lütfen yöneticinizle iletişime geçin.")
+            }
         }
         .onAppear {
-            if !viewModel.isDeviceAuthorized {
-                viewModel.checkDeviceAuthorization()
-            }
+            // Arka planda cihaz yetkilendirme kontrolü (sessizce)
+            viewModel.checkDeviceAuthorizationSilently()
         }
     }
 }

@@ -10,6 +10,31 @@ protocol DeviceAuthCallback {
     func onHideLoading()
 }
 
+// MARK: - SilentDeviceAuthCallback (UI'ı etkilemeden sessiz kontrol)
+class SilentDeviceAuthCallback: DeviceAuthCallback {
+    private let completion: (Bool) -> Void
+    
+    init(completion: @escaping (Bool) -> Void) {
+        self.completion = completion
+    }
+    
+    func onAuthSuccess() {
+        completion(true)
+    }
+    
+    func onAuthFailure() {
+        completion(false)
+    }
+    
+    func onShowLoading() {
+        // Sessiz modda loading gösterme
+    }
+    
+    func onHideLoading() {
+        // Sessiz modda loading gizleme
+    }
+}
+
 // MARK: - DeviceAuthResponse Model
 struct DeviceAuthResponse: Codable {
     let success: Bool
@@ -43,9 +68,31 @@ class DeviceAuthManager {
             
             // Cihaz kimliğini al
             let deviceId = DeviceIdentifier.getUniqueDeviceId()
+            let deviceInfo = DeviceIdentifier.getReadableDeviceInfo()
             
             print("🔐 Cihaz Kimliği: \(deviceId)")
-            print("📱 Cihaz Bilgileri: \(DeviceIdentifier.getReadableDeviceInfo())")
+            print("📱 Cihaz Bilgileri: \(deviceInfo)")
+            
+            // İlk kayıt kontrolü (Android mantığı)
+            let isFirstRun = !UserDefaults.standard.bool(forKey: "device_registered_to_server")
+            
+            if isFirstRun {
+                print("🆕 İlk çalıştırma tespit edildi, cihaz sunucuya kaydediliyor...")
+                let registerResult = await registerDeviceToServer(deviceId: deviceId, deviceInfo: deviceInfo)
+                
+                // Kayıt işleminin sonucuna bakılmaksızın, flag'i set et
+                UserDefaults.standard.set(true, forKey: "device_registered_to_server")
+                
+                switch registerResult {
+                case .success(let response):
+                    print("📝 Kayıt sonucu: \(response.message)")
+                case .failure(let error):
+                    print("⚠️ Kayıt hatası (devam ediliyor): \(error.localizedDescription)")
+                }
+                
+                // Kısa bekleme süresi
+                try await Task.sleep(nanoseconds: 500_000_000) // 0.5 saniye
+            }
             
             // Sunucudan cihaz yetkilendirme kontrolü
             let result = await checkServerAuthorization(deviceId: deviceId)
@@ -142,6 +189,55 @@ class DeviceAuthManager {
             return .success(authResponse)
             
         } catch {
+            return .failure(error)
+        }
+    }
+    
+    // MARK: - Cihaz ID'sini sunucuya kaydet (Android mantığı)
+    static func registerDeviceToServer(deviceId: String, deviceInfo: String) async -> Result<DeviceAuthResponse, Error> {
+        do {
+            // API endpoint URL'i oluştur
+            guard let baseURL = Bundle.main.object(forInfoDictionaryKey: "API_BASE_URL") as? String,
+                  let url = URL(string: "\(baseURL)/check_device_auth.php") else {
+                throw NetworkError.invalidURL
+            }
+            
+            // Request oluştur
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+            request.timeoutInterval = 5.0 // 5 saniyelik timeout (kayıt için biraz daha uzun)
+            
+            // Body parametreleri - Android'deki gibi
+            let bodyString = "action=register&device_id=\(deviceId)&device_info=\(deviceInfo.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
+            request.httpBody = bodyString.data(using: .utf8)
+            
+            print("📝 Cihaz kayıt işlemi başlatılıyor...")
+            print("🔗 URL: \(url)")
+            print("📋 Parametreler: \(bodyString)")
+            
+            // API çağrısı yap
+            let (data, response) = try await URLSession.shared.data(for: request)
+            
+            // HTTP yanıt kontrolü
+            guard let httpResponse = response as? HTTPURLResponse,
+                  httpResponse.statusCode == 200 else {
+                throw NetworkError.serverError
+            }
+            
+            // JSON decode et
+            let authResponse = try JSONDecoder().decode(DeviceAuthResponse.self, from: data)
+            
+            if authResponse.success {
+                print("✅ Cihaz sunucuya başarıyla kaydedildi: \(authResponse.message)")
+            } else {
+                print("⚠️ Cihaz kayıt yanıtı: \(authResponse.message)")
+            }
+            
+            return .success(authResponse)
+            
+        } catch {
+            print("💥 Cihaz kayıt hatası: \(error.localizedDescription)")
             return .failure(error)
         }
     }

@@ -19,6 +19,20 @@ class MainViewModel: ObservableObject, DeviceAuthCallback {
         DeviceAuthManager.checkDeviceAuthorization(callback: self)
     }
     
+    // MARK: - Sessiz cihaz yetkilendirme kontrolü (Main ve Scanner için)
+    func checkDeviceAuthorizationSilently() {
+        let silentCallback = SilentDeviceAuthCallback { [weak self] isAuthorized in
+            DispatchQueue.main.async {
+                self?.isDeviceAuthorized = isAuthorized
+                if isAuthorized {
+                    self?.loadDeviceOwner()
+                    self?.checkPermissions()
+                }
+            }
+        }
+        DeviceAuthManager.checkDeviceAuthorization(callback: silentCallback)
+    }
+    
     // MARK: - DeviceAuthCallback implementasyonu
     func onAuthSuccess() {
         DispatchQueue.main.async {
