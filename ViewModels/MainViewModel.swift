@@ -9,11 +9,6 @@ class MainViewModel: ObservableObject {
     
     init() {
         loadDeviceOwner()
-        
-        // DEBUG: ImageStorageManager test
-        #if DEBUG
-        ImageStorageManager.testStorageSetup()
-        #endif
     }
     
     // MARK: - Kamera izinleri kontrolü

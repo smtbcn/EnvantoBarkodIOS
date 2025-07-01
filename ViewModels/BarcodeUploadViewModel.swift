@@ -301,16 +301,21 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
     }
     
     private func loadSavedImagesForCustomer(_ customerName: String) {
-        // ImageStorageManager ile müşteri resimlerini yükle
-        let imagePaths = ImageStorageManager.listCustomerImages(customerName: customerName)
-        savedImages = imagePaths.map { path in
-            SavedImage(
-                customerName: customerName,
-                imagePath: path,
-                localPath: path,
-                uploadDate: getFileCreationDate(path: path),
-                isUploaded: false // TODO: Upload durumu kontrol edilecek
-            )
+        Task {
+            // ImageStorageManager ile müşteri resimlerini yükle
+            let imagePaths = await ImageStorageManager.listCustomerImages(customerName: customerName)
+            
+            await MainActor.run {
+                savedImages = imagePaths.map { path in
+                    SavedImage(
+                        customerName: customerName,
+                        imagePath: path,
+                        localPath: path,
+                        uploadDate: getFileCreationDate(path: path),
+                        isUploaded: false // TODO: Upload durumu kontrol edilecek
+                    )
+                }
+            }
         }
     }
     
@@ -382,21 +387,19 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
     // MARK: - Direct Save Image (Android Pattern)
     @MainActor
     private func directSaveImage(image: UIImage, customer: Customer, isGallery: Bool) async {
-        do {
-            // ImageStorageManager ile resmi cihaza kaydet
-            if let savedPath = ImageStorageManager.saveImage(
-                image: image, 
-                customerName: customer.name, 
-                isGallery: isGallery
-            ) {
-                print("✅ Resim başarıyla kaydedildi: \(savedPath)")
-                
-                // TODO: Veritabanına kayıt ve sunucuya upload işlemleri burada yapılacak
-                // Android'deki gibi: dbHelper.addBarkodResim() ve server upload
-                
-            } else {
-                showError("❌ Resim kaydetme hatası")
-            }
+        // ImageStorageManager ile resmi Photos Library'ye kaydet
+        if let savedPath = await ImageStorageManager.saveImage(
+            image: image, 
+            customerName: customer.name, 
+            isGallery: isGallery
+        ) {
+            print("✅ Resim başarıyla kaydedildi: \(savedPath)")
+            
+            // TODO: Veritabanına kayıt ve sunucuya upload işlemleri burada yapılacak
+            // Android'deki gibi: dbHelper.addBarkodResim() ve server upload
+            
+        } else {
+            showError("❌ Resim kaydetme hatası")
         }
     }
     
@@ -470,12 +473,18 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
     
     // MARK: - Delete Image
     func deleteImage(_ image: SavedImage) {
-        // ImageStorageManager ile dosyayı sil
-        if ImageStorageManager.deleteImage(at: image.localPath) {
-            savedImages.removeAll { $0.id == image.id }
-            print("🗑️ Resim başarıyla silindi: \(image.localPath)")
-        } else {
-            showError("Resim silme hatası")
+        Task {
+            // ImageStorageManager ile dosyayı sil
+            if await ImageStorageManager.deleteImage(at: image.localPath) {
+                await MainActor.run {
+                    savedImages.removeAll { $0.id == image.id }
+                    print("🗑️ Resim başarıyla silindi: \(image.localPath)")
+                }
+            } else {
+                await MainActor.run {
+                    showError("Resim silme hatası")
+                }
+            }
         }
     }
     
