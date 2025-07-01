@@ -413,9 +413,4 @@ struct SavedImage: Identifiable {
     let isUploaded: Bool
 }
 
-// MARK: - Network Error
-enum NetworkError: Error {
-    case invalidURL
-    case serverError
-    case noData
-} 
+// NetworkError DeviceAuthManager'da tanımlı 
