@@ -10,8 +10,6 @@ class ScannerViewModel: NSObject, ObservableObject {
     @Published var scannerLineOffset: CGFloat = -140
     // Android logic: finish() gibi - ScannerView'ı kapat ve external browser aç
     @Published var shouldDismissToMain = false
-    @Published var showWebBrowser = false
-    @Published var currentURL = ""
     
     let captureSession = AVCaptureSession()
     private var videoOutput = AVCaptureVideoDataOutput()
@@ -127,9 +125,15 @@ class ScannerViewModel: NSObject, ObservableObject {
         let baseURL = UserDefaults.standard.string(forKey: Constants.UserDefaults.baseURL) ?? Constants.Network.defaultBaseURL
         let fullURL = "\(baseURL)\(barcodeContent)"
         
-        DispatchQueue.main.async {
-            self.currentURL = fullURL
-            self.showWebBrowser = true
+        if let url = URL(string: fullURL) {
+            // Android mantık: finish() equivalent - ScannerView'ı kapat ve external browser'da aç
+            DispatchQueue.main.async {
+                // External browser'da aç (System Safari - JavaScript URL scheme çalışır)
+                UIApplication.shared.open(url)
+                
+                // ScannerView'ı kapat (Android finish() equivalent)
+                self.shouldDismissToMain = true
+            }
         }
     }
     

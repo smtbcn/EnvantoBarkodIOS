@@ -170,7 +170,7 @@
 				TargetAttributes = {
 					AB123456789012340000002B = {
 						CreatedOnToolsVersion = 15.0;
-						DevelopmentTeam = QDW7T6Q94X;
+						DevelopmentTeam = Samet Biçen;
 						ProvisioningStyle = Automatic;
 						LastSwiftMigration = 1500;
 						TestTargetID = "";
@@ -396,6 +396,14 @@
 				INFOPLIST_KEY_CFBundleDisplayName = "Envanto Barkod";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Bu uygulama barkod taramak için kamera kullanır.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Bu uygulama fotoğrafları kaydetmek için fotoğraf kütüphanesi erişimi gerektirir.";
+				INFOPLIST_KEY_CFBundleURLTypes = (
+					{
+						CFBundleURLName = "com.envanto.barcode";
+						CFBundleURLSchemes = (
+							"envantobarcode",
+						);
+					},
+				);
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -440,6 +448,14 @@
 				INFOPLIST_KEY_CFBundleDisplayName = "Envanto Barkod";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Bu uygulama barkod taramak için kamera kullanır.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Bu uygulama fotoğrafları kaydetmek için fotoğraf kütüphanesi erişimi gerektirir.";
+				INFOPLIST_KEY_CFBundleURLTypes = (
+					{
+						CFBundleURLName = "com.envanto.barcode";
+						CFBundleURLSchemes = (
+							"envantobarcode",
+						);
+					},
+				);
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
