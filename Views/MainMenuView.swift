@@ -91,7 +91,7 @@ struct MainMenuView: View {
                         .padding(.vertical, 12)
                         .background(
                             RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.gray.opacity(0.8))
+                                .foregroundColor(Color.gray.opacity(0.8))
                         )
                     }
                     .frame(maxWidth: .infinity * 0.6)
@@ -110,8 +110,11 @@ struct MainMenuView: View {
                             .padding(.vertical, 8)
                             .background(
                                 RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color.gray.opacity(0.1))
-                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                    .foregroundColor(Color.gray.opacity(0.1))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                    )
                             )
                         
                         // Versiyon (Android'deki gibi)
@@ -122,6 +125,7 @@ struct MainMenuView: View {
                     .padding(.bottom, 16)
                 }
             }
+            .navigationBarBackButtonHidden(true)
             .navigationBarHidden(true)
         }
         .fullScreenCover(isPresented: $showingScanner) {
@@ -168,7 +172,7 @@ struct MenuCard: View {
             .padding(16)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(color)
+                    .foregroundColor(color)
                     .shadow(color: color.opacity(0.3), radius: 4, x: 0, y: 2)
             )
         }
@@ -176,11 +180,11 @@ struct MenuCard: View {
     }
 }
 
-// MARK: - Placeholder View (Geçici ekranlar için)
+// MARK: - Placeholder View (Geçici ekranlar için) - iOS 15 uyumlu
 struct PlaceholderView: View {
     let title: String
     let message: String
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\.presentationMode) var presentationMode
     
     var body: some View {
         NavigationView {
@@ -205,17 +209,19 @@ struct PlaceholderView: View {
             .padding()
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Kapat") {
-                        dismiss()
-                    }
+            .navigationBarItems(trailing: 
+                Button("Kapat") {
+                    presentationMode.wrappedValue.dismiss()
                 }
-            }
+            )
         }
     }
 }
 
-#Preview {
-    MainMenuView()
-} 
+#if DEBUG
+struct MainMenuView_Previews: PreviewProvider {
+    static var previews: some View {
+        MainMenuView()
+    }
+}
+#endif 
