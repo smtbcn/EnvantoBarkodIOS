@@ -42,18 +42,17 @@ struct DeviceAuthResponse: Codable {
     }
 }
 
-// MARK: - DeviceAuthManager
+// MARK: - Device Auth Manager (Android DeviceAuthManager.java ile birebir aynı mantık)
 class DeviceAuthManager {
-    static let shared = DeviceAuthManager()
-    private init() {}
+    private static let TAG = "DeviceAuthManager"
     
     // MARK: - Hızlı cihaz yetki kontrolü (Android showPermissionRequiredDialog benzeri)
     @MainActor
     static func showDeviceAuthDialog(on presentingController: UIViewController? = nil, onAuth: @escaping (Bool) -> Void) {
         let deviceId = DeviceIdentifier.getUniqueDeviceId()
         
-        // Önce hızlı yerel kontrol yap
-        if checkLocalAuthorization(deviceId: deviceId) {
+        // Önce hızlı yerel kontrol yap (SQLiteManager ile)
+        if SQLiteManager.shared.isCihazOnaylanmis(deviceId: deviceId) {
             onAuth(true)
             return
         }
@@ -171,8 +170,8 @@ class DeviceAuthManager {
                 }
                 
             case .failure(let error):
-                // Sunucu hatası - yerel veritabanından kontrol et
-                let isLocallyAuthorized = checkLocalAuthorization(deviceId: deviceId)
+                // Sunucu hatası - yerel veritabanından kontrol et (Android network error handling)
+                let isLocallyAuthorized = SQLiteManager.shared.isCihazOnaylanmis(deviceId: deviceId)
                 
                 if isLocallyAuthorized {
                     print("🔄 Sunucu hatası, yerel veritabanında onaylı")

@@ -302,6 +302,7 @@ class SQLiteManager {
     /**
      * Cihaz yetkilendirme bilgilerini kaydet (Android saveCihazYetki ile aynı)
      */
+    @discardableResult
     func saveCihazYetki(deviceId: String, deviceOwner: String, isAuthorized: Bool) -> Bool {
         let query = """
             INSERT OR REPLACE INTO cihaz_yetki 
@@ -387,6 +388,7 @@ class SQLiteManager {
     /**
      * Cihaz yetkilendirme kaydını temizle (Android clearDeviceAuth ile aynı)
      */
+    @discardableResult
     func clearDeviceAuth(deviceId: String) -> Bool {
         let query = "DELETE FROM cihaz_yetki WHERE cihaz_bilgisi = ?"
         
