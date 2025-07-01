@@ -2,7 +2,7 @@ import SwiftUI
 import Foundation
 
 // MARK: - Customer Model
-struct Customer: Codable, Identifiable {
+struct Customer: Codable, Identifiable, Equatable {
     let id = UUID()
     let name: String
     let code: String?
@@ -12,6 +12,11 @@ struct Customer: Codable, Identifiable {
         case name
         case code
         case address
+    }
+    
+    // Equatable conformance
+    static func == (lhs: Customer, rhs: Customer) -> Bool {
+        return lhs.id == rhs.id && lhs.name == rhs.name && lhs.code == rhs.code
     }
 }
 
@@ -327,6 +332,63 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         errorMessage = message
         showingError = true
     }
+    
+    // MARK: - Handle Selected Photos (PhotosPicker için)
+    func handleSelectedPhotos(_ photos: [PhotosPickerItem]) async {
+        guard let customer = selectedCustomer else {
+            await MainActor.run {
+                showError("Lütfen önce bir müşteri seçin")
+            }
+            return
+        }
+        
+        await MainActor.run {
+            isUploading = true
+            uploadProgress = 0.0
+        }
+        
+        do {
+            var uploadedImages: [UIImage] = []
+            
+            for photo in photos {
+                if let data = try await photo.loadTransferable(type: Data.self),
+                   let image = UIImage(data: data) {
+                    uploadedImages.append(image)
+                }
+            }
+            
+            await performImageUpload(images: uploadedImages, customer: customer)
+            
+        } catch {
+            await MainActor.run {
+                isUploading = false
+                showError("Fotoğraf yükleme hatası: \(error.localizedDescription)")
+            }
+        }
+    }
+    
+    // MARK: - Refresh Saved Images
+    func refreshSavedImages() {
+        if let customer = selectedCustomer {
+            loadSavedImagesForCustomer(customer.name)
+        } else {
+            loadSavedImages()
+        }
+    }
+    
+    // MARK: - Delete Image
+    func deleteImage(_ image: SavedImage) {
+        savedImages.removeAll { $0.id == image.id }
+        
+        // TODO: Gerçek dosya silme implementasyonu
+        // FileManager ile dosyayı sil
+        do {
+            try FileManager.default.removeItem(atPath: image.localPath)
+            print("🗑️ Resim silindi: \(image.localPath)")
+        } catch {
+            print("🗑️ Resim silme hatası: \(error.localizedDescription)")
+        }
+    }
 }
 
 // MARK: - SavedImage Model
@@ -334,6 +396,14 @@ struct SavedImage: Identifiable {
     let id = UUID()
     let customerName: String
     let imagePath: String
+    let localPath: String
     let uploadDate: Date
     let isUploaded: Bool
+}
+
+// MARK: - Network Error
+enum NetworkError: Error {
+    case invalidURL
+    case serverError
+    case noData
 } 
