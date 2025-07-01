@@ -1,24 +1,11 @@
 import Foundation
 
 struct BarcodeResult: Identifiable, Codable {
-    var id: UUID
+    let id = UUID()
     let content: String
     let format: BarcodeFormat
     let timestamp: Date
     let location: BarcodeLocation?
-    
-    enum CodingKeys: String, CodingKey {
-        case content, format, timestamp, location
-    }
-    
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.id = UUID()
-        self.content = try container.decode(String.self, forKey: .content)
-        self.format = try container.decode(BarcodeFormat.self, forKey: .format)
-        self.timestamp = try container.decode(Date.self, forKey: .timestamp)
-        self.location = try container.decodeIfPresent(BarcodeLocation.self, forKey: .location)
-    }
     
     enum BarcodeFormat: String, CaseIterable, Codable {
         case qr = "QR"
@@ -45,7 +32,6 @@ struct BarcodeResult: Identifiable, Codable {
     }
     
     init(content: String, format: BarcodeFormat = .unknown, location: BarcodeLocation? = nil) {
-        self.id = UUID()
         self.content = content
         self.format = format
         self.timestamp = Date()

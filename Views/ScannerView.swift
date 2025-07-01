@@ -5,6 +5,7 @@ import Vision
 struct ScannerView: View {
     @StateObject private var viewModel = ScannerViewModel()
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var appState: AppStateManager
     
     var body: some View {
         ZStack {
@@ -106,14 +107,14 @@ struct ScannerView: View {
         .onReceive(viewModel.$scannedBarcode) { barcode in
             if !barcode.isEmpty {
                 viewModel.handleBarcodeDetection(barcode)
-                // Web sitesini aç ve scanner'ı kapat
+                // Android logic: External browser aç ve ScannerView'ı kapat
                 viewModel.openWebsite(with: barcode)
             }
         }
         .onReceive(viewModel.$shouldDismissToMain) { shouldDismiss in
             if shouldDismiss {
-                // Scanner'ı kapat ve ana menüye dön
-                dismiss()
+                // Android finish() equivalent - ScannerView'ı tamamen kapat
+                appState.closeScannerToMainMenu()
             }
         }
     }
@@ -138,6 +139,9 @@ struct CameraPreview: UIViewRepresentable {
     }
 }
 
+
+
 #Preview {
     ScannerView()
+        .environmentObject(AppStateManager())
 } 
