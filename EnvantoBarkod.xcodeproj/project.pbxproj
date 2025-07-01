@@ -20,7 +20,7 @@
 		AB1234567890123400000015 /* CameraService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000016 /* CameraService.swift */; };
 		AB1234567890123400000017 /* BarcodeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000018 /* BarcodeService.swift */; };
 		AB1234567890123400000019 /* DeviceAuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB123456789012340000001A /* DeviceAuthManager.swift */; };
-		AB123456789012340000001F /* ImageStorageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000020 /* ImageStorageManager.swift */; };
+		AB1234567890123400000050 /* ImageStorageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000051 /* ImageStorageManager.swift */; };
 		AB123456789012340000001B /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB123456789012340000001C /* Constants.swift */; };
 		AB123456789012340000001D /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB123456789012340000001E /* Extensions.swift */; };
 		AB12345678901234ASSETS002 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AB12345678901234ASSETS001 /* Assets.xcassets */; };
@@ -30,7 +30,7 @@
 /* Begin PBXFileReference section */
 		AB1234567890123400000021 /* EnvantoBarkod.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EnvantoBarkod.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB1234567890123400000002 /* EnvantoBarkodApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnvantoBarkodApp.swift; sourceTree = "<group>"; };
-		AB1234567890123400000020 /* ImageStorageManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageStorageManager.swift; sourceTree = "<group>"; };
+		AB1234567890123400000051 /* ImageStorageManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageStorageManager.swift; sourceTree = "<group>"; };
 		AB1234567890123400000004 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		AB1234567890123400000006 /* MainMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainMenuView.swift; sourceTree = "<group>"; };
 		AB1234567890123400000008 /* ScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerView.swift; sourceTree = "<group>"; };
@@ -60,7 +60,7 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		AB1234567890123400000022 /* EnvantoBarkodIOS */ = {
+		AB1234567890123400000023 /* EnvantoBarkodIOS */ = {
 			isa = PBXGroup;
 			children = (
 				AB1234567890123400000002 /* EnvantoBarkodApp.swift */,
@@ -119,7 +119,7 @@
 				AB1234567890123400000016 /* CameraService.swift */,
 				AB1234567890123400000018 /* BarcodeService.swift */,
 				AB123456789012340000001A /* DeviceAuthManager.swift */,
-				AB1234567890123400000020 /* ImageStorageManager.swift */,
+				AB1234567890123400000051 /* ImageStorageManager.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -189,7 +189,7 @@
 				en,
 				Base,
 			);
-			mainGroup = AB1234567890123400000022 /* EnvantoBarkodIOS */;
+			mainGroup = AB1234567890123400000023 /* EnvantoBarkodIOS */;
 			productRefGroup = AB1234567890123400000024 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -228,7 +228,7 @@
 				AB1234567890123400000015 /* CameraService.swift in Sources */,
 				AB1234567890123400000017 /* BarcodeService.swift in Sources */,
 				AB1234567890123400000019 /* DeviceAuthManager.swift in Sources */,
-				AB123456789012340000001F /* ImageStorageManager.swift in Sources */,
+				AB1234567890123400000050 /* ImageStorageManager.swift in Sources */,
 				AB123456789012340000001B /* Constants.swift in Sources */,
 				AB123456789012340000001D /* Extensions.swift in Sources */,
 			);
