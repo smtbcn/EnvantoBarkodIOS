@@ -21,6 +21,11 @@ struct Customer: Codable, Identifiable, Equatable {
     }
 }
 
+// MARK: - CustomerResponse (ASP API Response)
+struct CustomerResponse: Codable {
+    let musteri_adi: String
+}
+
 // MARK: - BarcodeUploadViewModel
 class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
     
@@ -152,10 +157,11 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         }
     }
     
-    // MARK: - Online Customer Search
+    // MARK: - Online Customer Search (Envanto API)
     private func searchCustomersOnline(query: String) async throws -> [Customer] {
-        guard let baseURL = Bundle.main.object(forInfoDictionaryKey: "API_BASE_URL") as? String,
-              let url = URL(string: "\(baseURL)customers.asp") else {
+        // Envanto API endpoint
+        let baseURL = "https://envanto.app/barkod_yukle_android"
+        guard let url = URL(string: "\(baseURL)/customers.asp") else {
             throw NetworkError.invalidURL
         }
         
@@ -164,8 +170,12 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         request.timeoutInterval = 10.0
         
-        let bodyString = "search=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
+        // ASP dosyasına uygun parametreler
+        let bodyString = "action=search&query=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
         request.httpBody = bodyString.data(using: .utf8)
+        
+        print("🔗 API URL: \(url)")
+        print("📋 Parametreler: \(bodyString)")
         
         let (data, response) = try await URLSession.shared.data(for: request)
         
@@ -174,7 +184,15 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
             throw NetworkError.serverError
         }
         
-        return try JSONDecoder().decode([Customer].self, from: data)
+        // JSON string'i debug için yazdır
+        if let jsonString = String(data: data, encoding: .utf8) {
+            print("📥 Müşteri API yanıtı: \(jsonString)")
+        }
+        
+        // ASP yanıtını decode et
+        return try JSONDecoder().decode([CustomerResponse].self, from: data).map { response in
+            Customer(name: response.musteri_adi, code: nil, address: nil)
+        }
     }
     
     // MARK: - Offline Customer Search
@@ -230,13 +248,23 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
     }
     
     private func fetchAllCustomersFromServer() async throws -> [Customer] {
-        guard let baseURL = Bundle.main.object(forInfoDictionaryKey: "API_BASE_URL") as? String,
-              let url = URL(string: "\(baseURL)/customers_all.php") else {
+        // Envanto API endpoint (getall action)
+        let baseURL = "https://envanto.app/barkod_yukle_android"
+        guard let url = URL(string: "\(baseURL)/customers.asp") else {
             throw NetworkError.invalidURL
         }
         
         var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         request.timeoutInterval = 30.0
+        
+        // ASP dosyasına getall action gönder
+        let bodyString = "action=getall"
+        request.httpBody = bodyString.data(using: .utf8)
+        
+        print("🔗 All Customers API URL: \(url)")
+        print("📋 Parametreler: \(bodyString)")
         
         let (data, response) = try await URLSession.shared.data(for: request)
         
@@ -245,7 +273,15 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
             throw NetworkError.serverError
         }
         
-        return try JSONDecoder().decode([Customer].self, from: data)
+        // JSON string'i debug için yazdır
+        if let jsonString = String(data: data, encoding: .utf8) {
+            print("📥 Tüm müşteriler API yanıtı: \(jsonString)")
+        }
+        
+        // ASP yanıtını decode et
+        return try JSONDecoder().decode([CustomerResponse].self, from: data).map { response in
+            Customer(name: response.musteri_adi, code: nil, address: nil)
+        }
     }
     
     // MARK: - Customer Selection
