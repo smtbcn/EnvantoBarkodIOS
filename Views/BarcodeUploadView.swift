@@ -342,6 +342,7 @@ struct BarcodeUploadView: View {
     @State private var selectedPhotos: [PhotosPickerItem] = []
     @State private var showingAlert = false
     @State private var alertMessage = ""
+    @State private var expandedCustomerId: String? = nil // Accordion state
     
     var body: some View {
         NavigationView {
@@ -628,11 +629,20 @@ struct BarcodeUploadView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 40)
             } else {
-                // Müşteri kartları (Android like)
+                // Müşteri kartları (Android like - Accordion)
                 LazyVStack(spacing: 12) {
                     ForEach(viewModel.customerImageGroups) { group in
                         CustomerImageCard(
                             group: group,
+                            isExpanded: expandedCustomerId == group.customerName,
+                            onToggle: {
+                                // Accordion davranışı: Bir müşteri açıldığında diğerleri kapansın
+                                if expandedCustomerId == group.customerName {
+                                    expandedCustomerId = nil // Aynı müşteriye basıldıysa kapat
+                                } else {
+                                    expandedCustomerId = group.customerName // Farklı müşteriye basıldıysa onları kapat, bunu aç
+                                }
+                            },
                             onDeleteImage: { image in
                                 viewModel.deleteImage(image)
                             }
@@ -687,16 +697,15 @@ struct CustomerRow: View {
 // MARK: - Customer Image Card (Android Resim Yükleme tasarımı)
 struct CustomerImageCard: View {
     let group: CustomerImageGroup
+    let isExpanded: Bool
+    let onToggle: () -> Void
     let onDeleteImage: (SavedImage) -> Void
-    @State private var isExpanded = false
     
     var body: some View {
         VStack(spacing: 0) {
             // Müşteri header'ı (Android Material Design like)
             Button(action: {
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    isExpanded.toggle()
-                }
+                onToggle() // Animasyonu kaldırdık, direk toggle
             }) {
                 HStack {
                     // Müşteri ikonu
@@ -720,7 +729,6 @@ struct CustomerImageCard: View {
                     Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.secondary)
-                        .animation(.easeInOut(duration: 0.3), value: isExpanded)
                 }
                 .padding()
             }
@@ -747,7 +755,6 @@ struct CustomerImageCard: View {
                     }
                     .padding(.bottom, 8)
                 }
-                .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
         .background(
