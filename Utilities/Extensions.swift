@@ -48,6 +48,9 @@ extension Color {
     static let defaultPrimaryGreen = Color(red: 0.0, green: 0.8, blue: 0.4)
     static let defaultPrimaryOrange = Color(red: 1.0, green: 0.6, blue: 0.0)
     static let defaultPrimaryPurple = Color(red: 0.6, green: 0.0, blue: 1.0)
+    
+    static let systemBackground = Color(UIColor.systemBackground)
+    static let secondarySystemBackground = Color(UIColor.secondarySystemBackground)
 }
 
 // MARK: - String Extensions
@@ -93,25 +96,10 @@ struct RoundedCorner: Shape {
 // MARK: - UIApplication Extensions
 extension UIApplication {
     var keyWindow: UIWindow? {
-        return UIApplication.shared.connectedScenes
+        connectedScenes
             .compactMap { $0 as? UIWindowScene }
             .flatMap { $0.windows }
             .first { $0.isKeyWindow }
-    }
-}
-
-// MARK: - Device Identifier (Android uyumlu)
-class DeviceIdentifier {
-    static func getUniqueDeviceId() -> String {
-        // iOS'ta Android'deki Settings.Secure.ANDROID_ID benzeri
-        if let deviceId = UserDefaults.standard.string(forKey: "unique_device_id") {
-            return deviceId
-        }
-        
-        // Yeni cihaz ID'si oluştur (UUID based)
-        let newDeviceId = UUID().uuidString
-        UserDefaults.standard.set(newDeviceId, forKey: "unique_device_id")
-        return newDeviceId
     }
 }
 

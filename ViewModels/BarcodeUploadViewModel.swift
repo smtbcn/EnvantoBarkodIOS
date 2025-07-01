@@ -8,7 +8,6 @@ struct Customer: Codable {
 }
 
 // MARK: - BarcodeUploadViewModel
-@MainActor
 class BarcodeUploadViewModel: ObservableObject {
     
     // MARK: - Published Properties
