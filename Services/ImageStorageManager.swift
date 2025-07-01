@@ -1,121 +1,27 @@
 import Foundation
 import UIKit
-import Photos
-import PhotosUI
 
 class ImageStorageManager {
     
     // MARK: - Constants
-    private static let ENVANTO_ALBUM_NAME = "Envanto"
     private static let TAG = "ImageStorageManager"
     
-    // MARK: - Photos Library Authorization
-    static func requestPhotosPermission() async -> Bool {
-        let status = PHPhotoLibrary.authorizationStatus(for: .addOnly)
-        
-        switch status {
-        case .authorized, .limited:
-            return true
-        case .notDetermined:
-            let newStatus = await PHPhotoLibrary.requestAuthorization(for: .addOnly)
-            return newStatus == .authorized || newStatus == .limited
-        case .denied, .restricted:
-            print("❌ Fotoğraf izni reddedildi")
-            return false
-        @unknown default:
-            return false
-        }
-    }
-    
-    // MARK: - Get or Create Envanto Album
-    static func getEnvantoAlbum() async -> PHAssetCollection? {
-        // Önce mevcut Envanto albumünü ara
-        let fetchOptions = PHFetchOptions()
-        fetchOptions.predicate = NSPredicate(format: "title = %@", ENVANTO_ALBUM_NAME)
-        let collections = PHAssetCollection.fetchAssetCollections(with: .album, 
-                                                                 subtype: .any, 
-                                                                 options: fetchOptions)
-        
-        if let existingAlbum = collections.firstObject {
-            print("📁 Mevcut Envanto albümü bulundu")
-            return existingAlbum
-        }
-        
-        // Albüm yoksa oluştur
-        return await createEnvantoAlbum()
-    }
-    
-    private static func createEnvantoAlbum() async -> PHAssetCollection? {
-        do {
-            var albumPlaceholder: PHObjectPlaceholder?
-            
-            try await PHPhotoLibrary.shared().performChanges {
-                let createRequest = PHAssetCollectionChangeRequest.creationRequestForAssetCollection(withTitle: ENVANTO_ALBUM_NAME)
-                albumPlaceholder = createRequest.placeholderForCreatedAssetCollection
-            }
-            
-            if let placeholder = albumPlaceholder {
-                let fetchResult = PHAssetCollection.fetchAssetCollections(withLocalIdentifiers: [placeholder.localIdentifier], options: nil)
-                print("📁 Envanto albümü oluşturuldu")
-                return fetchResult.firstObject
-            }
-        } catch {
-            print("❌ Envanto albümü oluşturma hatası: \(error.localizedDescription)")
-        }
-        
-        return nil
-    }
-    
-    // MARK: - Save Image to Photos Library (Android MediaStore Pattern)
+    // MARK: - Save Image (App Documents Only)
     static func saveImage(image: UIImage, customerName: String, isGallery: Bool) async -> String? {
-        // Photos izni kontrol et
-        guard await requestPhotosPermission() else {
-            print("❌ Fotoğraf izni gerekli")
-            return fallbackToDocuments(image: image, customerName: customerName, isGallery: isGallery)
+        // App Documents'a kaydet (Files uygulamasından erişilebilir)
+        if let documentsPath = saveToAppDocuments(image: image, customerName: customerName, isGallery: isGallery) {
+            print("✅ App Documents'a kaydedildi: \(documentsPath)")
+            return documentsPath
         }
         
-        // Envanto albümünü al/oluştur
-        guard let envantoAlbum = await getEnvantoAlbum() else {
-            print("❌ Envanto albümü oluşturulamadı, Documents'a kaydediliyor")
-            return fallbackToDocuments(image: image, customerName: customerName, isGallery: isGallery)
-        }
-        
-        // Android'deki gibi dosya adı oluştur
-        let fileName = generateFileName(customerName: customerName, isGallery: isGallery)
-        
-        do {
-            var assetPlaceholder: PHObjectPlaceholder?
-            
-            try await PHPhotoLibrary.shared().performChanges {
-                // Resmi Photos Library'ye ekle
-                let creationRequest = PHAssetChangeRequest.creationRequestForAsset(from: image)
-                assetPlaceholder = creationRequest.placeholderForCreatedAsset
-                
-                // Envanto albümüne ekle
-                if let albumChangeRequest = PHAssetCollectionChangeRequest(for: envantoAlbum),
-                   let placeholder = creationRequest.placeholderForCreatedAsset {
-                    albumChangeRequest.addAssets([placeholder] as NSArray)
-                }
-            }
-            
-            if let placeholder = assetPlaceholder {
-                let localId = placeholder.localIdentifier
-                print("✅ Resim Photos Library'ye kaydedildi: \(fileName)")
-                return "photos://\(localId)" // Custom URI scheme for Photos Library
-            }
-            
-        } catch {
-            print("❌ Photos Library kaydetme hatası: \(error.localizedDescription)")
-            return fallbackToDocuments(image: image, customerName: customerName, isGallery: isGallery)
-        }
-        
+        print("❌ Resim kaydedilemedi")
         return nil
     }
     
-    // MARK: - Fallback to Documents (iOS 14 altı veya izin yoksa)
-    private static func fallbackToDocuments(image: UIImage, customerName: String, isGallery: Bool) -> String? {
-        guard let customerDir = getDocumentsCustomerDir(for: customerName) else {
-            print("❌ Documents müşteri klasörü alınamadı")
+    // MARK: - Save to App Documents (Files App Access)
+    private static func saveToAppDocuments(image: UIImage, customerName: String, isGallery: Bool) -> String? {
+        guard let customerDir = getAppDocumentsCustomerDir(for: customerName) else {
+            print("❌ App Documents müşteri klasörü alınamadı")
             return nil
         }
         
@@ -134,10 +40,10 @@ class ImageStorageManager {
         
         do {
             try imageData.write(to: finalPath)
-            print("✅ Resim Documents'a kaydedildi: \(finalPath.path)")
+            print("✅ App Documents'a kaydedildi: \(finalPath.path)")
             return finalPath.path
         } catch {
-            print("❌ Documents kaydetme hatası: \(error.localizedDescription)")
+            print("❌ App Documents kaydetme hatası: \(error.localizedDescription)")
             return nil
         }
     }
@@ -168,15 +74,15 @@ class ImageStorageManager {
         return "\(safeCustomerName)_\(prefix)_\(timeStamp).jpg"
     }
     
-    // MARK: - Documents Directory Fallback Functions
-    private static func getDocumentsDirectory() -> URL? {
+    // MARK: - App Documents Directory Functions (Files App Access)
+    private static func getAppDocumentsDirectory() -> URL? {
         return FileManager.default.urls(for: .documentDirectory, 
                                        in: .userDomainMask).first
     }
     
-    private static func getDocumentsCustomerDir(for customerName: String) -> URL? {
-        guard let documentsDir = getDocumentsDirectory() else {
-            print("❌ Documents directory alınamadı")
+    private static func getAppDocumentsCustomerDir(for customerName: String) -> URL? {
+        guard let documentsDir = getAppDocumentsDirectory() else {
+            print("❌ App Documents directory alınamadı")
             return nil
         }
         
@@ -195,9 +101,9 @@ class ImageStorageManager {
                 try FileManager.default.createDirectory(at: customerDir, 
                                                       withIntermediateDirectories: true, 
                                                       attributes: nil)
-                print("📁 Documents müşteri klasörü oluşturuldu: \(customerDir.path)")
+                print("📁 App Documents müşteri klasörü oluşturuldu: \(customerDir.path)")
             } catch {
-                print("❌ Documents müşteri klasörü oluşturulamadı: \(error.localizedDescription)")
+                print("❌ App Documents müşteri klasörü oluşturulamadı: \(error.localizedDescription)")
                 return nil
             }
         }
@@ -220,43 +126,17 @@ class ImageStorageManager {
         return finalPath
     }
     
-    // MARK: - List Customer Images (Photos + Documents)
+    // MARK: - List Customer Images (App Documents)
     static func listCustomerImages(customerName: String) async -> [String] {
-        var imagePaths: [String] = []
+        // App Documents'tan ara
+        let documentsImages = getAppDocumentsImages(customerName: customerName)
         
-        // 1. Photos Library'den ara
-        if let photosImages = await getPhotosLibraryImages(customerName: customerName) {
-            imagePaths.append(contentsOf: photosImages)
-        }
-        
-        // 2. Documents'tan ara (fallback)
-        let documentsImages = getDocumentsImages(customerName: customerName)
-        imagePaths.append(contentsOf: documentsImages)
-        
-        print("📋 \(customerName) için toplam \(imagePaths.count) resim bulundu")
-        return imagePaths.sorted()
+        print("📋 \(customerName) için App Documents'ta \(documentsImages.count) resim bulundu")
+        return documentsImages.sorted()
     }
     
-    private static func getPhotosLibraryImages(customerName: String) async -> [String]? {
-        guard await requestPhotosPermission(),
-              let envantoAlbum = await getEnvantoAlbum() else {
-            return nil
-        }
-        
-        let assets = PHAsset.fetchAssets(in: envantoAlbum, options: nil)
-        var imagePaths: [String] = []
-        
-        assets.enumerateObjects { asset, _, _ in
-            // Müşteri adı ile eşleşen resimleri filtrele (dosya adından)
-            let localId = asset.localIdentifier
-            imagePaths.append("photos://\(localId)")
-        }
-        
-        return imagePaths
-    }
-    
-    private static func getDocumentsImages(customerName: String) -> [String] {
-        guard let customerDir = getDocumentsCustomerDir(for: customerName) else { return [] }
+    private static func getAppDocumentsImages(customerName: String) -> [String] {
+        guard let customerDir = getAppDocumentsCustomerDir(for: customerName) else { return [] }
         
         do {
             let fileURLs = try FileManager.default.contentsOfDirectory(at: customerDir, 
@@ -273,55 +153,24 @@ class ImageStorageManager {
             
             return imagePaths
         } catch {
-            print("❌ Documents müşteri resimleri listeleme hatası: \(error.localizedDescription)")
+            print("❌ App Documents müşteri resimleri listeleme hatası: \(error.localizedDescription)")
             return []
         }
     }
     
-    // MARK: - Delete Image
+    // MARK: - Delete Image (App Documents)
     static func deleteImage(at path: String) async -> Bool {
-        if path.hasPrefix("photos://") {
-            // Photos Library'den sil
-            return await deleteFromPhotosLibrary(path: path)
-        } else {
-            // Documents'tan sil
-            return deleteFromDocuments(path: path)
-        }
-    }
-    
-    private static func deleteFromPhotosLibrary(path: String) async -> Bool {
-        let localId = String(path.dropFirst(9)) // "photos://" prefix'ini kaldır
-        
-        let fetchResult = PHAsset.fetchAssets(withLocalIdentifiers: [localId], options: nil)
-        guard let asset = fetchResult.firstObject else {
-            print("❌ Photos Library'de resim bulunamadı")
-            return false
-        }
-        
-        do {
-            try await PHPhotoLibrary.shared().performChanges {
-                PHAssetChangeRequest.deleteAssets([asset] as NSArray)
-            }
-            print("🗑️ Photos Library'den resim silindi")
-            return true
-        } catch {
-            print("❌ Photos Library silme hatası: \(error.localizedDescription)")
-            return false
-        }
-    }
-    
-    private static func deleteFromDocuments(path: String) -> Bool {
         let fileURL = URL(fileURLWithPath: path)
         
         do {
             try FileManager.default.removeItem(at: fileURL)
-            print("🗑️ Documents'tan resim silindi: \(path)")
+            print("🗑️ App Documents'tan resim silindi: \(path)")
             
             // Boş klasörleri temizle
             cleanupEmptyDirectories(fileURL.deletingLastPathComponent())
             return true
         } catch {
-            print("❌ Documents silme hatası: \(error.localizedDescription)")
+            print("❌ App Documents silme hatası: \(error.localizedDescription)")
             return false
         }
     }
@@ -345,57 +194,52 @@ class ImageStorageManager {
         }
     }
     
-    // MARK: - Delete Customer Images
+    // MARK: - Delete Customer Images (App Documents)
     static func deleteCustomerImages(customerName: String) async -> Bool {
-        var success = true
-        
-        // 1. Photos Library'den sil
-        if let photosImages = await getPhotosLibraryImages(customerName: customerName) {
-            for imagePath in photosImages {
-                let result = await deleteFromPhotosLibrary(path: imagePath)
-                success = success && result
-            }
-        }
-        
-        // 2. Documents'tan sil
-        if let customerDir = getDocumentsCustomerDir(for: customerName) {
+        // App Documents müşteri klasörünü sil
+        if let customerDir = getAppDocumentsCustomerDir(for: customerName) {
             do {
                 try FileManager.default.removeItem(at: customerDir)
-                print("🗑️ Documents müşteri klasörü silindi: \(customerDir.path)")
+                print("🗑️ App Documents müşteri klasörü silindi: \(customerDir.path)")
                 cleanupEmptyDirectories(customerDir.deletingLastPathComponent())
+                return true
             } catch {
-                print("❌ Documents müşteri klasörü silme hatası: \(error.localizedDescription)")
-                success = false
+                print("❌ App Documents müşteri klasörü silme hatası: \(error.localizedDescription)")
+                return false
             }
         }
         
-        return success
+        return false
     }
     
     // MARK: - Get Storage Info
     static func getStorageInfo() async -> String {
         var info = "📱 Envanto Storage Info:\n"
         
-        // Photos Library bilgisi
-        if await requestPhotosPermission(),
-           let envantoAlbum = await getEnvantoAlbum() {
-            let assets = PHAsset.fetchAssets(in: envantoAlbum, options: nil)
-            info += "📸 Photos Library: \(assets.count) resim\n"
-        } else {
-            info += "📸 Photos Library: İzin yok\n"
-        }
-        
-        // Documents bilgisi
-        if let documentsDir = getDocumentsDirectory() {
+        // App Documents bilgisi
+        if let documentsDir = getAppDocumentsDirectory() {
             let envantoDir = documentsDir.appendingPathComponent("Envanto")
-            info += "📁 Documents: \(envantoDir.path)\n"
+            info += "📁 Files App: \(envantoDir.path)\n"
             
             do {
                 let contents = try FileManager.default.contentsOfDirectory(at: envantoDir, 
                                                                            includingPropertiesForKeys: nil)
                 info += "📁 Müşteri klasörleri: \(contents.count)\n"
+                
+                // Her müşteri için resim sayısı
+                for customerDir in contents.prefix(5) {
+                    if customerDir.hasDirectoryPath {
+                        let customerName = customerDir.lastPathComponent
+                        let imageCount = getAppDocumentsImages(customerName: customerName).count
+                        info += "   • \(customerName): \(imageCount) resim\n"
+                    }
+                }
+                
+                if contents.count > 5 {
+                    info += "   ... ve \(contents.count - 5) müşteri daha\n"
+                }
             } catch {
-                info += "📁 Documents: Henüz oluşturulmadı\n"
+                info += "📁 Files App: Henüz oluşturulmadı\n"
             }
         }
         

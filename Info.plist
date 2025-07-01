@@ -41,10 +41,6 @@
     <!-- İzinler -->
     <key>NSCameraUsageDescription</key>
     <string>Bu uygulama barkod taramak için kamera kullanır.</string>
-    <key>NSPhotoLibraryUsageDescription</key>
-    <string>Bu uygulama fotoğrafları kaydetmek için fotoğraf kütüphanesi erişimi gerektirir.</string>
-    <key>NSPhotoLibraryAddUsageDescription</key>
-    <string>Bu uygulama çekilen resimleri fotoğraf galerisindeki Envanto albümüne kaydetmek için izin gerektirir.</string>
     
     <!-- API Ayarları -->
     <key>API_BASE_URL</key>
