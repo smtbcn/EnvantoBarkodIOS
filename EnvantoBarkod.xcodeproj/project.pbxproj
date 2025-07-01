@@ -294,6 +294,12 @@
 				SWIFT_WHOLE_MODULE_OPTIMIZATION = NO;
 				COMPILER_INDEX_STORE_ENABLE = NO;
 				ENABLE_BITCODE = NO;
+				SWIFT_INSTALL_OBJC_HEADER = NO;
+				CLANG_ENABLE_MODULE_DEBUGGING = NO;
+				SUPPORTS_MACCATALYST = NO;
+				ENABLE_BUILD_SYSTEM_CACHING = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				VALIDATE_PRODUCT = NO;
 			};
 			name = Debug;
 		};
@@ -350,6 +356,9 @@
 				SDKROOT = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
+				ENABLE_BITCODE = NO;
+				COMPILER_INDEX_STORE_ENABLE = NO;
+				SUPPORTS_MACCATALYST = NO;
 			};
 			name = Release;
 		};
@@ -362,8 +371,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = Info.plist;
+				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Bu uygulama barkod taramak için kamera kullanır.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -385,6 +393,12 @@
 				COMPILER_INDEX_STORE_ENABLE = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_BITCODE = NO;
+				SWIFT_INSTALL_OBJC_HEADER = NO;
+				CLANG_ENABLE_MODULE_DEBUGGING = NO;
+				SUPPORTS_MACCATALYST = NO;
+				VALIDATE_PRODUCT = NO;
+				SKIP_INSTALL = NO;
+				COPY_PHASE_STRIP = NO;
 			};
 			name = Debug;
 		};
@@ -397,8 +411,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = Info.plist;
+				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Bu uygulama barkod taramak için kamera kullanır.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -418,6 +431,9 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
+				ENABLE_BITCODE = NO;
+				COMPILER_INDEX_STORE_ENABLE = NO;
+				SUPPORTS_MACCATALYST = NO;
 			};
 			name = Release;
 		};
