@@ -117,6 +117,19 @@ struct ScannerView: View {
                 appState.closeScannerToMainMenu()
             }
         }
+        .sheet(isPresented: $viewModel.showWebBrowser) {
+            WebBrowserView(
+                url: viewModel.currentURL,
+                onReturnToScanner: {
+                    viewModel.showWebBrowser = false
+                    viewModel.resetScanning()
+                },
+                onClose: {
+                    viewModel.showWebBrowser = false
+                    appState.closeScannerToMainMenu()
+                }
+            )
+        }
     }
 }
 
@@ -139,7 +152,73 @@ struct CameraPreview: UIViewRepresentable {
     }
 }
 
+// MARK: - Web Browser View
+struct WebBrowserView: View {
+    let url: String
+    let onReturnToScanner: () -> Void
+    let onClose: () -> Void
+    
+    var body: some View {
+        NavigationView {
+            VStack {
+                if let validURL = URL(string: url) {
+                    WebView(url: validURL)
+                } else {
+                    VStack {
+                        Image(systemName: "exclamationmark.triangle")
+                            .font(.system(size: 60))
+                            .foregroundColor(.orange)
+                        
+                        Text("Geçersiz URL")
+                            .font(.title)
+                            .fontWeight(.bold)
+                            .padding(.top)
+                        
+                        Text("URL yüklenemedi: \(url)")
+                            .font(.body)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding()
+                    }
+                    .padding()
+                }
+            }
+            .navigationTitle("Envanto")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Tekrar Tara") {
+                        onReturnToScanner()
+                    }
+                }
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Kapat") {
+                        onClose()
+                    }
+                }
+            }
+        }
+    }
+}
 
+// MARK: - WebView
+import WebKit
+
+struct WebView: UIViewRepresentable {
+    let url: URL
+    
+    func makeUIView(context: Context) -> WKWebView {
+        let webView = WKWebView()
+        let request = URLRequest(url: url)
+        webView.load(request)
+        return webView
+    }
+    
+    func updateUIView(_ uiView: WKWebView, context: Context) {
+        // Güncelleme gerektiğinde buraya kod eklenebilir
+    }
+}
 
 #Preview {
     ScannerView()
