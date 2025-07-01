@@ -162,7 +162,10 @@ struct WebBrowserView: View {
         NavigationView {
             VStack {
                 if let validURL = URL(string: url) {
-                    WebView(url: validURL)
+                    WebView(url: validURL) {
+                        // Web sitesinden "envantobarcode://" scheme geldi
+                        onReturnToScanner()
+                    }
                 } else {
                     VStack {
                         Image(systemName: "exclamationmark.triangle")
@@ -186,12 +189,6 @@ struct WebBrowserView: View {
             .navigationTitle("Envanto")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Tekrar Tara") {
-                        onReturnToScanner()
-                    }
-                }
-                
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Kapat") {
                         onClose()
@@ -207,9 +204,11 @@ import WebKit
 
 struct WebView: UIViewRepresentable {
     let url: URL
+    let onSchemeDetected: () -> Void
     
     func makeUIView(context: Context) -> WKWebView {
         let webView = WKWebView()
+        webView.navigationDelegate = context.coordinator
         let request = URLRequest(url: url)
         webView.load(request)
         return webView
@@ -217,6 +216,35 @@ struct WebView: UIViewRepresentable {
     
     func updateUIView(_ uiView: WKWebView, context: Context) {
         // Güncelleme gerektiğinde buraya kod eklenebilir
+    }
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+    
+    class Coordinator: NSObject, WKNavigationDelegate {
+        let parent: WebView
+        
+        init(_ parent: WebView) {
+            self.parent = parent
+        }
+        
+        func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+            guard let url = navigationAction.request.url else {
+                decisionHandler(.allow)
+                return
+            }
+            
+            // URL scheme kontrolü (web sitesindeki JavaScript ile aynı)
+            if url.scheme == "envantobarcode" {
+                // Web sitesindeki "Kamera Başlat" butonuna basıldı
+                decisionHandler(.cancel)
+                parent.onSchemeDetected()
+                return
+            }
+            
+            decisionHandler(.allow)
+        }
     }
 }
 
