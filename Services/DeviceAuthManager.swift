@@ -44,7 +44,7 @@ struct DeviceAuthResponse: Codable {
     private enum CodingKeys: String, CodingKey {
         case success
         case message
-        case deviceOwner = "device_owner"
+        case deviceOwner = "cihaz_sahibi"
     }
 }
 
@@ -73,26 +73,8 @@ class DeviceAuthManager {
             print("🔐 Cihaz Kimliği: \(deviceId)")
             print("📱 Cihaz Bilgileri: \(deviceInfo)")
             
-            // İlk kayıt kontrolü (Android mantığı)
-            let isFirstRun = !UserDefaults.standard.bool(forKey: "device_registered_to_server")
-            
-            if isFirstRun {
-                print("🆕 İlk çalıştırma tespit edildi, cihaz sunucuya kaydediliyor...")
-                let registerResult = await registerDeviceToServer(deviceId: deviceId, deviceInfo: deviceInfo)
-                
-                // Kayıt işleminin sonucuna bakılmaksızın, flag'i set et
-                UserDefaults.standard.set(true, forKey: "device_registered_to_server")
-                
-                switch registerResult {
-                case .success(let response):
-                    print("📝 Kayıt sonucu: \(response.message)")
-                case .failure(let error):
-                    print("⚠️ Kayıt hatası (devam ediliyor): \(error.localizedDescription)")
-                }
-                
-                // Kısa bekleme süresi
-                try await Task.sleep(nanoseconds: 500_000_000) // 0.5 saniye
-            }
+            // ASP dosyası otomatik kayıt yapıyor, ayrı register işlemi gerekmiyor
+            print("📝 Sunucu otomatik cihaz kaydı yapacak...")
             
             // Sunucudan cihaz yetkilendirme kontrolü
             let result = await checkServerAuthorization(deviceId: deviceId)
@@ -159,9 +141,9 @@ class DeviceAuthManager {
     // MARK: - Sunucu yetkilendirme kontrolü
     private static func checkServerAuthorization(deviceId: String) async -> Result<DeviceAuthResponse, Error> {
         do {
-            // API endpoint URL'i oluştur
-            guard let baseURL = Bundle.main.object(forInfoDictionaryKey: "API_BASE_URL") as? String,
-                  let url = URL(string: "\(baseURL)/check_device_auth.php") else {
+            // API endpoint URL'i oluştur (Envanto sunucusu)
+            let baseURL = "https://envanto.app/barkod_yukle_android"
+            guard let url = URL(string: "\(baseURL)/usersperm.asp") else {
                 throw NetworkError.invalidURL
             }
             
@@ -171,49 +153,14 @@ class DeviceAuthManager {
             request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
             request.timeoutInterval = 3.0 // 3 saniyelik timeout (Android'deki gibi)
             
-            // Body parametreleri
-            let bodyString = "action=check&device_id=\(deviceId)"
+            // Cihaz bilgilerini al
+            let deviceInfo = DeviceIdentifier.getReadableDeviceInfo()
+            
+            // Body parametreleri - ASP dosyasına uygun
+            let bodyString = "action=check&cihaz_bilgisi=\(deviceId.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")&cihaz_sahibi=\(deviceInfo.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
             request.httpBody = bodyString.data(using: .utf8)
             
-            // API çağrısı yap
-            let (data, response) = try await URLSession.shared.data(for: request)
-            
-            // HTTP yanıt kontrolü
-            guard let httpResponse = response as? HTTPURLResponse,
-                  httpResponse.statusCode == 200 else {
-                throw NetworkError.serverError
-            }
-            
-            // JSON decode et
-            let authResponse = try JSONDecoder().decode(DeviceAuthResponse.self, from: data)
-            return .success(authResponse)
-            
-        } catch {
-            return .failure(error)
-        }
-    }
-    
-    // MARK: - Cihaz ID'sini sunucuya kaydet (Android mantığı)
-    static func registerDeviceToServer(deviceId: String, deviceInfo: String) async -> Result<DeviceAuthResponse, Error> {
-        do {
-            // API endpoint URL'i oluştur
-            guard let baseURL = Bundle.main.object(forInfoDictionaryKey: "API_BASE_URL") as? String,
-                  let url = URL(string: "\(baseURL)/check_device_auth.php") else {
-                throw NetworkError.invalidURL
-            }
-            
-            // Request oluştur
-            var request = URLRequest(url: url)
-            request.httpMethod = "POST"
-            request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-            request.timeoutInterval = 5.0 // 5 saniyelik timeout (kayıt için biraz daha uzun)
-            
-            // Body parametreleri - Android'deki gibi
-            let bodyString = "action=register&device_id=\(deviceId)&device_info=\(deviceInfo.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
-            request.httpBody = bodyString.data(using: .utf8)
-            
-            print("📝 Cihaz kayıt işlemi başlatılıyor...")
-            print("🔗 URL: \(url)")
+            print("🔗 API URL: \(url)")
             print("📋 Parametreler: \(bodyString)")
             
             // API çağrısı yap
@@ -225,22 +172,22 @@ class DeviceAuthManager {
                 throw NetworkError.serverError
             }
             
-            // JSON decode et
-            let authResponse = try JSONDecoder().decode(DeviceAuthResponse.self, from: data)
-            
-            if authResponse.success {
-                print("✅ Cihaz sunucuya başarıyla kaydedildi: \(authResponse.message)")
-            } else {
-                print("⚠️ Cihaz kayıt yanıtı: \(authResponse.message)")
+            // JSON string'i yazdır
+            if let jsonString = String(data: data, encoding: .utf8) {
+                print("📥 Sunucu yanıtı: \(jsonString)")
             }
             
+            // JSON decode et
+            let authResponse = try JSONDecoder().decode(DeviceAuthResponse.self, from: data)
             return .success(authResponse)
             
         } catch {
-            print("💥 Cihaz kayıt hatası: \(error.localizedDescription)")
+            print("💥 API hatası: \(error.localizedDescription)")
             return .failure(error)
         }
     }
+    
+
     
     // MARK: - Yerel yetkilendirme kontrolü
     private static func checkLocalAuthorization(deviceId: String) -> Bool {
