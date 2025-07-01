@@ -23,7 +23,7 @@
 		AB123456789012340000001B /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB123456789012340000001C /* Constants.swift */; };
 		AB123456789012340000001D /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB123456789012340000001E /* Extensions.swift */; };
 		AB12345678901234ASSETS002 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AB12345678901234ASSETS001 /* Assets.xcassets */; };
-		AB12345678901234INFOPLIST /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB12345678901234INFOPLIST001 /* Info.plist */; };
+
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -44,7 +44,7 @@
 		AB123456789012340000001C /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		AB123456789012340000001E /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
 		AB12345678901234ASSETS001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		AB12345678901234INFOPLIST001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -70,7 +70,6 @@
 				AB1234567890123400000029 /* Utilities */,
 				AB123456789012340000002A /* Protocols */,
 				AB12345678901234ASSETS001 /* Assets.xcassets */,
-				AB12345678901234INFOPLIST001 /* Info.plist */,
 				AB1234567890123400000024 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -202,7 +201,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				AB12345678901234ASSETS002 /* Assets.xcassets in Resources */,
-				AB12345678901234INFOPLIST /* Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -376,7 +374,8 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
-				INFOPLIST_FILE = Info.plist;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Envanto Barkod";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Bu uygulama barkod taramak için kamera kullanır.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Bu uygulama fotoğrafları kaydetmek için fotoğraf kütüphanesi erişimi gerektirir.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -419,7 +418,8 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
-				INFOPLIST_FILE = Info.plist;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Envanto Barkod";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Bu uygulama barkod taramak için kamera kullanır.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Bu uygulama fotoğrafları kaydetmek için fotoğraf kütüphanesi erişimi gerektirir.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
