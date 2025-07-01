@@ -10,30 +10,7 @@ protocol DeviceAuthCallback {
     func onHideLoading()
 }
 
-// MARK: - SilentDeviceAuthCallback (UI'ı etkilemeden sessiz kontrol)
-class SilentDeviceAuthCallback: DeviceAuthCallback {
-    private let completion: (Bool) -> Void
-    
-    init(completion: @escaping (Bool) -> Void) {
-        self.completion = completion
-    }
-    
-    func onAuthSuccess() {
-        completion(true)
-    }
-    
-    func onAuthFailure() {
-        completion(false)
-    }
-    
-    func onShowLoading() {
-        // Sessiz modda loading gösterme
-    }
-    
-    func onHideLoading() {
-        // Sessiz modda loading gizleme
-    }
-}
+
 
 // MARK: - DeviceAuthResponse Model
 struct DeviceAuthResponse: Codable {

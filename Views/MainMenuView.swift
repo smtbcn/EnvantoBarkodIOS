@@ -1,10 +1,16 @@
 import SwiftUI
 
+enum AlertType {
+    case cameraPermission
+    case deviceAuthorization
+}
+
 struct MainMenuView: View {
     @StateObject private var viewModel = MainViewModel()
     @State private var showingSettings = false
     @State private var showingPermissionAlert = false
     @State private var showingBarcodeUpload = false
+    @State private var alertType: AlertType = .cameraPermission
     @EnvironmentObject var appState: AppStateManager
     
     var body: some View {
@@ -41,16 +47,16 @@ struct MainMenuView: View {
                 // Ana menü butonları - Main ve Barkod Tara için cihaz yetkilendirme muafiyeti
                 VStack(spacing: 16) {
                         HStack(spacing: 16) {
-                            // Barkod Tara - Cihaz yetkilendirme muafiyeti
+                            // Barkod Tara - Sadece kamera izni gerekli
                             GridButton(
                                 title: "Barkod Tara",
                                 icon: "qrcode.viewfinder",
                                 color: .blue
                             ) {
                                 if viewModel.hasRequiredPermissions {
-                                    // Android mantık: AppStateManager ile scanner aç
                                     appState.showScanner = true
                                 } else {
+                                    alertType = .cameraPermission
                                     showingPermissionAlert = true
                                 }
                             }
@@ -65,10 +71,11 @@ struct MainMenuView: View {
                                     if viewModel.hasRequiredPermissions {
                                         showingBarcodeUpload = true
                                     } else {
+                                        alertType = .cameraPermission
                                         showingPermissionAlert = true
                                     }
                                 } else {
-                                    // Cihaz yetkilendirme gerekli uyarısı
+                                    alertType = .deviceAuthorization
                                     showingPermissionAlert = true
                                 }
                             }
@@ -85,10 +92,11 @@ struct MainMenuView: View {
                                     if viewModel.hasRequiredPermissions {
                                         // Customer images görünümüne git
                                     } else {
+                                        alertType = .cameraPermission
                                         showingPermissionAlert = true
                                     }
                                 } else {
-                                    // Cihaz yetkilendirme gerekli uyarısı
+                                    alertType = .deviceAuthorization
                                     showingPermissionAlert = true
                                 }
                             }
@@ -103,10 +111,11 @@ struct MainMenuView: View {
                                     if viewModel.hasRequiredPermissions {
                                         // Vehicle products görünümüne git
                                     } else {
+                                        alertType = .cameraPermission
                                         showingPermissionAlert = true
                                     }
                                 } else {
-                                    // Cihaz yetkilendirme gerekli uyarısı
+                                    alertType = .deviceAuthorization
                                     showingPermissionAlert = true
                                 }
                             }
@@ -170,24 +179,26 @@ struct MainMenuView: View {
             BarcodeUploadView()
         }
         .alert("İzin Gerekli", isPresented: $showingPermissionAlert) {
-            if viewModel.isDeviceAuthorized {
+            switch alertType {
+            case .cameraPermission:
                 Button("Ayarlara Git") {
                     viewModel.openSettings()
                 }
                 Button("İptal", role: .cancel) { }
-            } else {
+            case .deviceAuthorization:
                 Button("Tamam", role: .cancel) { }
             }
         } message: {
-            if viewModel.isDeviceAuthorized {
+            switch alertType {
+            case .cameraPermission:
                 Text("Bu özelliği kullanmak için kamera izni gerekli.")
-            } else {
+            case .deviceAuthorization:
                 Text("Bu özelliği kullanmak için cihaz yetkilendirmesi gerekli. Lütfen yöneticinizle iletişime geçin.")
             }
         }
         .onAppear {
-            // Arka planda cihaz yetkilendirme kontrolü (sessizce)
-            viewModel.checkDeviceAuthorizationSilently()
+            // Kamera izinlerini kontrol et
+            viewModel.checkPermissions()
         }
     }
 }
