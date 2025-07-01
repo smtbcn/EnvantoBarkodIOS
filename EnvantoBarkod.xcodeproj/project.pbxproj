@@ -11,32 +11,44 @@
 		AB1234567890123400000003 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000004 /* ContentView.swift */; };
 		AB1234567890123400000005 /* MainMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000006 /* MainMenuView.swift */; };
 		AB1234567890123400000007 /* ScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000008 /* ScannerView.swift */; };
-
-		AB123456789012340000000D /* ScannerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB123456789012340000000E /* ScannerViewModel.swift */; };
-		AB123456789012340000000F /* BarcodeResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000010 /* BarcodeResult.swift */; };
-		AB1234567890123400000011 /* CameraService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000012 /* CameraService.swift */; };
-		AB1234567890123400000015 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000016 /* Constants.swift */; };
-		AB1234567890123400000017 /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000018 /* Extensions.swift */; };
+		AB1234567890123400000009 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB123456789012340000000A /* SettingsView.swift */; };
+		AB123456789012340000000B /* BarcodeUploadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB123456789012340000000C /* BarcodeUploadView.swift */; };
+		AB123456789012340000000D /* MainViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB123456789012340000000E /* MainViewModel.swift */; };
+		AB123456789012340000000F /* ScannerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000010 /* ScannerViewModel.swift */; };
+		AB1234567890123400000011 /* BarcodeUploadViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000012 /* BarcodeUploadViewModel.swift */; };
+		AB1234567890123400000013 /* BarcodeResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000014 /* BarcodeResult.swift */; };
+		AB1234567890123400000015 /* CameraService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000016 /* CameraService.swift */; };
+		AB1234567890123400000017 /* BarcodeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000018 /* BarcodeService.swift */; };
+		AB1234567890123400000019 /* DeviceAuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB123456789012340000001A /* DeviceAuthManager.swift */; };
+		AB123456789012340000001B /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB123456789012340000001C /* Constants.swift */; };
+		AB123456789012340000001D /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB123456789012340000001E /* Extensions.swift */; };
 		AB12345678901234ASSETS002 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AB12345678901234ASSETS001 /* Assets.xcassets */; };
+		AB12345678901234INFOPLIST /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = AB12345678901234INFOPLIST001 /* Info.plist */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		AB1234567890123400000019 /* EnvantoBarkod.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EnvantoBarkod.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AB1234567890123400000020 /* EnvantoBarkod.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EnvantoBarkod.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB1234567890123400000002 /* EnvantoBarkodApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnvantoBarkodApp.swift; sourceTree = "<group>"; };
 		AB1234567890123400000004 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		AB1234567890123400000006 /* MainMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainMenuView.swift; sourceTree = "<group>"; };
 		AB1234567890123400000008 /* ScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerView.swift; sourceTree = "<group>"; };
-		AB123456789012340000000E /* ScannerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerViewModel.swift; sourceTree = "<group>"; };
-		AB1234567890123400000010 /* BarcodeResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeResult.swift; sourceTree = "<group>"; };
-		AB1234567890123400000012 /* CameraService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraService.swift; sourceTree = "<group>"; };
-		AB1234567890123400000016 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
-		AB1234567890123400000018 /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
-		AB123456789012340000001A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		AB123456789012340000000A /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		AB123456789012340000000C /* BarcodeUploadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeUploadView.swift; sourceTree = "<group>"; };
+		AB123456789012340000000E /* MainViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewModel.swift; sourceTree = "<group>"; };
+		AB1234567890123400000010 /* ScannerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerViewModel.swift; sourceTree = "<group>"; };
+		AB1234567890123400000012 /* BarcodeUploadViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeUploadViewModel.swift; sourceTree = "<group>"; };
+		AB1234567890123400000014 /* BarcodeResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeResult.swift; sourceTree = "<group>"; };
+		AB1234567890123400000016 /* CameraService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraService.swift; sourceTree = "<group>"; };
+		AB1234567890123400000018 /* BarcodeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeService.swift; sourceTree = "<group>"; };
+		AB123456789012340000001A /* DeviceAuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceAuthManager.swift; sourceTree = "<group>"; };
+		AB123456789012340000001C /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
+		AB123456789012340000001E /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
 		AB12345678901234ASSETS001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		AB12345678901234INFOPLIST001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		AB123456789012340000001B /* Frameworks */ = {
+		AB1234567890123400000021 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -46,82 +58,96 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		AB123456789012340000001C /* EnvantoBarkodIOS */ = {
+		AB1234567890123400000022 /* EnvantoBarkodIOS */ = {
 			isa = PBXGroup;
 			children = (
 				AB1234567890123400000002 /* EnvantoBarkodApp.swift */,
 				AB1234567890123400000004 /* ContentView.swift */,
-				AB123456789012340000001F /* Views */,
-				AB1234567890123400000020 /* ViewModels */,
-				AB1234567890123400000021 /* Models */,
-				AB1234567890123400000022 /* Services */,
-				AB1234567890123400000023 /* Utilities */,
+				AB1234567890123400000025 /* Views */,
+				AB1234567890123400000026 /* ViewModels */,
+				AB1234567890123400000027 /* Models */,
+				AB1234567890123400000028 /* Services */,
+				AB1234567890123400000029 /* Utilities */,
+				AB123456789012340000002A /* Protocols */,
 				AB12345678901234ASSETS001 /* Assets.xcassets */,
-				AB123456789012340000001A /* Info.plist */,
-				AB123456789012340000001E /* Products */,
+				AB12345678901234INFOPLIST001 /* Info.plist */,
+				AB1234567890123400000024 /* Products */,
 			);
 			sourceTree = "<group>";
 		};
-		AB123456789012340000001E /* Products */ = {
+		AB1234567890123400000024 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				AB1234567890123400000019 /* EnvantoBarkod.app */,
+				AB1234567890123400000020 /* EnvantoBarkod.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		AB123456789012340000001F /* Views */ = {
+		AB1234567890123400000025 /* Views */ = {
 			isa = PBXGroup;
 			children = (
 				AB1234567890123400000006 /* MainMenuView.swift */,
 				AB1234567890123400000008 /* ScannerView.swift */,
+				AB123456789012340000000A /* SettingsView.swift */,
+				AB123456789012340000000C /* BarcodeUploadView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
 		};
-		AB1234567890123400000020 /* ViewModels */ = {
+		AB1234567890123400000026 /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
-				AB123456789012340000000E /* ScannerViewModel.swift */,
+				AB123456789012340000000E /* MainViewModel.swift */,
+				AB1234567890123400000010 /* ScannerViewModel.swift */,
+				AB1234567890123400000012 /* BarcodeUploadViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
 		};
-		AB1234567890123400000021 /* Models */ = {
+		AB1234567890123400000027 /* Models */ = {
 			isa = PBXGroup;
 			children = (
-				AB1234567890123400000010 /* BarcodeResult.swift */,
+				AB1234567890123400000014 /* BarcodeResult.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
 		};
-		AB1234567890123400000022 /* Services */ = {
+		AB1234567890123400000028 /* Services */ = {
 			isa = PBXGroup;
 			children = (
-				AB1234567890123400000012 /* CameraService.swift */,
+				AB1234567890123400000016 /* CameraService.swift */,
+				AB1234567890123400000018 /* BarcodeService.swift */,
+				AB123456789012340000001A /* DeviceAuthManager.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
 		};
-		AB1234567890123400000023 /* Utilities */ = {
+		AB1234567890123400000029 /* Utilities */ = {
 			isa = PBXGroup;
 			children = (
-				AB1234567890123400000016 /* Constants.swift */,
-				AB1234567890123400000018 /* Extensions.swift */,
+				AB123456789012340000001C /* Constants.swift */,
+				AB123456789012340000001E /* Extensions.swift */,
 			);
 			path = Utilities;
+			sourceTree = "<group>";
+		};
+		AB123456789012340000002A /* Protocols */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Protocols;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		AB1234567890123400000024 /* EnvantoBarkod */ = {
+		AB123456789012340000002B /* EnvantoBarkod */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = AB1234567890123400000025 /* Build configuration list for PBXNativeTarget "EnvantoBarkod" */;
+			buildConfigurationList = AB123456789012340000002C /* Build configuration list for PBXNativeTarget "EnvantoBarkod" */;
 			buildPhases = (
-				AB1234567890123400000026 /* Sources */,
-				AB123456789012340000001B /* Frameworks */,
-				AB1234567890123400000027 /* Resources */,
+				AB123456789012340000002D /* Sources */,
+				AB1234567890123400000021 /* Frameworks */,
+				AB123456789012340000002E /* Resources */,
 			);
 			buildRules = (
 			);
@@ -129,13 +155,13 @@
 			);
 			name = EnvantoBarkod;
 			productName = EnvantoBarkod;
-			productReference = AB1234567890123400000019 /* EnvantoBarkod.app */;
+			productReference = AB1234567890123400000020 /* EnvantoBarkod.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		AB1234567890123400000028 /* Project object */ = {
+		AB123456789012340000002F /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
@@ -143,7 +169,7 @@
 				LastUpgradeCheck = 1500;
 				ORGANIZATIONNAME = "Envanto";
 				TargetAttributes = {
-					AB1234567890123400000024 = {
+					AB123456789012340000002B = {
 						CreatedOnToolsVersion = 15.0;
 						DevelopmentTeam = "";
 						ProvisioningStyle = Manual;
@@ -151,7 +177,7 @@
 					};
 				};
 			};
-			buildConfigurationList = AB1234567890123400000029 /* Build configuration list for PBXProject "EnvantoBarkod" */;
+			buildConfigurationList = AB1234567890123400000030 /* Build configuration list for PBXProject "EnvantoBarkod" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = tr;
 			hasScannedForEncodings = 0;
@@ -160,29 +186,30 @@
 				en,
 				Base,
 			);
-			mainGroup = AB123456789012340000001C /* EnvantoBarkodIOS */;
-			productRefGroup = AB123456789012340000001E /* Products */;
+			mainGroup = AB1234567890123400000022 /* EnvantoBarkodIOS */;
+			productRefGroup = AB1234567890123400000024 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				AB1234567890123400000024 /* EnvantoBarkod */,
+				AB123456789012340000002B /* EnvantoBarkod */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		AB1234567890123400000027 /* Resources */ = {
+		AB123456789012340000002E /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				AB12345678901234ASSETS002 /* Assets.xcassets in Resources */,
+				AB12345678901234INFOPLIST /* Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		AB1234567890123400000026 /* Sources */ = {
+		AB123456789012340000002D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -190,18 +217,24 @@
 				AB1234567890123400000003 /* ContentView.swift in Sources */,
 				AB1234567890123400000005 /* MainMenuView.swift in Sources */,
 				AB1234567890123400000007 /* ScannerView.swift in Sources */,
-				AB123456789012340000000D /* ScannerViewModel.swift in Sources */,
-				AB123456789012340000000F /* BarcodeResult.swift in Sources */,
-				AB1234567890123400000011 /* CameraService.swift in Sources */,
-				AB1234567890123400000015 /* Constants.swift in Sources */,
-				AB1234567890123400000017 /* Extensions.swift in Sources */,
+				AB1234567890123400000009 /* SettingsView.swift in Sources */,
+				AB123456789012340000000B /* BarcodeUploadView.swift in Sources */,
+				AB123456789012340000000D /* MainViewModel.swift in Sources */,
+				AB123456789012340000000F /* ScannerViewModel.swift in Sources */,
+				AB1234567890123400000011 /* BarcodeUploadViewModel.swift in Sources */,
+				AB1234567890123400000013 /* BarcodeResult.swift in Sources */,
+				AB1234567890123400000015 /* CameraService.swift in Sources */,
+				AB1234567890123400000017 /* BarcodeService.swift in Sources */,
+				AB1234567890123400000019 /* DeviceAuthManager.swift in Sources */,
+				AB123456789012340000001B /* Constants.swift in Sources */,
+				AB123456789012340000001D /* Extensions.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		AB123456789012340000002A /* Debug */ = {
+		AB1234567890123400000031 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -269,12 +302,11 @@
 				CLANG_ENABLE_MODULE_DEBUGGING = NO;
 				SUPPORTS_MACCATALYST = NO;
 				ENABLE_BUILD_SYSTEM_CACHING = YES;
-				ONLY_ACTIVE_ARCH = YES;
 				VALIDATE_PRODUCT = NO;
 			};
 			name = Debug;
 		};
-		AB123456789012340000002B /* Release */ = {
+		AB1234567890123400000032 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -333,7 +365,7 @@
 			};
 			name = Release;
 		};
-		AB123456789012340000002C /* Debug */ = {
+		AB1234567890123400000033 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -344,8 +376,9 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Bu uygulama barkod taramak için kamera kullanır.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Bu uygulama fotoğrafları kaydetmek için fotoğraf kütüphanesi erişimi gerektirir.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -375,7 +408,7 @@
 			};
 			name = Debug;
 		};
-		AB123456789012340000002D /* Release */ = {
+		AB1234567890123400000034 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -386,8 +419,9 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_KEY_NSCameraUsageDescription = "Bu uygulama barkod taramak için kamera kullanır.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Bu uygulama fotoğrafları kaydetmek için fotoğraf kütüphanesi erişimi gerektirir.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -415,25 +449,25 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		AB1234567890123400000025 /* Build configuration list for PBXNativeTarget "EnvantoBarkod" */ = {
+		AB123456789012340000002C /* Build configuration list for PBXNativeTarget "EnvantoBarkod" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				AB123456789012340000002C /* Debug */,
-				AB123456789012340000002D /* Release */,
+				AB1234567890123400000033 /* Debug */,
+				AB1234567890123400000034 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		AB1234567890123400000029 /* Build configuration list for PBXProject "EnvantoBarkod" */ = {
+		AB1234567890123400000030 /* Build configuration list for PBXProject "EnvantoBarkod" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				AB123456789012340000002A /* Debug */,
-				AB123456789012340000002B /* Release */,
+				AB1234567890123400000031 /* Debug */,
+				AB1234567890123400000032 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
-	rootObject = AB1234567890123400000028 /* Project object */;
-} 
+	rootObject = AB123456789012340000002F /* Project object */;
+}
