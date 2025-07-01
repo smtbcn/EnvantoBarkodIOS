@@ -170,7 +170,7 @@
 				TargetAttributes = {
 					AB123456789012340000002B = {
 						CreatedOnToolsVersion = 15.0;
-						DevelopmentTeam = "";
+						DevelopmentTeam = QDW7T6Q94X;
 						ProvisioningStyle = Automatic;
 						LastSwiftMigration = 1500;
 						TestTargetID = "";
@@ -390,7 +390,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = QDW7T6Q94X;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Envanto Barkod";
@@ -434,7 +434,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = QDW7T6Q94X;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Envanto Barkod";
