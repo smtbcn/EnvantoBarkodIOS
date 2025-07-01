@@ -155,7 +155,7 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
     // MARK: - Online Customer Search
     private func searchCustomersOnline(query: String) async throws -> [Customer] {
         guard let baseURL = Bundle.main.object(forInfoDictionaryKey: "API_BASE_URL") as? String,
-              let url = URL(string: "\(baseURL)/customers_search.php") else {
+              let url = URL(string: "\(baseURL)customers.asp") else {
             throw NetworkError.invalidURL
         }
         
