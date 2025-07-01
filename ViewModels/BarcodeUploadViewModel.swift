@@ -301,13 +301,34 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
     }
     
     private func loadSavedImagesForCustomer(_ customerName: String) {
-        // Belirli müşterinin resimlerini yükle
-        savedImages = loadAllSavedImages().filter { $0.customerName == customerName }
+        // ImageStorageManager ile müşteri resimlerini yükle
+        let imagePaths = ImageStorageManager.listCustomerImages(customerName: customerName)
+        savedImages = imagePaths.map { path in
+            SavedImage(
+                customerName: customerName,
+                imagePath: path,
+                localPath: path,
+                uploadDate: getFileCreationDate(path: path),
+                isUploaded: false // TODO: Upload durumu kontrol edilecek
+            )
+        }
     }
     
     private func loadAllSavedImages() -> [SavedImage] {
-        // TODO: Core Data veya dosya sistemi ile implement edilecek
+        // Şimdilik sadece seçili müşterinin resimlerini döndür
+        if let customer = selectedCustomer {
+            return savedImages.filter { $0.customerName == customer.name }
+        }
         return []
+    }
+    
+    private func getFileCreationDate(path: String) -> Date {
+        do {
+            let attributes = try FileManager.default.attributesOfItem(atPath: path)
+            return attributes[.creationDate] as? Date ?? Date()
+        } catch {
+            return Date()
+        }
     }
     
     // MARK: - Progress Management (Android'deki gibi)
@@ -338,8 +359,8 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
                 // Her resim için progress güncelle
                 updateProgress(current: index, total: images.count)
                 
-                // Resmi sunucuya yükle
-                try await uploadSingleImage(image: image, customer: customer)
+                // Android'deki direktSaveImage mantığı - Önce cihaza kaydet
+                await directSaveImage(image: image, customer: customer, isGallery: true)
                 
                 // Kısa bekleme
                 try await Task.sleep(nanoseconds: 100_000_000) // 0.1 saniye
@@ -350,11 +371,32 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
             isUploading = false
             
             // Kayıtlı resimleri yenile
-            loadSavedImages()
+            loadSavedImagesForCustomer(customer.name)
             
         } catch {
             isUploading = false
             showError("Yükleme hatası: \(error.localizedDescription)")
+        }
+    }
+    
+    // MARK: - Direct Save Image (Android Pattern)
+    @MainActor
+    private func directSaveImage(image: UIImage, customer: Customer, isGallery: Bool) async {
+        do {
+            // ImageStorageManager ile resmi cihaza kaydet
+            if let savedPath = ImageStorageManager.saveImage(
+                image: image, 
+                customerName: customer.name, 
+                isGallery: isGallery
+            ) {
+                print("✅ Resim başarıyla kaydedildi: \(savedPath)")
+                
+                // TODO: Veritabanına kayıt ve sunucuya upload işlemleri burada yapılacak
+                // Android'deki gibi: dbHelper.addBarkodResim() ve server upload
+                
+            } else {
+                showError("❌ Resim kaydetme hatası")
+            }
         }
     }
     
@@ -385,16 +427,29 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         }
         
         do {
-            var uploadedImages: [UIImage] = []
-            
-            for photo in photos {
+            for (index, photo) in photos.enumerated() {
+                // Progress güncelle
+                await MainActor.run {
+                    updateProgress(current: index, total: photos.count)
+                }
+                
+                // PhotosPickerItem'den resim yükle ve kaydet
                 if let data = try await photo.loadTransferable(type: Data.self),
                    let image = UIImage(data: data) {
-                    uploadedImages.append(image)
+                    
+                    // Galeri resmini direk kaydet (Android directSaveImage mantığı)
+                    await directSaveImage(image: image, customer: customer, isGallery: true)
                 }
             }
             
-            await performImageUpload(images: uploadedImages, customer: customer)
+            await MainActor.run {
+                // Tamamlandı
+                updateProgress(current: photos.count, total: photos.count)
+                isUploading = false
+                
+                // Kayıtlı resimleri yenile
+                loadSavedImagesForCustomer(customer.name)
+            }
             
         } catch {
             await MainActor.run {
@@ -415,15 +470,12 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
     
     // MARK: - Delete Image
     func deleteImage(_ image: SavedImage) {
-        savedImages.removeAll { $0.id == image.id }
-        
-        // TODO: Gerçek dosya silme implementasyonu
-        // FileManager ile dosyayı sil
-        do {
-            try FileManager.default.removeItem(atPath: image.localPath)
-            print("🗑️ Resim silindi: \(image.localPath)")
-        } catch {
-            print("🗑️ Resim silme hatası: \(error.localizedDescription)")
+        // ImageStorageManager ile dosyayı sil
+        if ImageStorageManager.deleteImage(at: image.localPath) {
+            savedImages.removeAll { $0.id == image.id }
+            print("🗑️ Resim başarıyla silindi: \(image.localPath)")
+        } else {
+            showError("Resim silme hatası")
         }
     }
     
@@ -435,7 +487,16 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
             showingCamera = false
         }
         
-        await performImageUpload(images: [image], customer: customer)
+        // Kamera resmini direk kaydet (Android directSaveImage mantığı)
+        await directSaveImage(image: image, customer: customer, isGallery: false)
+        
+        await MainActor.run {
+            isUploading = false
+            uploadProgress = 1.0
+            
+            // Kayıtlı resimleri yenile
+            loadSavedImagesForCustomer(customer.name)
+        }
     }
 }
 
