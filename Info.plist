@@ -5,7 +5,7 @@
     <key>UIApplicationSceneManifest</key>
     <dict>
         <key>UIApplicationSupportsMultipleScenes</key>
-        <false/>
+        <true/>
         <key>UISceneConfigurations</key>
         <dict>
             <key>UIWindowSceneSessionRoleApplication</key>
@@ -34,19 +34,19 @@
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.0</string>
+    <string>$(MARKETING_VERSION)</string>
     <key>CFBundleVersion</key>
-    <string>1</string>
+    <string>$(CURRENT_PROJECT_VERSION)</string>
     
     <!-- İzinler -->
     <key>NSCameraUsageDescription</key>
     <string>Bu uygulama barkod taramak için kamera kullanır.</string>
     <key>NSPhotoLibraryUsageDescription</key>
-    <string>Bu uygulama fotoğrafları kaydetmek için fotoğraf kütüphanesi erişimi gerektirir.</string>
+    <string>Bu uygulama resim seçmek için fotoğraf kitaplığını kullanır.</string>
     
     <!-- API Ayarları -->
     <key>API_BASE_URL</key>
-    <string>https://envanto.app/barkod_yukle_android/</string>
+    <string>https://www.example.com/api/</string>
     
     <!-- Güvenlik -->
     <key>NSAppTransportSecurity</key>
@@ -94,8 +94,7 @@
     <!-- Gerekli Cihaz Özellikleri -->
     <key>UIRequiredDeviceCapabilities</key>
     <array>
-        <string>camera-flash</string>
-        <string>auto-focus-camera</string>
+        <string>armv7</string>
     </array>
     
     <!-- Minimum iOS Versiyonu -->
@@ -107,5 +106,14 @@
     <true/>
     <key>LSSupportsOpeningDocumentsInPlace</key>
     <true/>
+    
+    <!-- Internationalization -->
+    <key>CFBundleDevelopmentRegion</key>
+    <string>tr</string>
+    <key>CFBundleLocalizations</key>
+    <array>
+        <string>tr</string>
+        <string>en</string>
+    </array>
 </dict>
 </plist> 

@@ -1,9 +1,13 @@
 import SwiftUI
+import UIKit
+import Foundation
 
 // MARK: - Bundle Extensions
 extension Bundle {
     var appVersionLong: String {
-        return "\(appVersion) (\(appBuild))"
+        let version = infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+        let build = infoDictionary?["CFBundleVersion"] as? String ?? "1"
+        return "\(version) (\(build))"
     }
     
     var appVersion: String {
@@ -94,4 +98,21 @@ extension UIApplication {
             .flatMap { $0.windows }
             .first { $0.isKeyWindow }
     }
-} 
+}
+
+// MARK: - Device Identifier (Android uyumlu)
+class DeviceIdentifier {
+    static func getUniqueDeviceId() -> String {
+        // iOS'ta Android'deki Settings.Secure.ANDROID_ID benzeri
+        if let deviceId = UserDefaults.standard.string(forKey: "unique_device_id") {
+            return deviceId
+        }
+        
+        // Yeni cihaz ID'si oluştur (UUID based)
+        let newDeviceId = UUID().uuidString
+        UserDefaults.standard.set(newDeviceId, forKey: "unique_device_id")
+        return newDeviceId
+    }
+}
+
+ 

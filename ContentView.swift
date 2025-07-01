@@ -37,6 +37,8 @@ struct ContentView: View {
 // MARK: - App State Manager
 class AppStateManager: ObservableObject {
     @Published var showScanner = false
+    @Published var currentTab = 0
+    @Published var isAuthenticated = false
     private var pendingURLScheme = false
     
     func openScannerFromURLScheme() {
@@ -57,6 +59,20 @@ class AppStateManager: ObservableObject {
     func closeScannerToMainMenu() {
         showScanner = false
         pendingURLScheme = false
+    }
+    
+    // Android MainActivity benzeri navigation methods
+    func openScanner() {
+        showScanner = true
+    }
+    
+    func closeScanner() {
+        showScanner = false
+    }
+    
+    func resetNavigation() {
+        showScanner = false
+        currentTab = 0
     }
 }
 

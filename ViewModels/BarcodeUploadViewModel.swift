@@ -1,5 +1,6 @@
 import SwiftUI
 import Foundation
+import Combine
 
 // MARK: - Customer Model (API'den gelen format: {"musteri_adi":"..."})
 struct Customer: Codable {
@@ -7,10 +8,12 @@ struct Customer: Codable {
 }
 
 // MARK: - BarcodeUploadViewModel
+@MainActor
 class BarcodeUploadViewModel: ObservableObject {
     
     // MARK: - Published Properties
     @Published var isLoading = false
+    @Published var isCheckingAuth = false
     @Published var isAuthSuccess = false
     @Published var customerSearchText = ""
     @Published var searchResults: [String] = []
@@ -31,11 +34,13 @@ class BarcodeUploadViewModel: ObservableObject {
     }
     
     func checkDeviceAuthorization() {
+        isCheckingAuth = true
         isLoading = true
         
         DeviceAuthManager.checkDeviceAuthorization(callback: DeviceAuthCallbackImpl(
             authSuccessHandler: { [weak self] in
                 DispatchQueue.main.async {
+                    self?.isCheckingAuth = false
                     self?.isLoading = false
                     self?.isAuthSuccess = true
                     self?.checkAndUpdateCustomerCache()
@@ -43,6 +48,7 @@ class BarcodeUploadViewModel: ObservableObject {
             },
             authFailureHandler: { [weak self] in
                 DispatchQueue.main.async {
+                    self?.isCheckingAuth = false
                     self?.isLoading = false
                     self?.isAuthSuccess = false
                 }

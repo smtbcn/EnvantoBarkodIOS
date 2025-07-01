@@ -167,6 +167,8 @@
 				TargetAttributes = {
 					AB1234567890123400000024 = {
 						CreatedOnToolsVersion = 15.0;
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
 					};
 				};
 			};
@@ -177,6 +179,7 @@
 			knownRegions = (
 				tr,
 				en,
+				Base,
 			);
 			mainGroup = AB123456789012340000001C /* EnvantoBarkodIOS */;
 			productRefGroup = AB123456789012340000001E /* Products */;
