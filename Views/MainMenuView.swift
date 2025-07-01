@@ -6,6 +6,7 @@ struct MainMenuView: View {
     @State private var showingPermissionAlert = false
     @State private var showingBarcodeUpload = false
     @State private var showingSavedImages = false
+    @State private var showingDeviceAuthDialog = false
     @EnvironmentObject var appState: AppStateManager
     
     var body: some View {
@@ -39,7 +40,7 @@ struct MainMenuView: View {
             
             Spacer()
             
-                // Ana menü butonları
+                // Ana menü butonları (Android MainActivity ile birebir aynı)
             VStack(spacing: 16) {
                 HStack(spacing: 16) {
                             // Barkod Tara (İzin kontrolü: sadece kamera izni)
@@ -56,7 +57,7 @@ struct MainMenuView: View {
                         }
                     }
                     
-                            // Barkod Yükle (Cihaz yetki kontrolü burada değil, sayfa içinde)
+                            // Barkod Yükle (Cihaz yetki kontrolü sayfa içinde)
                     GridButton(
                         title: "Barkod Yükle",
                         icon: "square.and.arrow.up",
@@ -67,22 +68,24 @@ struct MainMenuView: View {
                 }
                 
                 HStack(spacing: 16) {
-                            // Müşteri Resimleri (Cihaz yetki kontrolü sayfa içinde)
+                            // Müşteri Resimleri (Android CustomerImagesActivity benzeri - cihaz yetki kontrolü Android gibi)
                     GridButton(
-                                title: "Kaydedilen Resimler",
+                                title: "Müşteri Resimleri",
                         icon: "photo.on.rectangle",
                                 color: .purple
                     ) {
-                                showingSavedImages = true
+                        // Android gibi cihaz yetki kontrolü yap
+                        checkDeviceAuthAndNavigate(to: .customerImages)
                     }
                     
-                            // Araçtaki Ürünler (Cihaz yetki kontrolü sayfa içinde)
+                            // Kaydedilen Resimler (Barkod resimleri - Android gibi cihaz yetki kontrolü)
                     GridButton(
-                        title: "Araçtaki Ürünler",
-                        icon: "car.fill",
+                        title: "Kaydedilen Resimler",
+                        icon: "photo.stack",
                         color: .green
                     ) {
-                                // Vehicle products görünümüne git (cihaz kontrolü sayfa içinde)
+                        // Android gibi cihaz yetki kontrolü yap
+                        checkDeviceAuthAndNavigate(to: .savedImages)
                     }
                 }
             }
@@ -144,10 +147,70 @@ struct MainMenuView: View {
             }
             Button("İptal", role: .cancel) { }
         } message: {
-            Text("Bu özelliği kullanmak için kamera izni gerekli.")
+            Text("Bu özelliği kullanmek için kamera izni gerekli.")
         }
         .onAppear {
             viewModel.checkPermissions()
+        }
+        .onChange(of: showingDeviceAuthDialog) { showing in
+            if showing {
+                // Android benzeri device auth dialog göster
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                       let window = windowScene.windows.first,
+                       let rootViewController = window.rootViewController {
+                        
+                        DeviceAuthManager.showDeviceAuthDialog(on: rootViewController) { success in
+                            showingDeviceAuthDialog = false
+                            if success {
+                                // Yetki verildiyse target sayfaya git
+                                DispatchQueue.main.async {
+                                    switch pendingNavigation {
+                                    case .customerImages:
+                                        showingSavedImages = true // Müşteri resimleri için SavedImagesView kullan
+                                    case .savedImages:
+                                        showingSavedImages = true
+                                    case .none:
+                                        break
+                                    }
+                                    pendingNavigation = nil
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // MARK: - Navigation Target Enum (Android MainActivity benzeri)
+    private enum NavigationTarget {
+        case customerImages // Android CustomerImagesActivity
+        case savedImages // Android'deki barkod resimleri
+    }
+    
+    @State private var pendingNavigation: NavigationTarget?
+    
+    // MARK: - Device Auth Check (Android benzeri)
+    private func checkDeviceAuthAndNavigate(to target: NavigationTarget) {
+        let deviceId = DeviceIdentifier.getUniqueDeviceId()
+        
+        // Hızlı yerel kontrol (Android benzeri)
+        let key = "local_device_auth_\(deviceId)"
+        let isLocallyAuthorized = UserDefaults.standard.bool(forKey: key)
+        
+        if isLocallyAuthorized {
+            // Yetki var, direkt sayfaya git
+            DispatchQueue.main.async {
+                switch target {
+                case .customerImages, .savedImages:
+                    showingSavedImages = true
+                }
+            }
+        } else {
+            // Yetki yok, dialog göster (Android benzeri)
+            pendingNavigation = target
+            showingDeviceAuthDialog = true
         }
     }
 }

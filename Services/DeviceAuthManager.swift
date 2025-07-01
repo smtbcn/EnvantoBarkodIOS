@@ -36,6 +36,70 @@ class DeviceAuthManager {
     static let shared = DeviceAuthManager()
     private init() {}
     
+    // MARK: - Hızlı cihaz yetki kontrolü (Android showPermissionRequiredDialog benzeri)
+    @MainActor
+    static func showDeviceAuthDialog(on presentingController: UIViewController? = nil, onAuth: @escaping (Bool) -> Void) {
+        let deviceId = DeviceIdentifier.getUniqueDeviceId()
+        
+        // Önce hızlı yerel kontrol yap
+        if checkLocalAuthorization(deviceId: deviceId) {
+            onAuth(true)
+            return
+        }
+        
+        // Yerel yetki yok, kullanıcıya bilgi ver
+        let alert = UIAlertController(
+            title: "🔐 Cihaz Yetkilendirme Gerekli",
+            message: """
+            Bu özelliği kullanabilmek için cihazınızın yetkilendirilmesi gerekiyor.
+            
+            📱 Uygulama düzgün çalışabilmesi için cihaz yetkilendirmesi gereklidir.
+            
+            Cihaz Kimliği: \(deviceId)
+            
+            Bu kimliği sistem yöneticinize ileterek yetkilendirme talebinde bulunun.
+            """,
+            preferredStyle: .alert
+        )
+        
+        // Cihaz ID'yi kopyala butonu
+        alert.addAction(UIAlertAction(title: "📋 Cihaz Kimliği Kopyala", style: .default) { _ in
+            UIPasteboard.general.string = deviceId
+            showToast(message: "Cihaz kimliği panoya kopyalandı")
+            onAuth(false)
+        })
+        
+        // Yetkilendirmeyi kontrol et butonu
+        alert.addAction(UIAlertAction(title: "🔄 Yetkilendirmeyi Kontrol Et", style: .default) { _ in
+            // Tam yetkilendirme kontrolü yap
+            let callback = SimpleDeviceAuthCallback { success in
+                DispatchQueue.main.async {
+                    if success {
+                        showToast(message: "✅ Cihaz yetkilendirildi!")
+                    } else {
+                        showToast(message: "❌ Cihaz henüz yetkilendirilmemiş")
+                    }
+                    onAuth(success)
+                }
+            }
+            checkDeviceAuthorization(callback: callback)
+        })
+        
+        // İptal butonu
+        alert.addAction(UIAlertAction(title: "İptal", style: .cancel) { _ in
+            onAuth(false)
+        })
+        
+        // Dialog'u göster
+        if let presenter = presentingController {
+            presenter.present(alert, animated: true)
+        } else if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                  let window = windowScene.windows.first,
+                  let rootViewController = window.rootViewController {
+            rootViewController.present(alert, animated: true)
+        }
+    }
+    
     // MARK: - Ana cihaz yetkilendirme kontrol metodu
     static func checkDeviceAuthorization(callback: DeviceAuthCallback) {
         Task {
@@ -254,6 +318,31 @@ class DeviceAuthManager {
         }, completion: { _ in
             toastLabel.removeFromSuperview()
         })
+    }
+}
+
+// MARK: - Simple Callback Implementation
+class SimpleDeviceAuthCallback: DeviceAuthCallback {
+    private let completion: (Bool) -> Void
+    
+    init(completion: @escaping (Bool) -> Void) {
+        self.completion = completion
+    }
+    
+    func onAuthSuccess() {
+        completion(true)
+    }
+    
+    func onAuthFailure() {
+        completion(false)
+    }
+    
+    func onShowLoading() {
+        // Basit callback için loading gösterme yok
+    }
+    
+    func onHideLoading() {
+        // Basit callback için loading gizleme yok
     }
 }
 
