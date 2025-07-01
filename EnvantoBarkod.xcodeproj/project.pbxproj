@@ -44,6 +44,7 @@
 		AB123456789012340000001C /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		AB123456789012340000001E /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
 		AB12345678901234ASSETS001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		AB123456789012340000001F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 
 /* End PBXFileReference section */
 
@@ -70,6 +71,7 @@
 				AB1234567890123400000029 /* Utilities */,
 				AB123456789012340000002A /* Protocols */,
 				AB12345678901234ASSETS001 /* Assets.xcassets */,
+				AB123456789012340000001F /* Info.plist */,
 				AB1234567890123400000024 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -392,12 +394,11 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = QDW7T6Q94X;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Envanto Barkod";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Bu uygulama barkod taramak için kamera kullanır.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Bu uygulama fotoğrafları kaydetmek için fotoğraf kütüphanesi erişimi gerektirir.";
-				"INFOPLIST_KEY_CFBundleURLTypes[0].CFBundleURLName" = "com.envanto.barcode.ios";
-				"INFOPLIST_KEY_CFBundleURLTypes[0].CFBundleURLSchemes[0]" = "envantobarcode";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -438,12 +439,11 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = QDW7T6Q94X;
 				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Envanto Barkod";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Bu uygulama barkod taramak için kamera kullanır.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Bu uygulama fotoğrafları kaydetmek için fotoğraf kütüphanesi erişimi gerektirir.";
-				"INFOPLIST_KEY_CFBundleURLTypes[0].CFBundleURLName" = "com.envanto.barcode.ios";
-				"INFOPLIST_KEY_CFBundleURLTypes[0].CFBundleURLSchemes[0]" = "envantobarcode";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
