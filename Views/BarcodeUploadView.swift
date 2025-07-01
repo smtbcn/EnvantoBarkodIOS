@@ -684,7 +684,7 @@ struct CustomerRow: View {
     }
 }
 
-// MARK: - Customer Image Card (Müşteri bazlı resim kartı)
+// MARK: - Customer Image Card (Android Resim Yükleme tasarımı)
 struct CustomerImageCard: View {
     let group: CustomerImageGroup
     let onDeleteImage: (SavedImage) -> Void
@@ -709,22 +709,12 @@ struct CustomerImageCard: View {
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(.primary)
                         
-                        Text("\(group.imageCount) resim • \(formattedDate(group.lastUpdated))")
+                        Text("Kayıtlı Resimler (\(group.imageCount))")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
                     
                     Spacer()
-                    
-                    // Resim sayısı badge
-                    Text("\(group.imageCount)")
-                        .font(.caption)
-                        .fontWeight(.medium)
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color.green)
-                        .cornerRadius(10)
                     
                     // Expand/Collapse ikonu
                     Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
@@ -736,46 +726,133 @@ struct CustomerImageCard: View {
             }
             .buttonStyle(PlainButtonStyle())
             
-            // Resim grid'i (expandable)
+            // Resim listesi (Android like - vertical list)
             if isExpanded {
-                VStack(spacing: 12) {
+                VStack(spacing: 0) {
                     Divider()
                         .padding(.horizontal)
                     
-                    LazyVGrid(columns: [
-                        GridItem(.flexible()),
-                        GridItem(.flexible()),
-                        GridItem(.flexible()),
-                        GridItem(.flexible())
-                    ], spacing: 12) {
+                    LazyVStack(spacing: 0) {
                         ForEach(group.images) { image in
-                            SavedImageCard(image: image) {
+                            AndroidImageRow(image: image) {
                                 onDeleteImage(image)
+                            }
+                            
+                            // Son item değilse divider ekle
+                            if image.id != group.images.last?.id {
+                                Divider()
+                                    .padding(.horizontal)
                             }
                         }
                     }
-                    .padding(.horizontal)
-                    .padding(.bottom)
+                    .padding(.bottom, 8)
                 }
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.systemGray6))
-                .shadow(color: .black.opacity(0.05), radius: 3, x: 0, y: 2)
+                .fill(Color(.systemBackground))
+                .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
         )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color(.systemGray4), lineWidth: 0.5)
+        )
+    }
+}
+
+// MARK: - Android Image Row (Resim Yükleme'deki gibi)
+struct AndroidImageRow: View {
+    let image: SavedImage
+    let onDelete: () -> Void
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            // Sol: Resim preview (Android like)
+            AsyncImage(url: URL(fileURLWithPath: image.localPath)) { phase in
+                switch phase {
+                case .success(let image):
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 50, height: 50)
+                        .clipped()
+                        .cornerRadius(6)
+                        
+                case .failure(_):
+                    Image(systemName: "photo")
+                        .font(.system(size: 20))
+                        .foregroundColor(.secondary)
+                        .frame(width: 50, height: 50)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(6)
+                        
+                case .empty:
+                    ProgressView()
+                        .frame(width: 50, height: 50)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(6)
+                        
+                @unknown default:
+                    EmptyView()
+                }
+            }
+            
+            // Orta: Dosya bilgileri (Android like)
+            VStack(alignment: .leading, spacing: 4) {
+                // Dosya adı (sadece filename)
+                Text(extractFileName(from: image.localPath))
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                
+                // Upload durumu placeholder (şimdilik boş)
+                HStack(spacing: 4) {
+                    // Boş alan - gelecekte "SUNUCUYA YÜKLENDİ" badge'i buraya gelecek
+                    Spacer()
+                }
+                .frame(height: 16)
+                
+                // Müşteri ve tarih bilgisi
+                Text("Müşteri: \(image.customerName)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+                
+                Text("Tarih: \(formattedDate(image.uploadDate)) | Yükleyen: Samet BİÇEN Android")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+            }
+            
+            Spacer()
+            
+            // Sağ: Silme butonu (Android like)
+            Button(action: onDelete) {
+                Image(systemName: "trash")
+                    .font(.system(size: 18))
+                    .foregroundColor(.red)
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(Color(.systemBackground))
+    }
+    
+    private func extractFileName(from path: String) -> String {
+        return URL(fileURLWithPath: path).lastPathComponent
     }
     
     private func formattedDate(_ date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.dateStyle = .short
-        formatter.timeStyle = .short
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
         return formatter.string(from: date)
     }
 }
 
-// MARK: - Saved Image Card
+// MARK: - Saved Image Card (Legacy - artık kullanılmıyor)
 struct SavedImageCard: View {
     let image: SavedImage
     let onDelete: () -> Void
