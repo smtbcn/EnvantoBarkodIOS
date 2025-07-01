@@ -565,6 +565,26 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         }
     }
     
+    // MARK: - Delete Customer Folder (Tüm müşteri klasörünü sil)
+    func deleteCustomerFolder(_ customerName: String) {
+        Task {
+            // ImageStorageManager ile müşteri klasörünü sil
+            if await ImageStorageManager.deleteCustomerImages(customerName: customerName) {
+                await MainActor.run {
+                    // SavedImages'dan bu müşteriye ait tüm resimleri kaldır
+                    savedImages.removeAll { $0.customerName == customerName }
+                    print("🗑️ Müşteri klasörü başarıyla silindi: \(customerName)")
+                    // Müşteri gruplarını güncelle
+                    loadCustomerImageGroups()
+                }
+            } else {
+                await MainActor.run {
+                    showError("Müşteri klasörü silme hatası")
+                }
+            }
+        }
+    }
+    
     // MARK: - Handle Captured Image (Kamera için - Sürekli çekim)
     func handleCapturedImage(_ image: UIImage, customer: Customer) async {
         // Kamerayı açık bırak, sadece background'da kaydet

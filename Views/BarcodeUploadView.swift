@@ -343,6 +343,8 @@ struct BarcodeUploadView: View {
     @State private var showingAlert = false
     @State private var alertMessage = ""
     @State private var expandedCustomerId: String? = nil // Accordion state
+    @State private var showingDeleteCustomerAlert = false
+    @State private var customerToDelete: String = ""
     
     var body: some View {
         NavigationView {
@@ -368,6 +370,20 @@ struct BarcodeUploadView: View {
                 Button("Tamam") { }
             } message: {
                 Text(alertMessage)
+            }
+            .alert("Müşteri Klasörünü Sil", isPresented: $showingDeleteCustomerAlert) {
+                Button("İptal", role: .cancel) { }
+                Button("Sil", role: .destructive) {
+                    // Müşteri klasörünü sil
+                    viewModel.deleteCustomerFolder(customerToDelete)
+                    // Eğer silinen müşteri açıksa accordion'u kapat
+                    if expandedCustomerId == customerToDelete {
+                        expandedCustomerId = nil
+                    }
+                    customerToDelete = ""
+                }
+            } message: {
+                Text("'\(customerToDelete)' müşterisine ait tüm resimler silinecek. Bu işlem geri alınamaz.")
             }
             .onChange(of: selectedPhotos) { photos in
                 Task {
@@ -643,6 +659,11 @@ struct BarcodeUploadView: View {
                                     expandedCustomerId = group.customerName // Farklı müşteriye basıldıysa onları kapat, bunu aç
                                 }
                             },
+                            onDeleteCustomer: {
+                                // Onay dialogu göster
+                                customerToDelete = group.customerName
+                                showingDeleteCustomerAlert = true
+                            },
                             onDeleteImage: { image in
                                 viewModel.deleteImage(image)
                             }
@@ -699,6 +720,7 @@ struct CustomerImageCard: View {
     let group: CustomerImageGroup
     let isExpanded: Bool
     let onToggle: () -> Void
+    let onDeleteCustomer: () -> Void
     let onDeleteImage: (SavedImage) -> Void
     
     var body: some View {
@@ -724,6 +746,16 @@ struct CustomerImageCard: View {
                     }
                     
                     Spacer()
+                    
+                    // Müşteri klasörü silme butonu
+                    Button(action: {
+                        onDeleteCustomer()
+                    }) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 16))
+                            .foregroundColor(.red)
+                    }
+                    .buttonStyle(PlainButtonStyle())
                     
                     // Expand/Collapse ikonu
                     Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
