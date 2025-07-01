@@ -1,5 +1,6 @@
 import SwiftUI
 import Foundation
+import PhotosUI
 
 // MARK: - Customer Model
 struct Customer: Codable, Identifiable, Equatable {
