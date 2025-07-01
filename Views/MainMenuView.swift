@@ -153,8 +153,6 @@ struct MainMenuView: View {
     }
 }
 
-
-
 struct GridButton: View {
     let title: String
     let icon: String
