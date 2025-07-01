@@ -240,6 +240,14 @@ struct BarcodeUploadView: View {
                 .font(.headline)
                 .fontWeight(.semibold)
             
+            // Debug butonu - Path'leri kontrol et
+            Button("📱 Path'leri Kontrol Et") {
+                ImageStorageManager.printDocumentsPath()
+            }
+            .font(.caption)
+            .foregroundColor(.orange)
+            .padding(.vertical, 4)
+            
             // Android like button layout
             HStack(spacing: 12) {
                 // Kamera butonu (birincil - Android like)

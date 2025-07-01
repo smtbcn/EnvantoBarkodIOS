@@ -11,6 +11,14 @@ class ImageStorageManager {
         // App Documents'a kaydet (Files uygulamasından erişilebilir)
         if let documentsPath = saveToAppDocuments(image: image, customerName: customerName, isGallery: isGallery) {
             print("✅ App Documents'a kaydedildi: \(documentsPath)")
+            
+            // Debug: Dosya gerçekten var mı kontrol et
+            if FileManager.default.fileExists(atPath: documentsPath) {
+                print("✅ Dosya doğrulandı: \(documentsPath)")
+            } else {
+                print("❌ Dosya bulunamadı: \(documentsPath)")
+            }
+            
             return documentsPath
         }
         
@@ -18,12 +26,42 @@ class ImageStorageManager {
         return nil
     }
     
+    // MARK: - Debug: Print actual Documents path
+    static func printDocumentsPath() {
+        if let documentsDir = getAppDocumentsDirectory() {
+            print("📱 ACTUAL Documents Path: \(documentsDir.path)")
+            let envantoDir = documentsDir.appendingPathComponent("Envanto")
+            print("📱 ACTUAL Envanto Path: \(envantoDir.path)")
+            
+            // Envanto klasörü var mı kontrol et
+            if FileManager.default.fileExists(atPath: envantoDir.path) {
+                print("✅ Envanto klasörü mevcut")
+                
+                do {
+                    let contents = try FileManager.default.contentsOfDirectory(atPath: envantoDir.path)
+                    print("📁 Envanto içindeki klasörler: \(contents)")
+                } catch {
+                    print("❌ Envanto klasörü içeriği okunamadı: \(error)")
+                }
+            } else {
+                print("❌ Envanto klasörü mevcut değil")
+            }
+        } else {
+            print("❌ Documents directory alınamadı")
+        }
+    }
+    
     // MARK: - Save to App Documents (Files App Access)
     private static func saveToAppDocuments(image: UIImage, customerName: String, isGallery: Bool) -> String? {
+        // Debug: Path'i yazdır
+        printDocumentsPath()
+        
         guard let customerDir = getAppDocumentsCustomerDir(for: customerName) else {
             print("❌ App Documents müşteri klasörü alınamadı")
             return nil
         }
+        
+        print("📁 Müşteri klasörü: \(customerDir.path)")
         
         // Android'deki gibi dosya adı oluştur
         let fileName = generateFileName(customerName: customerName, isGallery: isGallery)
@@ -31,6 +69,8 @@ class ImageStorageManager {
         
         // Aynı isimde dosya varsa sayı ekle (Android mantığı)
         let finalPath = getUniqueFilePath(basePath: filePath)
+        
+        print("💾 Kaydetme yolu: \(finalPath.path)")
         
         // Resmi JPEG olarak kaydet
         guard let imageData = image.jpegData(compressionQuality: 0.8) else {
@@ -41,6 +81,13 @@ class ImageStorageManager {
         do {
             try imageData.write(to: finalPath)
             print("✅ App Documents'a kaydedildi: \(finalPath.path)")
+            
+            // Dosya boyutunu da kontrol et
+            if let attributes = try? FileManager.default.attributesOfItem(atPath: finalPath.path),
+               let fileSize = attributes[.size] as? Int64 {
+                print("📏 Dosya boyutu: \(fileSize) bytes")
+            }
+            
             return finalPath.path
         } catch {
             print("❌ App Documents kaydetme hatası: \(error.localizedDescription)")
