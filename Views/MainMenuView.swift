@@ -1,267 +1,221 @@
 import SwiftUI
 
 struct MainMenuView: View {
-    @StateObject private var viewModel = MainViewModel()
+    @State private var showingScanner = false
+    @State private var showingUpload = false
+    @State private var showingCustomerImages = false
+    @State private var showingVehicleProducts = false
     @State private var showingSettings = false
-    @State private var showingPermissionAlert = false
-    @State private var showingBarcodeUpload = false
-    @State private var showingSavedImages = false
-    @State private var showingDeviceAuthDialog = false
-    @EnvironmentObject var appState: AppStateManager
     
     var body: some View {
-        ZStack {
-            // Ana içerik
-        VStack(spacing: 20) {
-            // Logo ve başlık
-            VStack(spacing: 16) {
-                // App Logo - Özel EnvantoLogo image set
-                Image("EnvantoLogo")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 120, height: 120)
-                    .clipShape(RoundedRectangle(cornerRadius: 24))
-                    .shadow(color: Color.black.opacity(0.2), radius: 8, x: 0, y: 4)
-                
-                // Başlık
-                Text("Envanto Barkod")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                    .foregroundColor(.primary)
-                
-                // Açıklama metni
-                Text("Barkod tarama ve yükleme işlemlerinizi kolayca gerçekleştirin")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
-            }
-            .padding(.top, 20)
-            
-            Spacer()
-            
-                // Ana menü butonları (Android MainActivity ile birebir aynı)
-            VStack(spacing: 16) {
-                HStack(spacing: 16) {
-                            // Barkod Tara (İzin kontrolü: sadece kamera izni)
-                    GridButton(
-                        title: "Barkod Tara",
-                        icon: "qrcode.viewfinder",
-                        color: .blue
-                    ) {
-                        if viewModel.hasRequiredPermissions {
-                            // Android mantık: AppStateManager ile scanner aç
-                            appState.showScanner = true
-                        } else {
-                            showingPermissionAlert = true
-                        }
-                    }
-                    
-                            // Barkod Yükle (Cihaz yetki kontrolü sayfa içinde)
-                    GridButton(
-                        title: "Barkod Yükle",
-                        icon: "square.and.arrow.up",
-                        color: .orange
-                    ) {
-                                showingBarcodeUpload = true
-                    }
-                }
-                
-                HStack(spacing: 16) {
-                            // Müşteri Resimleri (Android CustomerImagesActivity benzeri - cihaz yetki kontrolü Android gibi)
-                    GridButton(
-                                title: "Müşteri Resimleri",
-                        icon: "photo.on.rectangle",
-                                color: .purple
-                    ) {
-                        // Android gibi cihaz yetki kontrolü yap
-                        checkDeviceAuthAndNavigate(to: .customerImages)
-                    }
-                    
-                            // Kaydedilen Resimler (Barkod resimleri - Android gibi cihaz yetki kontrolü)
-                    GridButton(
-                        title: "Kaydedilen Resimler",
-                        icon: "photo.stack",
-                        color: .green
-                    ) {
-                        // Android gibi cihaz yetki kontrolü yap
-                        checkDeviceAuthAndNavigate(to: .savedImages)
-                    }
-                }
-            }
-            .padding(.horizontal, 20)
-            
-            Spacer()
-            
-            // Uygulama Ayarları butonu
-            Button(action: {
-                showingSettings = true
-            }) {
-                HStack {
-                    Image(systemName: "gearshape.fill")
-                        .font(.title2)
-                        .foregroundColor(.white)
-                    
-                    Text("Uygulama Ayarları")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.blue)
-                )
-            }
-            .padding(.horizontal, 40)
-            
-            // Alt bilgiler
-            VStack(spacing: 4) {
-                if !viewModel.deviceOwner.isEmpty {
-                    Text("Cihaz Sahibi: \(viewModel.deviceOwner)")
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
-                }
-                
-                Text("Versiyon: \(Bundle.main.appVersionLong)")
-                    .font(.footnote)
-                    .foregroundColor(.secondary)
-            }
-            .padding(.bottom, 20)
-            }
-        }
-        .navigationBarTitleDisplayMode(.inline)
-        .navigationBarHidden(true)
-        .sheet(isPresented: $showingSettings) {
-            SettingsView(viewModel: viewModel)
-        }
-        .sheet(isPresented: $showingBarcodeUpload) {
-            BarcodeUploadView()
-        }
-        .sheet(isPresented: $showingSavedImages) {
-            SavedImagesView()
-        }
-        .alert("İzin Gerekli", isPresented: $showingPermissionAlert) {
-            Button("Ayarlara Git") {
-                viewModel.openSettings()
-            }
-            Button("İptal", role: .cancel) { }
-        } message: {
-            Text("Bu özelliği kullanmek için kamera izni gerekli.")
-        }
-        .onAppear {
-            viewModel.checkPermissions()
-        }
-        .onChange(of: showingDeviceAuthDialog) { showing in
-            if showing {
-                // Android benzeri device auth dialog göster
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-                       let window = windowScene.windows.first,
-                       let rootViewController = window.rootViewController {
+        NavigationView {
+            ScrollView {
+                VStack(spacing: 0) {
+                    // Logo ve Başlık Bölümü (Android ile aynı)
+                    VStack(spacing: 12) {
+                        Image("EnvantoLogo")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 120, height: 120)
+                            .foregroundColor(.blue)
                         
-                        DeviceAuthManager.showDeviceAuthDialog(on: rootViewController) { success in
-                            showingDeviceAuthDialog = false
-                            if success {
-                                // Yetki verildiyse target sayfaya git
-                                DispatchQueue.main.async {
-                                    switch pendingNavigation {
-                                    case .customerImages:
-                                        showingSavedImages = true // Müşteri resimleri için SavedImagesView kullan
-                                    case .savedImages:
-                                        showingSavedImages = true
-                                    case .none:
-                                        break
-                                    }
-                                    pendingNavigation = nil
-                                }
-                            }
+                        Text("Envanto Barkod")
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundColor(.primary)
+                        
+                        Text("Barkod Tarama ve Yönetim Sistemi")
+                            .font(.system(size: 16))
+                            .foregroundColor(.gray)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 16)
+                    }
+                    .padding(.top, 24)
+                    .padding(.bottom, 48)
+                    
+                    // 2x2 Buton Grid (Android ile birebir aynı)
+                    VStack(spacing: 16) {
+                        // Üst sıra: Barkod Tara + Barkod Yükle
+                        HStack(spacing: 8) {
+                            // Barkod Tara (Sol üst - Primary color)
+                            MenuCard(
+                                icon: "barcode.viewfinder",
+                                title: "Barkod Tara",
+                                color: .blue,
+                                action: { showingScanner = true }
+                            )
+                            
+                            // Barkod Yükle (Sağ üst - Secondary color)
+                            MenuCard(
+                                icon: "square.and.arrow.up",
+                                title: "Barkod Yükle", 
+                                color: .orange,
+                                action: { showingUpload = true }
+                            )
+                        }
+                        
+                        // Alt sıra: Müşteri Resimleri + Araçtaki Ürünler
+                        HStack(spacing: 8) {
+                            // Müşteri Resimleri (Sol alt - Info color)
+                            MenuCard(
+                                icon: "person.2.crop.square.stack",
+                                title: "Müşteri Resimleri",
+                                color: .cyan,
+                                action: { showingCustomerImages = true }
+                            )
+                            
+                            // Araçtaki Ürünler (Sağ alt - Success color)
+                            MenuCard(
+                                icon: "car.fill",
+                                title: "Araçtaki Ürünler",
+                                color: .green,
+                                action: { showingVehicleProducts = true }
+                            )
                         }
                     }
+                    .padding(.horizontal, 16)
+                    
+                    // Ayarlar Butonu (Android ile aynı şekilde)
+                    Button(action: {
+                        showingSettings = true
+                    }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "gear")
+                                .font(.system(size: 24))
+                                .foregroundColor(.white)
+                            
+                            Text("Uygulama Ayarları")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(.white)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.gray.opacity(0.8))
+                        )
+                    }
+                    .frame(maxWidth: .infinity * 0.6)
+                    .padding(.top, 24)
+                    .padding(.horizontal, 16)
+                    
+                    Spacer()
+                    
+                    // Alt Bilgi Alanı (Android ile aynı)
+                    VStack(spacing: 8) {
+                        // Cihaz Sahibi (Android'deki gibi)
+                        Text("👤 Cihaz Sahibi: Belirtilmemiş")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.gray)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color.gray.opacity(0.1))
+                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                            )
+                        
+                        // Versiyon (Android'deki gibi)
+                        Text("Versiyon: 1.0.0")
+                            .font(.system(size: 12))
+                            .foregroundColor(.gray)
+                    }
+                    .padding(.bottom, 16)
                 }
             }
+            .navigationBarHidden(true)
         }
-    }
-    
-    // MARK: - Navigation Target Enum (Android MainActivity benzeri)
-    private enum NavigationTarget {
-        case customerImages // Android CustomerImagesActivity
-        case savedImages // Android'deki barkod resimleri
-    }
-    
-    @State private var pendingNavigation: NavigationTarget?
-    
-    // MARK: - Device Auth Check (Android benzeri)
-    private func checkDeviceAuthAndNavigate(to target: NavigationTarget) {
-        let deviceId = DeviceIdentifier.getUniqueDeviceId()
-        
-        // Hızlı yerel kontrol (Android benzeri)
-        let key = "local_device_auth_\(deviceId)"
-        let isLocallyAuthorized = UserDefaults.standard.bool(forKey: key)
-        
-        if isLocallyAuthorized {
-            // Yetki var, direkt sayfaya git
-            DispatchQueue.main.async {
-                switch target {
-                case .customerImages, .savedImages:
-                    showingSavedImages = true
-                }
-            }
-        } else {
-            // Yetki yok, dialog göster (Android benzeri)
-            pendingNavigation = target
-            showingDeviceAuthDialog = true
+        .fullScreenCover(isPresented: $showingScanner) {
+            ScannerView()
+        }
+        // Diğer ekranlar için placeholder sheet'ler (arkaplan kodu daha sonra)
+        .sheet(isPresented: $showingUpload) {
+            PlaceholderView(title: "Barkod Yükle", message: "Bu özellik yakında eklenecek")
+        }
+        .sheet(isPresented: $showingCustomerImages) {
+            PlaceholderView(title: "Müşteri Resimleri", message: "Bu özellik yakında eklenecek")
+        }
+        .sheet(isPresented: $showingVehicleProducts) {
+            PlaceholderView(title: "Araçtaki Ürünler", message: "Bu özellik yakında eklenecek")
+        }
+        .sheet(isPresented: $showingSettings) {
+            PlaceholderView(title: "Uygulama Ayarları", message: "Bu özellik yakında eklenecek")
         }
     }
 }
 
-struct GridButton: View {
-    let title: String
+// MARK: - Menu Card Component (Android MaterialCardView benzeri)
+struct MenuCard: View {
     let icon: String
+    let title: String
     let color: Color
     let action: () -> Void
     
     var body: some View {
         Button(action: action) {
-            GridButtonContent(title: title, icon: icon, color: color)
+            VStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.system(size: 48))
+                    .foregroundColor(.white)
+                
+                Text(title)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 120)
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(color)
+                    .shadow(color: color.opacity(0.3), radius: 4, x: 0, y: 2)
+            )
         }
         .buttonStyle(PlainButtonStyle())
     }
 }
 
-struct GridButtonContent: View {
+// MARK: - Placeholder View (Geçici ekranlar için)
+struct PlaceholderView: View {
     let title: String
-    let icon: String
-    let color: Color
+    let message: String
+    @Environment(\.dismiss) private var dismiss
     
     var body: some View {
-        VStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 32))
-                .foregroundColor(.white)
-            
-            Text(title)
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(.white)
-                .multilineTextAlignment(.center)
+        NavigationView {
+            VStack(spacing: 20) {
+                Spacer()
+                
+                Image(systemName: "hammer.fill")
+                    .font(.system(size: 80))
+                    .foregroundColor(.orange)
+                
+                Text(title)
+                    .font(.title)
+                    .fontWeight(.bold)
+                
+                Text(message)
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                
+                Spacer()
+            }
+            .padding()
+            .navigationTitle(title)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Kapat") {
+                        dismiss()
+                    }
+                }
+            }
         }
-        .frame(maxWidth: .infinity, minHeight: 120)
-        .padding(.vertical, 12)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(
-                    LinearGradient(
-                        gradient: Gradient(colors: [color.opacity(0.9), color]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-        )
-        .shadow(color: color.opacity(0.3), radius: 8, x: 0, y: 4)
     }
 }
 
 #Preview {
     MainMenuView()
-        .environmentObject(AppStateManager())
 } 

@@ -34,24 +34,7 @@ extension View {
     }
 }
 
-// MARK: - Color Extensions
-extension Color {
-    static let primaryBlue = Color("PrimaryBlue")
-    static let primaryGreen = Color("PrimaryGreen")
-    static let primaryOrange = Color("PrimaryOrange")
-    static let primaryPurple = Color("PrimaryPurple")
-    static let backgroundGray = Color("BackgroundGray")
-    static let textSecondary = Color("TextSecondary")
-    
-    // Varsayılan renkler (Assets.xcassets yoksa)
-    static let defaultPrimaryBlue = Color(red: 0.0, green: 0.5, blue: 1.0)
-    static let defaultPrimaryGreen = Color(red: 0.0, green: 0.8, blue: 0.4)
-    static let defaultPrimaryOrange = Color(red: 1.0, green: 0.6, blue: 0.0)
-    static let defaultPrimaryPurple = Color(red: 0.6, green: 0.0, blue: 1.0)
-    
-    static let systemBackground = Color(UIColor.systemBackground)
-    static let secondarySystemBackground = Color(UIColor.secondarySystemBackground)
-}
+
 
 // MARK: - String Extensions
 extension String {
@@ -93,14 +76,5 @@ struct RoundedCorner: Shape {
     }
 }
 
-// MARK: - UIApplication Extensions
-extension UIApplication {
-    var keyWindow: UIWindow? {
-        connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .flatMap { $0.windows }
-            .first { $0.isKeyWindow }
-    }
-}
 
  
