@@ -13,14 +13,33 @@ struct BarcodeUploadView: View {
                 // Ana içerik
                 VStack(spacing: 0) {
                     if viewModel.isDeviceAuthorized {
-                        // Müşteri arama bölümü
+                        // Müşteri arama bölümü (her zaman görünür)
                         customerSearchSection
                         
-                        // Resim yükleme bölümü
-                        imageUploadSection
+                        // Resim yükleme bölümü (sadece müşteri seçildiğinde)
+                        if viewModel.selectedCustomer != nil {
+                            imageUploadSection
+                                .transition(.asymmetric(
+                                    insertion: .opacity.combined(with: .move(edge: .top)),
+                                    removal: .opacity.combined(with: .move(edge: .top))
+                                ))
+                        }
                         
-                        // Kayıtlı resimler listesi
-                        savedImagesSection
+                        // Kayıtlı resimler (sadece müşteri seçildiğinde ve resim varsa)
+                        if viewModel.selectedCustomer != nil {
+                            savedImagesSection
+                                .transition(.asymmetric(
+                                    insertion: .opacity.combined(with: .move(edge: .top)),
+                                    removal: .opacity.combined(with: .move(edge: .top))
+                                ))
+                        } else {
+                            // Müşteri seçilmediğinde placeholder
+                            customerSelectionPlaceholder
+                                .transition(.asymmetric(
+                                    insertion: .opacity.combined(with: .move(edge: .top)),
+                                    removal: .opacity.combined(with: .move(edge: .top))
+                                ))
+                        }
                     } else if !viewModel.isLoading {
                         // Cihaz yetkili değilse uyarı
                         unauthorizedDeviceView
@@ -83,67 +102,92 @@ struct BarcodeUploadView: View {
                 }
             }
             
-            // Arama kutusu
-            VStack(alignment: .leading, spacing: 8) {
-                TextField("Müşteri adı veya kodu arayın...", text: $viewModel.searchText)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .onChange(of: viewModel.searchText) { _ in
-                        viewModel.searchCustomers()
-                    }
-                
-                // Dropdown - müşteri listesi
-                if viewModel.showDropdown && !viewModel.customers.isEmpty {
-                    VStack(spacing: 0) {
-                        ForEach(viewModel.customers.prefix(5)) { customer in
-                            CustomerRow(customer: customer) {
-                                viewModel.selectCustomer(customer)
-                            }
-                        }
-                    }
-                    .background(Color(.systemBackground))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color(.systemGray4), lineWidth: 1)
-                    )
-                    .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
-                }
-                
-                // Seçilen müşteri
-                if let selectedCustomer = viewModel.selectedCustomer {
-                    HStack {
-                        Image(systemName: "checkmark.circle.fill")
+            if let selectedCustomer = viewModel.selectedCustomer {
+                // Seçilen müşteri gösterimi (Android like design)
+                HStack {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.green)
+                        .font(.title2)
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(selectedCustomer.name)
+                            .font(.body)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
+                        
+                        Text("Müşteri seçildi")
+                            .font(.caption)
                             .foregroundColor(.green)
-                        
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(selectedCustomer.name)
-                                .font(.subheadline)
-                                .fontWeight(.medium)
-                            
-                            if let code = selectedCustomer.code {
-                                Text("Kod: \(code)")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                        
-                        Spacer()
-                        
-                        Button("Değiştir") {
+                    }
+                    
+                    Spacer()
+                    
+                    Button("Değiştir") {
+                        withAnimation(.easeInOut(duration: 0.3)) {
                             viewModel.selectedCustomer = nil
                             viewModel.searchText = ""
                             viewModel.showDropdown = false
                         }
-                        .font(.caption)
-                        .foregroundColor(.blue)
                     }
-                    .padding(.vertical, 8)
-                    .padding(.horizontal, 12)
-                    .background(Color.green.opacity(0.1))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.green.opacity(0.3), lineWidth: 1)
-                    )
+                    .font(.subheadline)
+                    .foregroundColor(.blue)
+                    .fontWeight(.medium)
                 }
+                .padding(.vertical, 16)
+                .padding(.horizontal, 16)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.green.opacity(0.1))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.green.opacity(0.3), lineWidth: 2)
+                        )
+                )
+                .animation(.easeInOut(duration: 0.3), value: selectedCustomer)
+                
+            } else {
+                // Müşteri arama inputu (müşteri seçilmediğinde)
+                VStack(alignment: .leading, spacing: 8) {
+                    TextField("Müşteri adı arayın...", text: $viewModel.searchText)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .font(.body)
+                        .onChange(of: viewModel.searchText) { _ in
+                            viewModel.searchCustomers()
+                        }
+                        .submitLabel(.search)
+                    
+                    // Dropdown - müşteri listesi (customers.asp'den gelecek)
+                    if viewModel.showDropdown && !viewModel.customers.isEmpty {
+                        VStack(spacing: 0) {
+                            ForEach(viewModel.customers.prefix(5)) { customer in
+                                CustomerRow(customer: customer) {
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        viewModel.selectCustomer(customer)
+                                    }
+                                }
+                            }
+                        }
+                        .background(Color(.systemBackground))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color(.systemGray4), lineWidth: 1)
+                        )
+                        .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .move(edge: .top)),
+                            removal: .opacity.combined(with: .move(edge: .top))
+                        ))
+                    }
+                    
+                    // Yardım metni
+                    if viewModel.searchText.isEmpty {
+                        Text("Müşteri adı yazarak arama yapabilirsiniz")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .padding(.top, 4)
+                    }
+                }
+                .animation(.easeInOut(duration: 0.3), value: viewModel.selectedCustomer)
             }
         }
         .padding(.horizontal, 16)
@@ -151,57 +195,104 @@ struct BarcodeUploadView: View {
         .background(Color(.systemGray6))
     }
     
-    // MARK: - Image Upload Section
+    // MARK: - Image Upload Section (Müşteri seçiminden sonra görünür)
     private var imageUploadSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
             // Başlık
             HStack {
                 Image(systemName: "photo.fill")
                     .foregroundColor(.orange)
+                    .font(.title2)
                 Text("Resim Yükleme")
                     .font(.headline)
                     .fontWeight(.semibold)
                 
                 Spacer()
+                
+                // Upload durumu badge
+                if !selectedImages.isEmpty {
+                    Text("\(selectedImages.count)")
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.orange.opacity(0.1))
+                        .foregroundColor(.orange)
+                        .cornerRadius(12)
+                }
             }
             
-            // Yükleme butonları
-            HStack(spacing: 12) {
-                // Fotoğraf seç
+            // Android like açıklama metni
+            Text("Fotoğraf çekin veya galeriden seçin")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .padding(.bottom, 8)
+            
+            // Yükleme butonları (Android tasarım)
+            VStack(spacing: 12) {
+                // Kamera butonu (Birincil)
+                Button(action: {
+                    viewModel.showingCamera = true
+                }) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "camera.fill")
+                            .font(.title2)
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Fotoğraf Çek")
+                                .font(.body)
+                                .fontWeight(.semibold)
+                            Text("Kamera ile yeni fotoğraf")
+                                .font(.caption)
+                                .opacity(0.8)
+                        }
+                        
+                        Spacer()
+                        
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                    }
+                    .padding(.vertical, 16)
+                    .padding(.horizontal, 16)
+                    .frame(maxWidth: .infinity)
+                    .background(Color.green)
+                    .foregroundColor(.white)
+                    .cornerRadius(12)
+                }
+                .disabled(viewModel.isUploading)
+                
+                // Galeri butonu (İkincil)
                 PhotosPicker(
                     selection: $selectedItems,
                     maxSelectionCount: 10,
                     matching: .images
                 ) {
-                    HStack {
+                    HStack(spacing: 12) {
                         Image(systemName: "photo.on.rectangle")
-                        Text("Galeri")
-                            .fontWeight(.medium)
+                            .font(.title2)
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Galeriden Seç")
+                                .font(.body)
+                                .fontWeight(.semibold)
+                            Text("Mevcut fotoğraflardan seç")
+                                .font(.caption)
+                                .opacity(0.8)
+                        }
+                        
+                        Spacer()
+                        
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
                     }
+                    .padding(.vertical, 16)
+                    .padding(.horizontal, 16)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
                     .background(Color.blue)
                     .foregroundColor(.white)
-                    .cornerRadius(8)
+                    .cornerRadius(12)
                 }
-                .disabled(viewModel.selectedCustomer == nil || viewModel.isUploading)
-                
-                // Kamera
-                Button(action: {
-                    viewModel.showingCamera = true
-                }) {
-                    HStack {
-                        Image(systemName: "camera.fill")
-                        Text("Kamera")
-                            .fontWeight(.medium)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(Color.green)
-                    .foregroundColor(.white)
-                    .cornerRadius(8)
-                }
-                .disabled(viewModel.selectedCustomer == nil || viewModel.isUploading)
+                .disabled(viewModel.isUploading)
             }
             
             // Seçilen resimler preview
@@ -311,6 +402,58 @@ struct BarcodeUploadView: View {
         .background(Color(.systemGray6))
     }
     
+    // MARK: - Customer Selection Placeholder
+    private var customerSelectionPlaceholder: some View {
+        VStack(spacing: 24) {
+            Image(systemName: "person.badge.plus")
+                .font(.system(size: 64))
+                .foregroundColor(.blue.opacity(0.6))
+            
+            VStack(spacing: 8) {
+                Text("Müşteri Seçin")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                
+                Text("Resim yükleyebilmek için önce bir müşteri seçmeniz gerekiyor")
+                    .font(.body)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+            }
+            
+            VStack(spacing: 12) {
+                HStack(spacing: 8) {
+                    Image(systemName: "1.circle.fill")
+                        .foregroundColor(.blue)
+                    Text("Yukarıdaki arama kutusunu kullanın")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                
+                HStack(spacing: 8) {
+                    Image(systemName: "2.circle.fill")
+                        .foregroundColor(.blue)
+                    Text("Müşteri adı yazarak arama yapın")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                
+                HStack(spacing: 8) {
+                    Image(systemName: "3.circle.fill")
+                        .foregroundColor(.blue)
+                    Text("Listeden müşteriyi seçin")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+            }
+            .padding(.horizontal, 16)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 40)
+        .background(Color(.systemGray6))
+    }
+
     // MARK: - Unauthorized Device View
     private var unauthorizedDeviceView: some View {
         VStack(spacing: 20) {
@@ -360,39 +503,48 @@ struct BarcodeUploadView: View {
     }
 }
 
-// MARK: - CustomerRow
+// MARK: - CustomerRow (Android like design)
 struct CustomerRow: View {
     let customer: Customer
     let onTap: () -> Void
     
     var body: some View {
         Button(action: onTap) {
-            HStack {
+            HStack(spacing: 12) {
+                // Müşteri ikonu
+                Image(systemName: "person.circle.fill")
+                    .font(.title2)
+                    .foregroundColor(.blue)
+                
                 VStack(alignment: .leading, spacing: 2) {
                     Text(customer.name)
-                        .font(.subheadline)
+                        .font(.body)
                         .fontWeight(.medium)
                         .foregroundColor(.primary)
                         .lineLimit(1)
                     
-                    if let code = customer.code {
-                        Text("Kod: \(code)")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
+                    Text("Müşteri")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
                 
                 Spacer()
                 
-                Image(systemName: "chevron.right")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                Image(systemName: "plus.circle")
+                    .font(.title3)
+                    .foregroundColor(.blue)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
         }
         .buttonStyle(PlainButtonStyle())
         .background(Color(.systemBackground))
+        .overlay(
+            Rectangle()
+                .frame(height: 0.5)
+                .foregroundColor(Color(.systemGray4)),
+            alignment: .bottom
+        )
     }
 }
 
