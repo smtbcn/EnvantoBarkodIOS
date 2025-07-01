@@ -52,6 +52,8 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
     
     init() {
         checkDeviceAuthorization()
+        // Başlangıçta müşteri gruplarını yükle
+        loadCustomerImageGroups()
     }
     
     // MARK: - Cihaz yetkilendirme kontrolü (Android template ile aynı)
@@ -97,6 +99,8 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         // Müşteri listesini yükle
         loadCustomerCache()
         loadSavedImages()
+        // Müşteri gruplarını da yükle
+        loadCustomerImageGroups()
     }
     
     private func onDeviceAuthFailure() {
@@ -359,6 +363,9 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         customerImageGroups = groups.sorted { $0.lastUpdated > $1.lastUpdated }
         
         print("📊 \(customerImageGroups.count) müşteri için resim grubu oluşturuldu")
+        for group in customerImageGroups {
+            print("   • \(group.customerName): \(group.imageCount) resim")
+        }
     }
     
     private func getStorageInfo() async -> String? {

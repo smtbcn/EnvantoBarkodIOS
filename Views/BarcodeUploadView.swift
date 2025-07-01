@@ -87,6 +87,10 @@ struct BarcodeUploadView: View {
                     }
                 }
             }
+            .onAppear {
+                // Sayfa açıldığında müşteri gruplarını yükle
+                viewModel.loadCustomerImageGroups()
+            }
         }
     }
     
@@ -240,13 +244,26 @@ struct BarcodeUploadView: View {
                 .font(.headline)
                 .fontWeight(.semibold)
             
-            // Debug butonu - Path'leri kontrol et
-            Button("📱 Path'leri Kontrol Et") {
-                ImageStorageManager.printDocumentsPath()
+            // Debug butonları
+            HStack {
+                Button("📱 Path'leri Kontrol Et") {
+                    ImageStorageManager.printDocumentsPath()
+                }
+                .font(.caption)
+                .foregroundColor(.orange)
+                .padding(.vertical, 4)
+                
+                Spacer()
+                
+                Button("👥 Grupları Yükle") {
+                    viewModel.loadCustomerImageGroups()
+                    print("🔄 Manuel grup yükleme tetiklendi")
+                    print("📊 Şu anda \(viewModel.customerImageGroups.count) grup var")
+                }
+                .font(.caption)
+                .foregroundColor(.green)
+                .padding(.vertical, 4)
             }
-            .font(.caption)
-            .foregroundColor(.orange)
-            .padding(.vertical, 4)
             
             // Android like button layout
             HStack(spacing: 12) {
@@ -313,6 +330,12 @@ struct BarcodeUploadView: View {
                 }
             }
             
+            // Debug info
+            Text("Debug: \(viewModel.customerImageGroups.count) müşteri grubu yüklendi")
+                .font(.caption2)
+                .foregroundColor(.gray)
+                .padding(.vertical, 2)
+            
             if viewModel.customerImageGroups.isEmpty {
                 VStack {
                     Image(systemName: "person.2.square.stack")
@@ -323,6 +346,10 @@ struct BarcodeUploadView: View {
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
+                    
+                    Text("(customerImageGroups.isEmpty = true)")
+                        .font(.caption2)
+                        .foregroundColor(.orange)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 40)
