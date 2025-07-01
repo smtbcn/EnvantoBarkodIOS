@@ -2,7 +2,6 @@ import SwiftUI
 
 enum AlertType {
     case cameraPermission
-    case deviceAuthorization
 }
 
 struct MainMenuView: View {
@@ -61,69 +60,37 @@ struct MainMenuView: View {
                                 }
                             }
                             
-                            // Barkod Yükle - Cihaz yetkilendirme gerekli
-                            GridButton(
-                                title: "Barkod Yükle",
-                                icon: "square.and.arrow.up",
-                                color: .orange
-                            ) {
-                                if viewModel.isDeviceAuthorized {
-                                    if viewModel.hasRequiredPermissions {
-                                        showingBarcodeUpload = true
-                                    } else {
-                                        alertType = .cameraPermission
-                                        showingPermissionAlert = true
-                                    }
-                                } else {
-                                    alertType = .deviceAuthorization
-                                    showingPermissionAlert = true
-                                }
-                            }
+                                                         // Barkod Yükle - Direkt açılacak (cihaz yetkilendirme BarcodeUploadView'da)
+                             GridButton(
+                                 title: "Barkod Yükle",
+                                 icon: "square.and.arrow.up",
+                                 color: .orange
+                             ) {
+                                 showingBarcodeUpload = true
+                             }
                         }
                         
                         HStack(spacing: 16) {
-                            // Müşteri Resimleri - Cihaz yetkilendirme gerekli
-                            GridButton(
-                                title: "Müşteri Resimleri",
-                                icon: "photo.on.rectangle",
-                                color: .blue
-                            ) {
-                                if viewModel.isDeviceAuthorized {
-                                    if viewModel.hasRequiredPermissions {
-                                        // Customer images görünümüne git
-                                    } else {
-                                        alertType = .cameraPermission
-                                        showingPermissionAlert = true
-                                    }
-                                } else {
-                                    alertType = .deviceAuthorization
-                                    showingPermissionAlert = true
-                                }
-                            }
+                                                         // Müşteri Resimleri - Henüz implementasyonu yok
+                             GridButton(
+                                 title: "Müşteri Resimleri",
+                                 icon: "photo.on.rectangle",
+                                 color: .blue
+                             ) {
+                                 // TODO: CustomerImagesView implementasyonu
+                             }
                             
-                            // Araçtaki Ürünler - Cihaz yetkilendirme gerekli
-                            GridButton(
-                                title: "Araçtaki Ürünler",
-                                icon: "car.fill",
-                                color: .green
-                            ) {
-                                if viewModel.isDeviceAuthorized {
-                                    if viewModel.hasRequiredPermissions {
-                                        // Vehicle products görünümüne git
-                                    } else {
-                                        alertType = .cameraPermission
-                                        showingPermissionAlert = true
-                                    }
-                                } else {
-                                    alertType = .deviceAuthorization
-                                    showingPermissionAlert = true
-                                }
-                            }
+                                                         // Araçtaki Ürünler - Henüz implementasyonu yok
+                             GridButton(
+                                 title: "Araçtaki Ürünler",
+                                 icon: "car.fill",
+                                 color: .green
+                             ) {
+                                 // TODO: VehicleProductsView implementasyonu
+                             }
                         }
                     }
-                    .padding(.horizontal, 20)
-                    .opacity(viewModel.isLoading ? 0.5 : 1.0)
-                    .animation(.easeInOut(duration: 0.3), value: viewModel.isLoading)
+                                         .padding(.horizontal, 20)
                 
                 Spacer()
                 
@@ -146,9 +113,8 @@ struct MainMenuView: View {
                         RoundedRectangle(cornerRadius: 12)
                             .fill(Color.blue)
                     )
-                }
-                .disabled(viewModel.isLoading)
-                .padding(.horizontal, 40)
+                                  }
+                  .padding(.horizontal, 40)
                 
                 // Alt bilgiler
                 VStack(spacing: 4) {
@@ -163,13 +129,7 @@ struct MainMenuView: View {
                         .foregroundColor(.secondary)
                 }
                 .padding(.bottom, 20)
-            }
-            
-            // Loading overlay - Android'deki gibi
-            if viewModel.isLoading {
-                LoadingOverlay(message: "Cihaz yetkilendirme kontrolü yapılıyor...")
-            }
-        }
+                         }
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarHidden(true)
         .sheet(isPresented: $showingSettings) {
@@ -178,24 +138,14 @@ struct MainMenuView: View {
         .sheet(isPresented: $showingBarcodeUpload) {
             BarcodeUploadView()
         }
-        .alert("İzin Gerekli", isPresented: $showingPermissionAlert) {
-            switch alertType {
-            case .cameraPermission:
-                Button("Ayarlara Git") {
-                    viewModel.openSettings()
-                }
-                Button("İptal", role: .cancel) { }
-            case .deviceAuthorization:
-                Button("Tamam", role: .cancel) { }
-            }
-        } message: {
-            switch alertType {
-            case .cameraPermission:
-                Text("Bu özelliği kullanmak için kamera izni gerekli.")
-            case .deviceAuthorization:
-                Text("Bu özelliği kullanmak için cihaz yetkilendirmesi gerekli. Lütfen yöneticinizle iletişime geçin.")
-            }
-        }
+                 .alert("İzin Gerekli", isPresented: $showingPermissionAlert) {
+             Button("Ayarlara Git") {
+                 viewModel.openSettings()
+             }
+             Button("İptal", role: .cancel) { }
+         } message: {
+             Text("Bu özelliği kullanmak için kamera izni gerekli.")
+         }
         .onAppear {
             // Kamera izinlerini kontrol et
             viewModel.checkPermissions()
@@ -203,33 +153,7 @@ struct MainMenuView: View {
     }
 }
 
-// MARK: - Loading Overlay
-struct LoadingOverlay: View {
-    let message: String
-    
-    var body: some View {
-        ZStack {
-            Color.black.opacity(0.3)
-                .ignoresSafeArea()
-            
-            VStack(spacing: 16) {
-                ProgressView()
-                    .scaleEffect(1.5)
-                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                
-                Text(message)
-                    .font(.subheadline)
-                    .foregroundColor(.white)
-                    .multilineTextAlignment(.center)
-            }
-            .padding(24)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.black.opacity(0.7))
-            )
-        }
-    }
-}
+
 
 struct GridButton: View {
     let title: String

@@ -1,52 +1,15 @@
 import SwiftUI
 import AVFoundation
 
-class MainViewModel: ObservableObject, DeviceAuthCallback {
+class MainViewModel: ObservableObject {
     @Published var hasRequiredPermissions = false
     @Published var deviceOwner = ""
-    @Published var isLoading = false
-    @Published var isDeviceAuthorized = false
     
     private let userDefaults = UserDefaults.standard
     
     init() {
         loadDeviceOwner()
-        checkDeviceAuthorization()
-    }
-    
-    // MARK: - Cihaz yetkilendirme kontrolü (Android template ile aynı)
-    func checkDeviceAuthorization() {
-        DeviceAuthManager.checkDeviceAuthorization(callback: self)
-    }
-    
-
-    
-    // MARK: - DeviceAuthCallback implementasyonu
-    func onAuthSuccess() {
-        DispatchQueue.main.async {
-            self.isDeviceAuthorized = true
-            self.loadDeviceOwner() // Güncel cihaz sahibini yükle
-            self.checkPermissions() // İzinleri kontrol et
-        }
-    }
-    
-    func onAuthFailure() {
-        DispatchQueue.main.async {
-            self.isDeviceAuthorized = false
-            // Activity kapanacak veya ana menüde kalacak
-        }
-    }
-    
-    func onShowLoading() {
-        DispatchQueue.main.async {
-            self.isLoading = true
-        }
-    }
-    
-    func onHideLoading() {
-        DispatchQueue.main.async {
-            self.isLoading = false
-        }
+        checkPermissions()
     }
     
     // MARK: - Kamera izinleri kontrolü
@@ -80,13 +43,8 @@ class MainViewModel: ObservableObject, DeviceAuthCallback {
     }
     
     private func loadDeviceOwner() {
-        // DeviceAuthManager'dan gelen cihaz sahibini al
-        if let authOwner = userDefaults.string(forKey: "device_owner"), !authOwner.isEmpty {
-            deviceOwner = authOwner
-        } else {
-            // Fallback: Constants'tan al
-            deviceOwner = userDefaults.string(forKey: Constants.UserDefaults.deviceOwner) ?? ""
-        }
+        // Constants'tan cihaz sahibini al
+        deviceOwner = userDefaults.string(forKey: Constants.UserDefaults.deviceOwner) ?? ""
     }
     
     func updateDeviceOwner(_ owner: String) {
