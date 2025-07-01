@@ -9,7 +9,6 @@ class MainViewModel: ObservableObject {
     
     init() {
         loadDeviceOwner()
-        checkPermissions()
     }
     
     // MARK: - Kamera izinleri kontrolü
@@ -43,8 +42,13 @@ class MainViewModel: ObservableObject {
     }
     
     private func loadDeviceOwner() {
-        // Constants'tan cihaz sahibini al
-        deviceOwner = userDefaults.string(forKey: Constants.UserDefaults.deviceOwner) ?? ""
+        // DeviceAuthManager'dan gelen cihaz sahibini al
+        if let authOwner = userDefaults.string(forKey: "device_owner"), !authOwner.isEmpty {
+            deviceOwner = authOwner
+        } else {
+            // Fallback: Constants'tan al
+            deviceOwner = userDefaults.string(forKey: Constants.UserDefaults.deviceOwner) ?? ""
+        }
     }
     
     func updateDeviceOwner(_ owner: String) {

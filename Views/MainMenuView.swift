@@ -1,15 +1,13 @@
 import SwiftUI
 
-enum AlertType {
-    case cameraPermission
-}
+// AlertType artık sadece kamera izni için kullanılıyor
 
 struct MainMenuView: View {
     @StateObject private var viewModel = MainViewModel()
     @State private var showingSettings = false
     @State private var showingPermissionAlert = false
     @State private var showingBarcodeUpload = false
-    @State private var alertType: AlertType = .cameraPermission
+    // AlertType kaldırıldı - sadece kamera izni kontrolü
     @EnvironmentObject var appState: AppStateManager
     
     var body: some View {
@@ -55,42 +53,41 @@ struct MainMenuView: View {
                                 if viewModel.hasRequiredPermissions {
                                     appState.showScanner = true
                                 } else {
-                                    alertType = .cameraPermission
                                     showingPermissionAlert = true
                                 }
                             }
                             
-                                                         // Barkod Yükle - Direkt açılacak (cihaz yetkilendirme BarcodeUploadView'da)
-                             GridButton(
-                                 title: "Barkod Yükle",
-                                 icon: "square.and.arrow.up",
-                                 color: .orange
-                             ) {
-                                 showingBarcodeUpload = true
-                             }
+                            // Barkod Yükle - Direkt açılır (cihaz yetki kontrolü BarcodeUploadView'da)
+                            GridButton(
+                                title: "Barkod Yükle",
+                                icon: "square.and.arrow.up",
+                                color: .orange
+                            ) {
+                                showingBarcodeUpload = true
+                            }
                         }
                         
                         HStack(spacing: 16) {
-                                                         // Müşteri Resimleri - Henüz implementasyonu yok
-                             GridButton(
-                                 title: "Müşteri Resimleri",
-                                 icon: "photo.on.rectangle",
-                                 color: .blue
-                             ) {
-                                 // TODO: CustomerImagesView implementasyonu
-                             }
+                            // Müşteri Resimleri - Direkt açılır (cihaz yetki kontrolü kendi sayfasında)
+                            GridButton(
+                                title: "Müşteri Resimleri",
+                                icon: "photo.on.rectangle",
+                                color: .blue
+                            ) {
+                                // TODO: Customer images görünümüne git
+                            }
                             
-                                                         // Araçtaki Ürünler - Henüz implementasyonu yok
-                             GridButton(
-                                 title: "Araçtaki Ürünler",
-                                 icon: "car.fill",
-                                 color: .green
-                             ) {
-                                 // TODO: VehicleProductsView implementasyonu
-                             }
+                            // Araçtaki Ürünler - Direkt açılır (cihaz yetki kontrolü kendi sayfasında)
+                            GridButton(
+                                title: "Araçtaki Ürünler",
+                                icon: "car.fill",
+                                color: .green
+                            ) {
+                                // TODO: Vehicle products görünümüne git
+                            }
                         }
                     }
-                                         .padding(.horizontal, 20)
+                    .padding(.horizontal, 20)
                 
                 Spacer()
                 
@@ -113,8 +110,9 @@ struct MainMenuView: View {
                         RoundedRectangle(cornerRadius: 12)
                             .fill(Color.blue)
                     )
-                                  }
-                  .padding(.horizontal, 40)
+                }
+                // Loading kaldırıldı - her zaman aktif
+                .padding(.horizontal, 40)
                 
                 // Alt bilgiler
                 VStack(spacing: 4) {
@@ -129,7 +127,8 @@ struct MainMenuView: View {
                         .foregroundColor(.secondary)
                 }
                 .padding(.bottom, 20)
-                         }
+            }
+        }
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarHidden(true)
         .sheet(isPresented: $showingSettings) {
@@ -138,14 +137,14 @@ struct MainMenuView: View {
         .sheet(isPresented: $showingBarcodeUpload) {
             BarcodeUploadView()
         }
-                 .alert("İzin Gerekli", isPresented: $showingPermissionAlert) {
-             Button("Ayarlara Git") {
-                 viewModel.openSettings()
-             }
-             Button("İptal", role: .cancel) { }
-         } message: {
-             Text("Bu özelliği kullanmak için kamera izni gerekli.")
-         }
+        .alert("Kamera İzni Gerekli", isPresented: $showingPermissionAlert) {
+            Button("Ayarlara Git") {
+                viewModel.openSettings()
+            }
+            Button("İptal", role: .cancel) { }
+        } message: {
+            Text("Barkod tarama özelliğini kullanmak için kamera izni gerekli.")
+        }
         .onAppear {
             // Kamera izinlerini kontrol et
             viewModel.checkPermissions()
