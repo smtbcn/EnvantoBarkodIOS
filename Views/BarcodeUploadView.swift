@@ -1,36 +1,339 @@
 import SwiftUI
 import PhotosUI
+import AVFoundation
 
-// Basit kamera view (geçici implementasyon)
+// Gerçek kamera view implementasyonu (sürekli çekim)
 struct CameraView: View {
     let onImageCaptured: (UIImage) -> Void
     @Environment(\.dismiss) private var dismiss
+    @StateObject private var cameraModel = CameraModel()
+    @State private var captureCount = 0
+    @State private var showFlash = false
+    @State private var showSuccessIndicator = false
     
     var body: some View {
-        VStack {
-            Text("Kamera Çekim")
-                .font(.title)
-                .padding()
-            
-            Text("Geçici kamera implementasyonu")
-                .foregroundColor(.secondary)
-                .padding()
-            
-            Button("Test Resim Çek") {
-                // Test için dummy resim
-                if let testImage = UIImage(systemName: "photo") {
-                    onImageCaptured(testImage)
+        ZStack {
+            // Kamera preview
+            CameraPreview(session: cameraModel.session)
+                .ignoresSafeArea()
+                .onTapGesture(coordinateSpace: .local) { location in
+                    cameraModel.focusAt(point: location)
                 }
-                dismiss()
-            }
-            .buttonStyle(.borderedProminent)
-            .padding()
             
-            Button("İptal") {
-                dismiss()
+            // Flash overlay
+            if showFlash {
+                Color.white
+                    .ignoresSafeArea()
+                    .opacity(0.8)
+                    .animation(.easeInOut(duration: 0.1), value: showFlash)
             }
-            .padding()
+            
+            // Başarı göstergesi
+            if showSuccessIndicator {
+                VStack {
+                    Spacer()
+                    
+                    HStack {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.title2)
+                            .foregroundColor(.green)
+                        
+                        Text("Kaydedildi!")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                    .background(Color.black.opacity(0.7))
+                    .cornerRadius(25)
+                    .scaleEffect(showSuccessIndicator ? 1.0 : 0.5)
+                    .opacity(showSuccessIndicator ? 1.0 : 0.0)
+                    .animation(.spring(response: 0.4, dampingFraction: 0.6), value: showSuccessIndicator)
+                    
+                    Spacer()
+                        .frame(height: 120)
+                }
+            }
+            
+            // Camera controls overlay
+            VStack {
+                // Üst kontroller
+                HStack {
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        Image(systemName: "xmark")
+                            .font(.title2)
+                            .foregroundColor(.white)
+                            .padding()
+                            .background(Color.black.opacity(0.5))
+                            .clipShape(Circle())
+                    }
+                    
+                    Spacer()
+                    
+                    // Çekim sayacı
+                    Text("Çekilen: \(captureCount)")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.black.opacity(0.6))
+                        .cornerRadius(15)
+                    
+                    Spacer()
+                    
+                    Button(action: {
+                        cameraModel.toggleFlash()
+                    }) {
+                        Image(systemName: cameraModel.isFlashOn ? "bolt.fill" : "bolt.slash")
+                            .font(.title2)
+                            .foregroundColor(cameraModel.isFlashOn ? .yellow : .white)
+                            .padding()
+                            .background(Color.black.opacity(0.5))
+                            .clipShape(Circle())
+                    }
+                }
+                .padding()
+                
+                Spacer()
+                
+                // Alt kontroller
+                VStack(spacing: 20) {
+                    // Ana çekim butonu
+                    Button(action: {
+                        capturePhoto()
+                    }) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.white)
+                                .frame(width: 80, height: 80)
+                            
+                            Circle()
+                                .stroke(Color.white, lineWidth: 4)
+                                .frame(width: 90, height: 90)
+                            
+                            // Loading indicator
+                            if cameraModel.isCapturing {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .black))
+                                    .scaleEffect(1.5)
+                            }
+                        }
+                    }
+                    .scaleEffect(cameraModel.isCapturing ? 0.9 : 1.0)
+                    .animation(.easeInOut(duration: 0.1), value: cameraModel.isCapturing)
+                    .disabled(cameraModel.isCapturing)
+                    
+                    Text("Resim çekmek için butona basın")
+                        .font(.caption)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(Color.black.opacity(0.5))
+                        .cornerRadius(10)
+                }
+                .padding(.bottom, 50)
+            }
         }
+        .onAppear {
+            cameraModel.startSession()
+        }
+        .onDisappear {
+            cameraModel.stopSession()
+        }
+    }
+    
+    private func capturePhoto() {
+        // Flash efekti
+        withAnimation(.easeInOut(duration: 0.1)) {
+            showFlash = true
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            showFlash = false
+        }
+        
+        cameraModel.capturePhoto { image in
+            if let image = image {
+                DispatchQueue.main.async {
+                    onImageCaptured(image)
+                    captureCount += 1
+                    
+                    // Başarı göstergesi
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
+                        showSuccessIndicator = true
+                    }
+                    
+                    // Başarı göstergesini gizle
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                        withAnimation(.easeOut(duration: 0.3)) {
+                            showSuccessIndicator = false
+                        }
+                    }
+                    
+                    // Başarı haptik feedback
+                    let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+                    impactFeedback.impactOccurred()
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Camera Model
+class CameraModel: NSObject, ObservableObject {
+    @Published var session = AVCaptureSession()
+    @Published var isCapturing = false
+    @Published var isFlashOn = false
+    
+    private var photoOutput = AVCapturePhotoOutput()
+    private var captureDevice: AVCaptureDevice?
+    private var photoCompletion: ((UIImage?) -> Void)?
+    
+    override init() {
+        super.init()
+        setupCamera()
+    }
+    
+    private func setupCamera() {
+        session.beginConfiguration()
+        
+        // Kamera cihazını seç
+        guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else {
+            session.commitConfiguration()
+            return
+        }
+        
+        captureDevice = device
+        
+        do {
+            // Kamera input
+            let input = try AVCaptureDeviceInput(device: device)
+            if session.canAddInput(input) {
+                session.addInput(input)
+            }
+            
+            // Photo output
+            if session.canAddOutput(photoOutput) {
+                session.addOutput(photoOutput)
+            }
+            
+            // Kamera ayarları
+            try device.lockForConfiguration()
+            
+            if device.isFocusModeSupported(.continuousAutoFocus) {
+                device.focusMode = .continuousAutoFocus
+            }
+            
+            if device.isExposureModeSupported(.continuousAutoExposure) {
+                device.exposureMode = .continuousAutoExposure
+            }
+            
+            device.unlockForConfiguration()
+            
+        } catch {
+            print("❌ Kamera ayarlama hatası: \(error)")
+        }
+        
+        session.commitConfiguration()
+    }
+    
+    func startSession() {
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            self?.session.startRunning()
+        }
+    }
+    
+    func stopSession() {
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            self?.session.stopRunning()
+        }
+    }
+    
+    func capturePhoto(completion: @escaping (UIImage?) -> Void) {
+        guard !isCapturing else { return }
+        
+        photoCompletion = completion
+        isCapturing = true
+        
+        let settings = AVCapturePhotoSettings()
+        
+        // Flash ayarı
+        if captureDevice?.hasFlash == true {
+            settings.flashMode = isFlashOn ? .on : .off
+        }
+        
+        photoOutput.capturePhoto(with: settings, delegate: self)
+    }
+    
+    func toggleFlash() {
+        isFlashOn.toggle()
+    }
+    
+    func focusAt(point: CGPoint) {
+        guard let device = captureDevice else { return }
+        
+        do {
+            try device.lockForConfiguration()
+            
+            if device.isFocusModeSupported(.autoFocus) {
+                device.focusMode = .autoFocus
+                device.focusPointOfInterest = point
+            }
+            
+            if device.isExposureModeSupported(.autoExpose) {
+                device.exposureMode = .autoExpose
+                device.exposurePointOfInterest = point
+            }
+            
+            device.unlockForConfiguration()
+        } catch {
+            print("❌ Odaklama hatası: \(error)")
+        }
+    }
+}
+
+// MARK: - AVCapturePhotoCaptureDelegate
+extension CameraModel: AVCapturePhotoCaptureDelegate {
+    func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
+        defer { 
+            isCapturing = false 
+        }
+        
+        if let error = error {
+            print("❌ Foto çekim hatası: \(error)")
+            photoCompletion?(nil)
+            return
+        }
+        
+        guard let imageData = photo.fileDataRepresentation(),
+              let image = UIImage(data: imageData) else {
+            photoCompletion?(nil)
+            return
+        }
+        
+        photoCompletion?(image)
+    }
+}
+
+// MARK: - Camera Preview
+struct CameraPreview: UIViewRepresentable {
+    let session: AVCaptureSession
+    
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView(frame: UIScreen.main.bounds)
+        
+        let previewLayer = AVCaptureVideoPreviewLayer(session: session)
+        previewLayer.frame = view.frame
+        previewLayer.videoGravity = .resizeAspectFill
+        view.layer.addSublayer(previewLayer)
+        
+        return view
+    }
+    
+    func updateUIView(_ uiView: UIView, context: Context) {
+        // Preview layer güncelleme gerekirse
     }
 }
 
@@ -244,26 +547,7 @@ struct BarcodeUploadView: View {
                 .font(.headline)
                 .fontWeight(.semibold)
             
-            // Debug butonları
-            HStack {
-                Button("📱 Path'leri Kontrol Et") {
-                    ImageStorageManager.printDocumentsPath()
-                }
-                .font(.caption)
-                .foregroundColor(.orange)
-                .padding(.vertical, 4)
-                
-                Spacer()
-                
-                Button("👥 Grupları Yükle") {
-                    viewModel.loadCustomerImageGroups()
-                    print("🔄 Manuel grup yükleme tetiklendi")
-                    print("📊 Şu anda \(viewModel.customerImageGroups.count) grup var")
-                }
-                .font(.caption)
-                .foregroundColor(.green)
-                .padding(.vertical, 4)
-            }
+
             
             // Android like button layout
             HStack(spacing: 12) {
@@ -330,12 +614,6 @@ struct BarcodeUploadView: View {
                 }
             }
             
-            // Debug info
-            Text("Debug: \(viewModel.customerImageGroups.count) müşteri grubu yüklendi")
-                .font(.caption2)
-                .foregroundColor(.gray)
-                .padding(.vertical, 2)
-            
             if viewModel.customerImageGroups.isEmpty {
                 VStack {
                     Image(systemName: "person.2.square.stack")
@@ -346,10 +624,6 @@ struct BarcodeUploadView: View {
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
-                    
-                    Text("(customerImageGroups.isEmpty = true)")
-                        .font(.caption2)
-                        .foregroundColor(.orange)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 40)

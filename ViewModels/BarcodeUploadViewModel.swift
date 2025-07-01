@@ -363,9 +363,6 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         customerImageGroups = groups.sorted { $0.lastUpdated > $1.lastUpdated }
         
         print("📊 \(customerImageGroups.count) müşteri için resim grubu oluşturuldu")
-        for group in customerImageGroups {
-            print("   • \(group.customerName): \(group.imageCount) resim")
-        }
     }
     
     private func getStorageInfo() async -> String? {
@@ -568,23 +565,18 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         }
     }
     
-    // MARK: - Handle Captured Image (Kamera için)
+    // MARK: - Handle Captured Image (Kamera için - Sürekli çekim)
     func handleCapturedImage(_ image: UIImage, customer: Customer) async {
-        await MainActor.run {
-            isUploading = true
-            uploadProgress = 0.0
-            showingCamera = false
-        }
+        // Kamerayı açık bırak, sadece background'da kaydet
         
         // Kamera resmini direk kaydet (Android directSaveImage mantığı)
         await directSaveImage(image: image, customer: customer, isGallery: false)
         
         await MainActor.run {
-            isUploading = false
-            uploadProgress = 1.0
-            
-            // Kayıtlı resimleri yenile
+            // Kayıtlı resimleri yenile (background'da)
             loadSavedImagesForCustomer(customer.name)
+            // Müşteri gruplarını güncelle (background'da)
+            loadCustomerImageGroups()
         }
     }
 }

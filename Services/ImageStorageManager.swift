@@ -53,15 +53,10 @@ class ImageStorageManager {
     
     // MARK: - Save to App Documents (Files App Access)
     private static func saveToAppDocuments(image: UIImage, customerName: String, isGallery: Bool) -> String? {
-        // Debug: Path'i yazdır
-        printDocumentsPath()
-        
         guard let customerDir = getAppDocumentsCustomerDir(for: customerName) else {
             print("❌ App Documents müşteri klasörü alınamadı")
             return nil
         }
-        
-        print("📁 Müşteri klasörü: \(customerDir.path)")
         
         // Android'deki gibi dosya adı oluştur
         let fileName = generateFileName(customerName: customerName, isGallery: isGallery)
