@@ -457,6 +457,34 @@ struct UploadProgressOverlay: View {
     }
 }
 
+// MARK: - Loading Overlay
+struct LoadingOverlay: View {
+    let message: String
+    
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.3)
+                .ignoresSafeArea()
+            
+            VStack(spacing: 16) {
+                ProgressView()
+                    .scaleEffect(1.5)
+                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                
+                Text(message)
+                    .font(.subheadline)
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(24)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.black.opacity(0.7))
+            )
+        }
+    }
+}
+
 #Preview {
     BarcodeUploadView()
 } 
