@@ -290,19 +290,19 @@ struct BarcodeUploadView: View {
         .transition(.opacity.combined(with: .move(edge: .top)))
     }
     
-    // MARK: - Kayıtlı Resimler Bölümü
+    // MARK: - Müşteri Bazlı Resimler Bölümü (Android like customer cards)
     private var savedImagesSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Text("Kayıtlı Resimler")
+                Text("Müşteri Resimleri")
                     .font(.headline)
                     .fontWeight(.semibold)
                 
                 Spacer()
                 
-                // Upload counter badge (Android like)
-                if !viewModel.savedImages.isEmpty {
-                    Text("\(viewModel.savedImages.count)")
+                // Toplam müşteri sayısı badge
+                if !viewModel.customerImageGroups.isEmpty {
+                    Text("\(viewModel.customerImageGroups.count) müşteri")
                         .font(.caption)
                         .fontWeight(.medium)
                         .foregroundColor(.white)
@@ -313,13 +313,13 @@ struct BarcodeUploadView: View {
                 }
             }
             
-            if viewModel.savedImages.isEmpty {
+            if viewModel.customerImageGroups.isEmpty {
                 VStack {
-                    Image(systemName: "photo.on.rectangle.angled")
+                    Image(systemName: "person.2.square.stack")
                         .font(.system(size: 40))
                         .foregroundColor(.secondary)
                     
-                    Text("Henüz kaydedilmiş resim yok")
+                    Text("Henüz müşteriye ait resim yok")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
@@ -327,15 +327,15 @@ struct BarcodeUploadView: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 40)
             } else {
-                LazyVGrid(columns: [
-                    GridItem(.flexible()),
-                    GridItem(.flexible()),
-                    GridItem(.flexible())
-                ], spacing: 12) {
-                    ForEach(viewModel.savedImages) { image in
-                        SavedImageCard(image: image) {
-                            viewModel.deleteImage(image)
-                        }
+                // Müşteri kartları (Android like)
+                LazyVStack(spacing: 12) {
+                    ForEach(viewModel.customerImageGroups) { group in
+                        CustomerImageCard(
+                            group: group,
+                            onDeleteImage: { image in
+                                viewModel.deleteImage(image)
+                            }
+                        )
                     }
                 }
             }
@@ -383,6 +383,97 @@ struct CustomerRow: View {
     }
 }
 
+// MARK: - Customer Image Card (Müşteri bazlı resim kartı)
+struct CustomerImageCard: View {
+    let group: CustomerImageGroup
+    let onDeleteImage: (SavedImage) -> Void
+    @State private var isExpanded = false
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Müşteri header'ı (Android Material Design like)
+            Button(action: {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    isExpanded.toggle()
+                }
+            }) {
+                HStack {
+                    // Müşteri ikonu
+                    Image(systemName: "person.crop.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(.blue)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(group.customerName)
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.primary)
+                        
+                        Text("\(group.imageCount) resim • \(formattedDate(group.lastUpdated))")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Spacer()
+                    
+                    // Resim sayısı badge
+                    Text("\(group.imageCount)")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.green)
+                        .cornerRadius(10)
+                    
+                    // Expand/Collapse ikonu
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .animation(.easeInOut(duration: 0.3), value: isExpanded)
+                }
+                .padding()
+            }
+            .buttonStyle(PlainButtonStyle())
+            
+            // Resim grid'i (expandable)
+            if isExpanded {
+                VStack(spacing: 12) {
+                    Divider()
+                        .padding(.horizontal)
+                    
+                    LazyVGrid(columns: [
+                        GridItem(.flexible()),
+                        GridItem(.flexible()),
+                        GridItem(.flexible()),
+                        GridItem(.flexible())
+                    ], spacing: 12) {
+                        ForEach(group.images) { image in
+                            SavedImageCard(image: image) {
+                                onDeleteImage(image)
+                            }
+                        }
+                    }
+                    .padding(.horizontal)
+                    .padding(.bottom)
+                }
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(.systemGray6))
+                .shadow(color: .black.opacity(0.05), radius: 3, x: 0, y: 2)
+        )
+    }
+    
+    private func formattedDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .short
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
+    }
+}
+
 // MARK: - Saved Image Card
 struct SavedImageCard: View {
     let image: SavedImage
@@ -396,23 +487,23 @@ struct SavedImageCard: View {
                     image
                         .resizable()
                         .aspectRatio(contentMode: .fill)
-                        .frame(width: 80, height: 80)
+                        .frame(width: 60, height: 60)
                         .clipped()
-                        .cornerRadius(8)
+                        .cornerRadius(6)
                         
                 case .failure(_):
                     Image(systemName: "photo")
-                        .font(.system(size: 30))
+                        .font(.system(size: 20))
                         .foregroundColor(.secondary)
-                        .frame(width: 80, height: 80)
+                        .frame(width: 60, height: 60)
                         .background(Color(.systemGray6))
-                        .cornerRadius(8)
+                        .cornerRadius(6)
                         
                 case .empty:
                     ProgressView()
-                        .frame(width: 80, height: 80)
+                        .frame(width: 60, height: 60)
                         .background(Color(.systemGray6))
-                        .cornerRadius(8)
+                        .cornerRadius(6)
                         
                 @unknown default:
                     EmptyView()
@@ -420,7 +511,7 @@ struct SavedImageCard: View {
             }
             
             Text(image.customerName)
-                .font(.caption)
+                .font(.caption2)
                 .lineLimit(1)
                 .truncationMode(.tail)
             

@@ -40,6 +40,7 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
     @Published var uploadProgress: Float = 0.0
     @Published var isUploading = false
     @Published var savedImages: [SavedImage] = []
+    @Published var customerImageGroups: [CustomerImageGroup] = []
     
     // MARK: - Error Handling
     @Published var showingError = false
@@ -298,6 +299,70 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
     func loadSavedImages() {
         // Tüm kayıtlı resimleri yükle
         savedImages = loadAllSavedImages()
+        // Müşteri bazlı gruplandırma yap
+        loadCustomerImageGroups()
+    }
+    
+    // MARK: - Customer Image Groups (Müşteri bazlı resim gruplandırması)
+    func loadCustomerImageGroups() {
+        Task {
+            await loadAllCustomerImages()
+        }
+    }
+    
+    @MainActor
+    private func loadAllCustomerImages() async {
+        // ImageStorageManager'dan tüm müşteri klasörlerini al
+        if let storageInfo = await getStorageInfo() {
+            print("📋 Storage Info: \(storageInfo)")
+        }
+        
+        var groups: [CustomerImageGroup] = []
+        
+        // Documents/Envanto klasöründeki tüm müşteri klasörlerini tara
+        if let documentsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+            let envantoDir = documentsDir.appendingPathComponent("Envanto")
+            
+            do {
+                let customerDirs = try FileManager.default.contentsOfDirectory(at: envantoDir, includingPropertiesForKeys: nil)
+                
+                for customerDir in customerDirs where customerDir.hasDirectoryPath {
+                    let customerName = customerDir.lastPathComponent
+                    
+                    // Bu müşterinin resimlerini yükle
+                    let imagePaths = await ImageStorageManager.listCustomerImages(customerName: customerName)
+                    
+                    if !imagePaths.isEmpty {
+                        let savedImages = imagePaths.map { path in
+                            SavedImage(
+                                customerName: customerName,
+                                imagePath: path,
+                                localPath: path,
+                                uploadDate: getFileCreationDate(path: path),
+                                isUploaded: false
+                            )
+                        }
+                        
+                        let group = CustomerImageGroup(
+                            customerName: customerName,
+                            images: savedImages.sorted { $0.uploadDate > $1.uploadDate }
+                        )
+                        groups.append(group)
+                    }
+                }
+            } catch {
+                print("❌ Müşteri klasörleri listelenemedi: \(error)")
+            }
+        }
+        
+        // Gruplari tarih sırasına göre sırala (en yeni önce)
+        customerImageGroups = groups.sorted { $0.lastUpdated > $1.lastUpdated }
+        
+        print("📊 \(customerImageGroups.count) müşteri için resim grubu oluşturuldu")
+    }
+    
+    private func getStorageInfo() async -> String? {
+        return await ImageStorageManager.getStorageInfo()
     }
     
     private func loadSavedImagesForCustomer(_ customerName: String) {
@@ -377,6 +442,8 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
             
             // Kayıtlı resimleri yenile
             loadSavedImagesForCustomer(customer.name)
+            // Müşteri gruplarını güncelle
+            loadCustomerImageGroups()
             
         } catch {
             isUploading = false
@@ -452,6 +519,8 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
                 
                 // Kayıtlı resimleri yenile
                 loadSavedImagesForCustomer(customer.name)
+                // Müşteri gruplarını güncelle
+                loadCustomerImageGroups()
             }
             
         } catch {
@@ -469,6 +538,8 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         } else {
             loadSavedImages()
         }
+        // Her durumda müşteri gruplarını da güncelle
+        loadCustomerImageGroups()
     }
     
     // MARK: - Delete Image
@@ -479,6 +550,8 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
                 await MainActor.run {
                     savedImages.removeAll { $0.id == image.id }
                     print("🗑️ Resim başarıyla silindi: \(image.localPath)")
+                    // Müşteri gruplarını güncelle
+                    loadCustomerImageGroups()
                 }
             } else {
                 await MainActor.run {
@@ -517,6 +590,21 @@ struct SavedImage: Identifiable {
     let localPath: String
     let uploadDate: Date
     let isUploaded: Bool
+}
+
+// MARK: - Customer Image Group Model (Müşteri bazlı resim gruplandırması)
+struct CustomerImageGroup: Identifiable {
+    let id = UUID()
+    let customerName: String
+    let images: [SavedImage]
+    
+    var imageCount: Int {
+        return images.count
+    }
+    
+    var lastUpdated: Date {
+        return images.map(\.uploadDate).max() ?? Date()
+    }
 }
 
 // NetworkError DeviceAuthManager'da tanımlı 
