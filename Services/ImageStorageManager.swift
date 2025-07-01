@@ -8,8 +8,9 @@ class ImageStorageManager {
     private static let ENVANTO_FOLDER = "Envanto"
     private static let TAG = "ImageStorageManager"
     
-    // MARK: - Get Documents Directory
+    // MARK: - Get Documents Directory (User Accessible)
     private static func getDocumentsDirectory() -> URL? {
+        // iOS Documents klasörü - Dosyalar uygulamasında görünür
         return FileManager.default.urls(for: .documentDirectory, 
                                        in: .userDomainMask).first
     }
@@ -29,7 +30,7 @@ class ImageStorageManager {
                 try FileManager.default.createDirectory(at: envantoDir, 
                                                       withIntermediateDirectories: true, 
                                                       attributes: nil)
-                print("📁 Envanto klasörü oluşturuldu: \(envantoDir.path)")
+                print("📁 Envanto klasörü oluşturuldu: \(getRelativePath(for: envantoDir))")
             } catch {
                 print("❌ Envanto klasörü oluşturulamadı: \(error.localizedDescription)")
                 return nil
@@ -56,7 +57,7 @@ class ImageStorageManager {
                 try FileManager.default.createDirectory(at: customerDir, 
                                                       withIntermediateDirectories: true, 
                                                       attributes: nil)
-                print("📁 Müşteri klasörü oluşturuldu: \(customerDir.path)")
+                print("📁 Müşteri klasörü oluşturuldu: \(getRelativePath(for: customerDir))")
             } catch {
                 print("❌ Müşteri klasörü oluşturulamadı: \(error.localizedDescription)")
                 return nil
@@ -88,7 +89,10 @@ class ImageStorageManager {
         
         do {
             try imageData.write(to: finalPath)
-            print("✅ Resim kaydedildi: \(finalPath.path)")
+            
+            // Daha temiz dosya yolu gösterimi
+            let relativePath = getRelativePath(for: finalPath)
+            print("✅ Resim kaydedildi: \(relativePath)")
             return finalPath.path
         } catch {
             print("❌ Resim kaydetme hatası: \(error.localizedDescription)")
@@ -139,7 +143,7 @@ class ImageStorageManager {
         
         do {
             try FileManager.default.removeItem(at: fileURL)
-            print("🗑️ Resim silindi: \(path)")
+            print("🗑️ Resim silindi: \(getRelativePath(for: fileURL))")
             
             // Boş klasörleri temizle (Android mantığı)
             cleanupEmptyDirectories(fileURL.deletingLastPathComponent())
@@ -156,7 +160,7 @@ class ImageStorageManager {
         
         do {
             try FileManager.default.removeItem(at: customerDir)
-            print("🗑️ Müşteri klasörü silindi: \(customerDir.path)")
+            print("🗑️ Müşteri klasörü silindi: \(getRelativePath(for: customerDir))")
             
             // Boş üst klasörleri temizle
             cleanupEmptyDirectories(customerDir.deletingLastPathComponent())
@@ -176,7 +180,7 @@ class ImageStorageManager {
         if contents?.isEmpty == true && directory.lastPathComponent != ENVANTO_FOLDER {
             do {
                 try FileManager.default.removeItem(at: directory)
-                print("🧹 Boş klasör silindi: \(directory.path)")
+                print("🧹 Boş klasör silindi: \(getRelativePath(for: directory))")
                 
                 // Üst klasörü de kontrol et
                 cleanupEmptyDirectories(directory.deletingLastPathComponent())
@@ -211,6 +215,23 @@ class ImageStorageManager {
         }
     }
     
+    // MARK: - Get Relative Path (Clean Display)
+    private static func getRelativePath(for fullPath: URL) -> String {
+        guard let documentsDir = getDocumentsDirectory() else {
+            return fullPath.path
+        }
+        
+        let documentsPath = documentsDir.path
+        let fullPathString = fullPath.path
+        
+        if fullPathString.hasPrefix(documentsPath) {
+            let relativePath = String(fullPathString.dropFirst(documentsPath.count))
+            return "📁 Documents\(relativePath)"
+        }
+        
+        return fullPathString
+    }
+    
     // MARK: - Get Storage Info
     static func getStorageInfo() -> String {
         guard let storageDir = getStorageDir() else {
@@ -218,7 +239,8 @@ class ImageStorageManager {
         }
         
         var info = "📁 Envanto Storage Info:\n"
-        info += "Path: \(storageDir.path)\n"
+        info += "📂 Konum: \(getRelativePath(for: storageDir))\n"
+        info += "💡 Dosyalar uygulamasından erişilebilir\n"
         
         do {
             let contents = try FileManager.default.contentsOfDirectory(at: storageDir, 
@@ -237,5 +259,35 @@ class ImageStorageManager {
         }
         
         return info
+    }
+    
+    // MARK: - Debug Test Function
+    static func testStorageSetup() {
+        print("🧪 ImageStorageManager Test Başlatıldı")
+        
+        guard let documentsDir = getDocumentsDirectory() else {
+            print("❌ Documents directory alınamadı")
+            return
+        }
+        
+        print("📂 Documents Path: \(getRelativePath(for: documentsDir))")
+        
+        guard let storageDir = getStorageDir() else {
+            print("❌ Storage directory oluşturulamadı")
+            return
+        }
+        
+        print("📁 Envanto Path: \(getRelativePath(for: storageDir))")
+        
+        // Test müşteri klasörü oluştur
+        let testCustomer = "TEST_MUSTERI"
+        guard let customerDir = getCustomerDir(for: testCustomer) else {
+            print("❌ Test müşteri klasörü oluşturulamadı")
+            return
+        }
+        
+        print("🏢 Test Müşteri Path: \(getRelativePath(for: customerDir))")
+        print("✅ Tüm klasörler başarıyla oluşturuldu!")
+        print("💡 iPhone Dosyalar uygulamasından 'Bu iPhone'da' > 'Envanto Barkod' altından erişebilirsiniz")
     }
 } 
