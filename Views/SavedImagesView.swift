@@ -11,6 +11,9 @@ struct SavedImagesView: View {
     @State private var showingDeviceAuthDialog = false
     @State private var selectedImageType: ImageType = .barkod // Android'deki tab sistemi
     
+    // Sanal PC performansı için lazy loading
+    @State private var isViewLoaded = false
+    
     // Android CustomerImagesActivity'deki gibi image type enum
     enum ImageType: String, CaseIterable {
         case barkod = "Barkod Resimleri"
@@ -93,7 +96,13 @@ struct SavedImagesView: View {
         }
         .navigationBarHidden(true)
         .onAppear {
-            checkDeviceAuthorization()
+            if !isViewLoaded {
+                // Sanal PC performansı için lazy initialization
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    checkDeviceAuthorization()
+                    isViewLoaded = true
+                }
+            }
         }
         .onChange(of: showingDeviceAuthDialog) { showing in
             if showing {

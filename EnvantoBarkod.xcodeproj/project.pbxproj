@@ -287,6 +287,10 @@
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_COMPILATION_MODE = incremental;
+				SWIFT_WHOLE_MODULE_OPTIMIZATION = NO;
+				COMPILER_INDEX_STORE_ENABLE = NO;
+				ENABLE_BITCODE = NO;
 			};
 			name = Debug;
 		};
@@ -374,6 +378,10 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				SWIFT_COMPILATION_MODE = incremental;
+				COMPILER_INDEX_STORE_ENABLE = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_BITCODE = NO;
 			};
 			name = Debug;
 		};
@@ -405,6 +413,8 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
 		};

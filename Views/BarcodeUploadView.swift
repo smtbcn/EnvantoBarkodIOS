@@ -245,6 +245,9 @@ struct BarcodeUploadView: View {
     @State private var showingDeviceAuthDialog = false
     @State private var selectedImageType: ImageType = .barkod // Android benzeri tab sistemi
     
+    // Sanal PC performansı için lazy loading
+    @State private var isViewLoaded = false
+    
     // Android uygulamasındaki gibi image type enum
     enum ImageType: String, CaseIterable {
         case barkod = "Barkod Resimleri"
@@ -316,7 +319,13 @@ struct BarcodeUploadView: View {
             .navigationBarHidden(true)
         }
         .onAppear {
-            viewModel.checkDeviceAuthorization()
+            if !isViewLoaded {
+                // Sanal PC performansı için lazy initialization
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    viewModel.checkDeviceAuthorization()
+                    isViewLoaded = true
+                }
+            }
         }
         .sheet(isPresented: $showingImagePicker) {
             MultipleImagePicker(selectedImages: $selectedImages) { images in
