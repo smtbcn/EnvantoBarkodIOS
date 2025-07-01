@@ -516,4 +516,89 @@ class SQLiteManager {
         formatter.locale = Locale(identifier: "en_US_POSIX")
         return formatter.string(from: Date())
     }
+    
+    // MARK: - Müşteri Cache Methodları (Android DatabaseHelper ile aynı)
+    
+    /**
+     * Müşteri cache'inde kayıtlı müşteri sayısını getir
+     */
+    func getCachedMusteriCount() -> Int {
+        let querySQL = "SELECT COUNT(*) FROM \(SQLiteManager.TABLE_MUSTERILER)"
+        
+        var statement: OpaquePointer?
+        var count = 0
+        
+        if sqlite3_prepare_v2(db, querySQL, -1, &statement, nil) == SQLITE_OK {
+            if sqlite3_step(statement) == SQLITE_ROW {
+                count = Int(sqlite3_column_int(statement, 0))
+            }
+        }
+        
+        sqlite3_finalize(statement)
+        return count
+    }
+    
+    /**
+     * Müşteri listesini cache'e kaydet (Android cacheMusteriler ile aynı)
+     */
+    func cacheMusteriler(_ customerNames: [String]) {
+        // İlk önce mevcut cache'i temizle
+        let deleteSQL = "DELETE FROM \(SQLiteManager.TABLE_MUSTERILER)"
+        var statement: OpaquePointer?
+        
+        if sqlite3_prepare_v2(db, deleteSQL, -1, &statement, nil) == SQLITE_OK {
+            sqlite3_step(statement)
+        }
+        sqlite3_finalize(statement)
+        
+        // Yeni müşterileri ekle
+        let insertSQL = """
+        INSERT INTO \(SQLiteManager.TABLE_MUSTERILER) 
+        (\(SQLiteManager.COLUMN_MUSTERI_ADI), \(SQLiteManager.COLUMN_TARIH))
+        VALUES (?, datetime('now'))
+        """
+        
+        for customerName in customerNames {
+            if sqlite3_prepare_v2(db, insertSQL, -1, &statement, nil) == SQLITE_OK {
+                sqlite3_bind_text(statement, 1, customerName, -1, nil)
+                sqlite3_step(statement)
+            }
+            sqlite3_finalize(statement)
+        }
+        
+        // Cache update zamanını UserDefaults'ta güncelle
+        UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "last_customer_update")
+        
+        print("✅ \(customerNames.count) müşteri cache'e kaydedildi")
+    }
+    
+    /**
+     * Cache'den müşteri ara (Android searchCachedMusteriler ile aynı)
+     */
+    func searchCachedMusteriler(query: String) -> [String] {
+        let querySQL = """
+        SELECT \(SQLiteManager.COLUMN_MUSTERI_ADI)
+        FROM \(SQLiteManager.TABLE_MUSTERILER)
+        WHERE \(SQLiteManager.COLUMN_MUSTERI_ADI) LIKE ?
+        ORDER BY \(SQLiteManager.COLUMN_MUSTERI_ADI) ASC
+        LIMIT 10
+        """
+        
+        var statement: OpaquePointer?
+        var results: [String] = []
+        
+        if sqlite3_prepare_v2(db, querySQL, -1, &statement, nil) == SQLITE_OK {
+            let searchPattern = "%\(query)%"
+            sqlite3_bind_text(statement, 1, searchPattern, -1, nil)
+            
+            while sqlite3_step(statement) == SQLITE_ROW {
+                if let musteriAdi = sqlite3_column_text(statement, 0) {
+                    results.append(String(cString: musteriAdi))
+                }
+            }
+        }
+        
+        sqlite3_finalize(statement)
+        return results
+    }
 }

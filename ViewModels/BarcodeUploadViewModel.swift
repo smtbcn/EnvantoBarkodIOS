@@ -32,8 +32,6 @@ class BarcodeUploadViewModel: ObservableObject {
         loadCustomerCache()
     }
     
-
-    
     func searchCustomers(query: String) {
         guard query.count >= 2 else { 
             searchResults = []
@@ -117,7 +115,43 @@ class BarcodeUploadViewModel: ObservableObject {
         }.resume()
     }
     
-    private func checkAndUpdateCustomerCache() {
+    // MARK: - Device Authorization Methods
+    
+    func checkDeviceAuthorization() {
+        // Android BarcodeUploadActivity onResume benzeri - check işlemini başlat
+        isCheckingAuth = true
+        
+        // DeviceAuthManager kullanarak authorization kontrol et
+        DeviceAuthManager.checkDeviceAuthorization(callback: DeviceAuthCallbackImpl(
+            authSuccessHandler: { [weak self] in
+                DispatchQueue.main.async {
+                    self?.isAuthSuccess = true
+                    self?.isCheckingAuth = false
+                    self?.checkAndUpdateCustomerCache()
+                }
+            },
+            authFailureHandler: { [weak self] in
+                DispatchQueue.main.async {
+                    self?.isAuthSuccess = false
+                    self?.isCheckingAuth = false
+                }
+            },
+            showLoadingHandler: { [weak self] in
+                DispatchQueue.main.async {
+                    self?.isLoading = true
+                }
+            },
+            hideLoadingHandler: { [weak self] in
+                DispatchQueue.main.async {
+                    self?.isLoading = false
+                }
+            }
+        ))
+    }
+    
+    // MARK: - Customer Cache Methods
+    
+    func checkAndUpdateCustomerCache() {
         // Android behavior: Check SQLite cache first
         let sqliteCachedCount = SQLiteManager.shared.getCachedMusteriCount()
         let userDefaultsCachedCount = customerCache.count
@@ -209,17 +243,20 @@ class BarcodeUploadViewModel: ObservableObject {
     
     private func saveCustomerCache() {
         UserDefaults.standard.set(customerCache, forKey: "customerCache")
-        UserDefaults.standard.set(lastCacheUpdate, forKey: "lastCacheUpdate")
+        UserDefaults.standard.set(Date(), forKey: "lastCacheUpdate")
         print("📋 Customer cache saved to UserDefaults")
     }
+    
+    // MARK: - Toast Message Helper
     
     func showToast(_ message: String) {
         toastMessage = message
         showingToast = true
         
-        // Auto hide after 2 seconds
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
-            self?.showingToast = false
+        // Android Toast behavior: Auto-hide after 2 seconds
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            self.showingToast = false
+            self.toastMessage = ""
         }
     }
 }

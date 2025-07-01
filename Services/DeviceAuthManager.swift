@@ -359,6 +359,11 @@ class DeviceIdentifier {
         return newUUID
     }
     
+    // MARK: - Alias method (Android uyumluluğu için)
+    static func getDeviceID() -> String {
+        return getUniqueDeviceId()
+    }
+    
     // MARK: - Okunabilir cihaz bilgileri
     static func getReadableDeviceInfo() -> String {
         let device = UIDevice.current
