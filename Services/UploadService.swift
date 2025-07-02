@@ -199,6 +199,12 @@ class UploadService: ObservableObject {
                 uploadStatus = "Yüklendi: \(uploadedCount)/\(totalCount)"
                 
                 print("✅ \(UploadService.TAG): Resim başarıyla yüklendi: \(imageRecord.musteriAdi) - \(imageRecord.resimYolu)")
+                
+                // Her başarılı upload sonrasında UI'ı anında güncelle
+                DispatchQueue.main.async {
+                    NotificationCenter.default.post(name: .uploadCompleted, object: nil)
+                    print("📢 \(UploadService.TAG): Tek resim yüklendi - UI refresh notification gönderildi")
+                }
             } else {
                 print("❌ \(UploadService.TAG): Resim yüklenemedi: \(imageRecord.musteriAdi) - \(imageRecord.resimYolu)")
                 
@@ -216,6 +222,14 @@ class UploadService: ObservableObject {
         }
         
         uploadProgress = (uploadedCount, totalCount)
+        
+        // UI refresh tetikle (upload tamamlandığında resim listesi güncellenir)
+        if uploadedCount > 0 {
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(name: .uploadCompleted, object: nil)
+                print("📢 \(UploadService.TAG): Upload tamamlandı - UI refresh notification gönderildi")
+            }
+        }
     }
     
     // MARK: - Server Upload (Android uploadImageToServer benzeri)

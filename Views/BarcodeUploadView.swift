@@ -415,6 +415,13 @@ struct BarcodeUploadView: View {
             // Sayfa açıldığında müşteri gruplarını yükle
             viewModel.loadCustomerImageGroups()
         }
+        .onReceive(NotificationCenter.default.publisher(for: .uploadCompleted)) { _ in
+            // Upload tamamlandığında resim listesini yenile
+            DispatchQueue.main.async {
+                viewModel.loadCustomerImageGroups()
+                print("🔄 BarcodeUploadView: Upload tamamlandı, resim listesi yenileniyor")
+            }
+        }
     }
     
     // MARK: - Yetkisiz Cihaz Görünümü (Android mantığı)

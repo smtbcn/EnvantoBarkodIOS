@@ -48,4 +48,9 @@ struct Constants {
         static let beepSoundID: UInt32 = 1004
         static let vibrationSoundID: UInt32 = kSystemSoundID_Vibrate
     }
+}
+
+// MARK: - Notification Names
+extension Notification.Name {
+    static let uploadCompleted = Notification.Name("uploadCompleted")
 } 
