@@ -21,25 +21,93 @@ class ImageStorageManager {
                 print("📱 Files App'te görünecek yol: \(relativePath)")
             }
             
-            // 🗄️ Basit database kayıt işlemi 
-            print("🗄️ Database kayıt işlemi: \(customerName)")
-            print("📁 Yol: \(documentsPath)")
+            // Debug: Dosya gerçekten var mı kontrol et (birkaç deneme yap)
+            var fileExists = false
+            var attempt = 1
+            let maxAttempts = 3
             
-            let dbManager = DatabaseManager.getInstance()
-            let dbSaved = dbManager.insertBarkodResim(
-                musteriAdi: customerName,
-                resimYolu: documentsPath,
-                yukleyen: yukleyen
-            )
-            
-            if dbSaved {
-                print("✅ Database'e kaydedildi: \(customerName)")
-                dbManager.printDatabaseInfo()
+            while !fileExists && attempt <= maxAttempts {
+                fileExists = FileManager.default.fileExists(atPath: documentsPath)
+                print("🔍 Dosya varlık kontrolü (Deneme \(attempt)/\(maxAttempts)): \(fileExists ? "BULUNDU" : "BULUNAMADI")")
                 
-                // Upload işlemini tetikle (WiFi ayarını kontrol et)
-                triggerUploadAfterSave()
+                if !fileExists && attempt < maxAttempts {
+                    // Kısa bekleme (dosya sistemi için)
+                    try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 saniye
+                }
+                attempt += 1
+            }
+            
+            if fileExists {
+                print("✅ Dosya doğrulandı: \(documentsPath)")
+                
+                // Dosya boyutunu da göster
+                if let attributes = try? FileManager.default.attributesOfItem(atPath: documentsPath),
+                   let fileSize = attributes[.size] as? Int64 {
+                    let fileSizeMB = Double(fileSize) / (1024 * 1024)
+                    print("📏 Dosya boyutu: \(String(format: "%.2f", fileSizeMB)) MB")
+                }
+                
+                print("🗄️ Database kayıt işlemi başlıyor...")
+                print("📋 Kaydedilecek bilgiler:")
+                print("   👤 Müşteri: '\(customerName)'")
+                print("   📁 Yol: '\(documentsPath)'")
+                print("   🔑 Yukleyen: '\(yukleyen)'")
+                
+                // DatabaseManager instance kontrol
+                print("🔄 DatabaseManager instance alınıyor...")
+                let dbManager = DatabaseManager.getInstance()
+                print("✅ DatabaseManager instance alındı")
+                
+                // 🗄️ Veritabanına kaydet (Android'deki gibi)
+                print("💾 insertBarkodResim çağrılıyor...")
+                let dbSaved = dbManager.insertBarkodResim(
+                    musteriAdi: customerName,
+                    resimYolu: documentsPath,
+                    yukleyen: yukleyen
+                )
+                print("💾 insertBarkodResim sonucu: \(dbSaved)")
+                
+                if dbSaved {
+                    print("🗄️ Veritabanına kaydedildi: \(customerName) - \(documentsPath)")
+                    // Database istatistiklerini göster
+                    dbManager.printDatabaseInfo()
+                    
+                    // Upload işlemini tetikle (WiFi ayarını kontrol et)
+                    triggerUploadAfterSave()
+                } else {
+                    print("❌ Veritabanına kaydedilemedi")
+                }
+                
             } else {
-                print("❌ Database kayıt hatası")
+                print("❌ Dosya \(maxAttempts) denemede bulunamadı: \(documentsPath)")
+                print("❌ KRITIK: Dosya kaydedildi ama erişilemiyor - iOS dosya sistemi gecikmesi olabilir")
+                
+                // Database'e yine de kaydet (dosya vardır ama geç erişilebilir)
+                print("🔄 Yine de database'e kaydediliyor...")
+                print("📋 Kaydedilecek bilgiler (gecikmeli):")
+                print("   👤 Müşteri: '\(customerName)'")
+                print("   📁 Yol: '\(documentsPath)'")
+                print("   🔑 Yukleyen: '\(yukleyen)'")
+                
+                print("🔄 DatabaseManager instance alınıyor (gecikmeli)...")
+                let dbManager = DatabaseManager.getInstance()
+                print("✅ DatabaseManager instance alındı (gecikmeli)")
+                
+                print("💾 insertBarkodResim çağrılıyor (gecikmeli)...")
+                let dbSaved = dbManager.insertBarkodResim(
+                    musteriAdi: customerName,
+                    resimYolu: documentsPath,
+                    yukleyen: yukleyen
+                )
+                print("💾 insertBarkodResim sonucu (gecikmeli): \(dbSaved)")
+                
+                if dbSaved {
+                    print("🗄️ Veritabanına kaydedildi (dosya gecikmeli): \(customerName) - \(documentsPath)")
+                    dbManager.printDatabaseInfo()
+                    triggerUploadAfterSave()
+                } else {
+                    print("❌ Veritabanına kaydedilemedi (dosya gecikmeli)")
+                }
             }
             
             return documentsPath
@@ -60,11 +128,38 @@ class ImageStorageManager {
         UploadService.shared.startUploadService(wifiOnly: wifiOnly)
     }
     
-    // MARK: - Simple Path Info
+    // MARK: - Debug: Print actual Documents path
     private static func printActualDocumentsPath() {
         if let documentsDir = getAppDocumentsDirectory() {
-            let envantoPath = documentsDir.appendingPathComponent("Envanto").path
-            print("📁 Envanto path: \(envantoPath)")
+            print("📱 ACTUAL Documents Path: \(documentsDir.path)")
+            print("📁 Envanto klasör yolu: \(documentsDir.appendingPathComponent("Envanto").path)")
+            print("💡 Files App'te 'Bu iPhone/iPad' > 'Envanto Barkod' altında görünür")
+            
+            // Envanto klasörü var mı kontrol et
+            let envantoDir = documentsDir.appendingPathComponent("Envanto")
+            if FileManager.default.fileExists(atPath: envantoDir.path) {
+                print("✅ Envanto klasörü mevcut")
+                
+                do {
+                    let contents = try FileManager.default.contentsOfDirectory(atPath: envantoDir.path)
+                    print("📁 Envanto içindeki müşteri klasörleri: \(contents)")
+                    
+                    // Her müşteri klasöründe kaç resim var
+                    for customerFolder in contents.prefix(3) {
+                        let customerPath = envantoDir.appendingPathComponent(customerFolder)
+                        if let customerContents = try? FileManager.default.contentsOfDirectory(atPath: customerPath.path) {
+                            let imageCount = customerContents.filter { $0.hasSuffix(".jpg") || $0.hasSuffix(".jpeg") || $0.hasSuffix(".png") }.count
+                            print("   👤 \(customerFolder): \(imageCount) resim")
+                        }
+                    }
+                } catch {
+                    print("❌ Envanto klasörü içeriği okunamadı: \(error)")
+                }
+            } else {
+                print("❌ Envanto klasörü henüz oluşturulmamış")
+            }
+        } else {
+            print("❌ Documents directory alınamadı")
         }
     }
 
