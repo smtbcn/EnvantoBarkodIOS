@@ -163,9 +163,21 @@ class UploadService: ObservableObject {
         
         for (index, imageRecord) in pendingImages.enumerated() {
             uploadProgress = (index, totalCount)
-            print("📤 \(UploadService.TAG): Resim yükleniyor (\(index + 1)/\(totalCount)): \(imageRecord.musteriAdi)")
-            print("📂 \(UploadService.TAG): Resim yolu: \(imageRecord.resimYolu)")
-            print("👤 \(UploadService.TAG): Yükleyen: \(imageRecord.yukleyen)")
+            print("📤 \(UploadService.TAG): === RESİM UPLOAD DEBUG (\(index + 1)/\(totalCount)) ===")
+            print("👤 \(UploadService.TAG): Müşteri: '\(imageRecord.musteriAdi)'")
+            print("📁 \(UploadService.TAG): DB Path: '\(imageRecord.resimYolu)'")
+            print("👨‍💼 \(UploadService.TAG): Yükleyen: '\(imageRecord.yukleyen)'")
+            print("🆔 \(UploadService.TAG): DB ID: \(imageRecord.id)")
+            print("📅 \(UploadService.TAG): Tarih: '\(imageRecord.tarih)'")
+            print("🏷️ \(UploadService.TAG): Yuklendi Flag: \(imageRecord.yuklendi)")
+            
+            // PATH KONTROL DETAYI
+            if imageRecord.resimYolu.isEmpty {
+                print("❌ \(UploadService.TAG): KRITIK HATA - Database'deki path BOŞ!")
+                continue
+            } else {
+                print("✅ \(UploadService.TAG): Database path dolu: \(imageRecord.resimYolu.count) karakter")
+            }
             
             // Her resim için network kontrolü (WiFi kesilirse dursun)
             let currentCheck = NetworkUtils.canUploadWithSettings(wifiOnly: wifiOnly)
@@ -363,16 +375,62 @@ class UploadService: ObservableObject {
         }
     }
     
-    // MARK: - Path Helper (Basitleştirildi)
+    // MARK: - Path Helper (Detaylı Debug)
     private func findActualImagePath(for imageRecord: BarkodResim) -> String {
-        // Database'deki path'i doğrudan kullan - ImageStorageManager doğru path kaydetmeli
-        let imagePath = imageRecord.resimYolu
+        print("🔍 \(UploadService.TAG): === PATH DEBUG BAŞLIYOR ===")
         
-        if FileManager.default.fileExists(atPath: imagePath) {
-            print("✅ \(UploadService.TAG): Dosya bulundu: \(imagePath)")
+        let imagePath = imageRecord.resimYolu
+        print("📋 \(UploadService.TAG): DB'den gelen path: '\(imagePath)'")
+        print("📏 \(UploadService.TAG): Path uzunluğu: \(imagePath.count) karakter")
+        
+        if imagePath.isEmpty {
+            print("❌ \(UploadService.TAG): PATH BOŞ! Database sorunu")
+            return ""
+        }
+        
+        // Path formatını analiz et
+        if imagePath.hasPrefix("/var/mobile") {
+            print("✅ \(UploadService.TAG): iOS full path formatı")
+        } else if imagePath.hasPrefix("Documents/") {
+            print("⚠️ \(UploadService.TAG): Relative path formatı")
+        } else {
+            print("❓ \(UploadService.TAG): Bilinmeyen path formatı")
+        }
+        
+        // Dosya varlığını kontrol et
+        print("🔍 \(UploadService.TAG): Dosya varlığı kontrol ediliyor...")
+        let fileExists = FileManager.default.fileExists(atPath: imagePath)
+        print("📁 \(UploadService.TAG): FileManager.fileExists = \(fileExists)")
+        
+        if fileExists {
+            print("✅ \(UploadService.TAG): DOSYA BULUNDU: \(imagePath)")
             return imagePath
         } else {
-            print("❌ \(UploadService.TAG): Dosya bulunamadı: \(imagePath)")
+            print("❌ \(UploadService.TAG): DOSYA BULUNAMADI: \(imagePath)")
+            
+            // Alternative path dene - Documents klasörü
+            if let documentsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+                print("🔍 \(UploadService.TAG): Documents directory: \(documentsDir.path)")
+                
+                // Envanto klasör kontrol
+                let envantoDir = documentsDir.appendingPathComponent("Envanto")
+                print("🔍 \(UploadService.TAG): Envanto directory: \(envantoDir.path)")
+                print("📁 \(UploadService.TAG): Envanto exists: \(FileManager.default.fileExists(atPath: envantoDir.path))")
+                
+                // Müşteri klasör kontrol
+                let customerDir = envantoDir.appendingPathComponent(imageRecord.musteriAdi)
+                print("🔍 \(UploadService.TAG): Customer directory: \(customerDir.path)")
+                print("📁 \(UploadService.TAG): Customer exists: \(FileManager.default.fileExists(atPath: customerDir.path))")
+                
+                // Klasör içeriği listele
+                do {
+                    let contents = try FileManager.default.contentsOfDirectory(atPath: customerDir.path)
+                    print("📋 \(UploadService.TAG): Customer klasöründeki dosyalar: \(contents)")
+                } catch {
+                    print("❌ \(UploadService.TAG): Customer klasör okuma hatası: \(error)")
+                }
+            }
+            
             return ""
         }
     }

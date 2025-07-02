@@ -342,6 +342,8 @@ class DatabaseManager {
     func getAllPendingImages() -> [BarkodResim] {
         guard db != nil else { return [] }
         
+        print("🔍 \(DatabaseManager.TAG): === DATABASE READ DEBUG ===")
+        
         let selectSQL = """
             SELECT \(DatabaseManager.COLUMN_ID), \(DatabaseManager.COLUMN_MUSTERI_ADI), 
                    \(DatabaseManager.COLUMN_RESIM_YOLU), \(DatabaseManager.COLUMN_TARIH), 
@@ -351,17 +353,37 @@ class DatabaseManager {
             ORDER BY \(DatabaseManager.COLUMN_TARIH) ASC
         """
         
+        print("📝 \(DatabaseManager.TAG): SQL: \(selectSQL)")
+        
         var statement: OpaquePointer?
         var results: [BarkodResim] = []
         
         if sqlite3_prepare_v2(db, selectSQL, -1, &statement, nil) == SQLITE_OK {
+            var rowCount = 0
             while sqlite3_step(statement) == SQLITE_ROW {
+                rowCount += 1
+                
                 let id = Int(sqlite3_column_int(statement, 0))
                 let musteriAdi = String(cString: sqlite3_column_text(statement, 1))
                 let resimYolu = String(cString: sqlite3_column_text(statement, 2))
                 let tarih = String(cString: sqlite3_column_text(statement, 3))
                 let yukleyen = String(cString: sqlite3_column_text(statement, 4))
                 let yuklendi = Int(sqlite3_column_int(statement, 5))
+                
+                print("📋 \(DatabaseManager.TAG): === ROW \(rowCount) DEBUG ===")
+                print("   🆔 ID: \(id)")
+                print("   👤 Müşteri: '\(musteriAdi)'")
+                print("   📁 Path: '\(resimYolu)' (uzunluk: \(resimYolu.count))")
+                print("   📅 Tarih: '\(tarih)'")
+                print("   👨‍💼 Yükleyen: '\(yukleyen)'")
+                print("   🏷️ Yuklendi: \(yuklendi)")
+                
+                // Path boş mu kontrol et
+                if resimYolu.isEmpty {
+                    print("   ❌ PATH BOŞ!")
+                } else {
+                    print("   ✅ Path dolu")
+                }
                 
                 let barkodResim = BarkodResim(
                     id: id,
@@ -374,10 +396,12 @@ class DatabaseManager {
                 
                 results.append(barkodResim)
             }
+        } else {
+            print("❌ \(DatabaseManager.TAG): SQL prepare hatası")
         }
         
         sqlite3_finalize(statement)
-        print("📊 \(DatabaseManager.TAG): \(results.count) adet yüklenmemiş resim bulundu")
+        print("📊 \(DatabaseManager.TAG): TOPLAM \(results.count) adet yüklenmemiş resim bulundu")
         return results
     }
     
