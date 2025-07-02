@@ -1,5 +1,6 @@
 import Foundation
 import UIKit
+import CryptoKit
 
 class DeviceIdentifier {
     private static let DEVICE_ID_KEY = "envanto_device_id"
@@ -65,13 +66,21 @@ class DeviceIdentifier {
             "deviceId": getUniqueDeviceId()
         ]
     }
+    
+    // MARK: - Okunabilir cihaz bilgileri (DeviceAuthManager için)
+    static func getReadableDeviceInfo() -> String {
+        let device = UIDevice.current
+        let systemVersion = device.systemVersion
+        let model = device.model
+        let name = device.name
+        
+        return "\(name) - \(model) - iOS \(systemVersion)"
+    }
 }
 
 // MARK: - String MD5 Extension
 extension String {
     var md5: String {
-        import CryptoKit
-        
         let digest = Insecure.MD5.hash(data: self.data(using: .utf8) ?? Data())
         return digest.map { String(format: "%02hhx", $0) }.joined()
     }
