@@ -301,28 +301,8 @@ class DatabaseManager {
     func getCustomerImages(musteriAdi: String) -> [BarkodResim] {
         guard db != nil else { return [] }
         
-        // ÖNCE TÜM MÜŞTERİLERİ LİSTELE (DEBUG)
-        print("🔍 DEBUG: Önce database'deki tüm müşterileri görelim:")
-        let allCustomersSQL = "SELECT DISTINCT \(DatabaseManager.COLUMN_MUSTERI_ADI) FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER)"
-        var allStatement: OpaquePointer?
-        
-        if sqlite3_prepare_v2(db, allCustomersSQL, -1, &allStatement, nil) == SQLITE_OK {
-            var customerIndex = 0
-            while sqlite3_step(allStatement) == SQLITE_ROW {
-                customerIndex += 1
-                let customerPtr = sqlite3_column_text(allStatement, 0)
-                let customerName = customerPtr != nil ? String(cString: customerPtr!) : "NULL"
-                print("   \(customerIndex). DB'deki müşteri: '\(customerName)'")
-                
-                // Aranan müşteriyle karşılaştır
-                if customerName == musteriAdi {
-                    print("   ✅ EŞLEŞTİ!")
-                } else {
-                    print("   ❌ Farklı: '\(customerName)' != '\(musteriAdi)'")
-                }
-            }
-        }
-        sqlite3_finalize(allStatement)
+        // Debug: Database'deki müşteri adı formatını kontrol et
+        print("🔍 getCustomerImages: Aranan müşteri: '\(musteriAdi)'")
         
         let selectSQL = """
             SELECT \(DatabaseManager.COLUMN_ID), \(DatabaseManager.COLUMN_MUSTERI_ADI), 

@@ -422,11 +422,26 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
     
     // MARK: - Database Upload Status Check
     private func checkDatabaseUploadStatus(path: String, customerName: String, dbManager: DatabaseManager) -> Bool {
-        // Database'den bu resim yoluna göre upload durumunu kontrol et
-        let allImages = dbManager.getCustomerImages(musteriAdi: customerName)
+        // Müşteri adı format dönüşümü (File system vs Database format)
+        let dbCustomerName = customerName.replacingOccurrences(of: "_", with: " ") // SAMET_BICEN -> SAMET BICEN
+        let fsCustomerName = customerName.replacingOccurrences(of: " ", with: "_") // SAMET BICEN -> SAMET_BICEN
         
         print("🔍 checkDatabaseUploadStatus: Path: '\(path)'")
-        print("🔍 checkDatabaseUploadStatus: Customer: '\(customerName)'")
+        print("🔍 checkDatabaseUploadStatus: Original Customer: '\(customerName)'")
+        print("🔍 checkDatabaseUploadStatus: DB Format: '\(dbCustomerName)'")
+        print("🔍 checkDatabaseUploadStatus: FS Format: '\(fsCustomerName)'")
+        
+        // Önce database formatıyla dene
+        var allImages = dbManager.getCustomerImages(musteriAdi: dbCustomerName)
+        if allImages.isEmpty && dbCustomerName != customerName {
+            // Eğer boş gelirse original formatla da dene
+            allImages = dbManager.getCustomerImages(musteriAdi: customerName)
+        }
+        if allImages.isEmpty && fsCustomerName != customerName {
+            // Son çare file system formatıyla dene
+            allImages = dbManager.getCustomerImages(musteriAdi: fsCustomerName)
+        }
+        
         print("🔍 checkDatabaseUploadStatus: DB'den gelen kayıt sayısı: \(allImages.count)")
         
         // Dosya yoluna göre eşleştir
