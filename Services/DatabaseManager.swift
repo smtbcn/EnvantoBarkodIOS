@@ -364,10 +364,36 @@ class DatabaseManager {
                 rowCount += 1
                 
                 let id = Int(sqlite3_column_int(statement, 0))
-                let musteriAdi = String(cString: sqlite3_column_text(statement, 1))
-                let resimYolu = String(cString: sqlite3_column_text(statement, 2))
-                let tarih = String(cString: sqlite3_column_text(statement, 3))
-                let yukleyen = String(cString: sqlite3_column_text(statement, 4))
+                
+                // Güvenli string okuma (NULL kontrol)
+                let musteriAdi = if let ptr = sqlite3_column_text(statement, 1) {
+                    String(cString: ptr)
+                } else {
+                    print("   ⚠️ Column 1 (musteriAdi) is NULL")
+                    ""
+                }
+                
+                let resimYolu = if let ptr = sqlite3_column_text(statement, 2) {
+                    String(cString: ptr)
+                } else {
+                    print("   ⚠️ Column 2 (resimYolu) is NULL")
+                    ""
+                }
+                
+                let tarih = if let ptr = sqlite3_column_text(statement, 3) {
+                    String(cString: ptr)
+                } else {
+                    print("   ⚠️ Column 3 (tarih) is NULL")
+                    ""
+                }
+                
+                let yukleyen = if let ptr = sqlite3_column_text(statement, 4) {
+                    String(cString: ptr)
+                } else {
+                    print("   ⚠️ Column 4 (yukleyen) is NULL")
+                    ""
+                }
+                
                 let yuklendi = Int(sqlite3_column_int(statement, 5))
                 
                 print("📋 \(DatabaseManager.TAG): === ROW \(rowCount) DEBUG ===")
