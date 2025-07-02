@@ -1,8 +1,9 @@
 import Foundation
 import Network
 import SystemConfiguration
+import Combine
 
-class NetworkUtils {
+class NetworkUtils: ObservableObject {
     static let shared = NetworkUtils()
     private let monitor = NWPathMonitor()
     private let queue = DispatchQueue(label: "NetworkMonitor")

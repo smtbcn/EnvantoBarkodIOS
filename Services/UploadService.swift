@@ -161,7 +161,7 @@ class UploadService: ObservableObject {
             if success {
                 uploadedCount += 1
                 // Database'de yuklendi flag'ini güncelle
-                _ = dbManager.updateUploadStatus(id: imageRecord.id, uploaded: true)
+                _ = dbManager.updateUploadStatus(id: imageRecord.id, yuklendi: 1)
                 
                 uploadProgress = (uploadedCount, totalCount)
                 uploadStatus = "Yüklendi: \(uploadedCount)/\(totalCount)"
