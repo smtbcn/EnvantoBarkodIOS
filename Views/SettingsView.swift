@@ -184,7 +184,7 @@ struct SettingsView: View {
     private func updateUploadService() {
         // Upload servisini yeni ayarlarla yeniden başlat
         UploadService.shared.startUploadService(wifiOnly: wifiOnlyUpload)
-        print("🔄 Upload servisi güncellendi - WiFi only: \(wifiOnlyUpload)")
+        
     }
     
     private func resetAllSettings() {
@@ -200,13 +200,13 @@ struct SettingsView: View {
     }
     
     private func testDatabase() {
-        print("🧪 Manuel database test başlatıldı")
+        
         let dbManager = DatabaseManager.getInstance()
         dbManager.testDatabaseOperations()
     }
     
     private func importExistingImages() {
-        print("🔄 Manuel import başlatıldı")
+        
         let dbManager = DatabaseManager.getInstance()
         dbManager.importExistingImages()
         
@@ -220,13 +220,7 @@ struct SettingsView: View {
         let success = dbManager.clearAllBarkodResimler()
         
         if success {
-            print("✅ Database başarıyla temizlendi")
-            
-            // Upload servisini durdur
             UploadService.shared.stopUploadService()
-            print("🛑 Upload servisi durduruldu")
-        } else {
-            print("❌ Database temizleme başarısız")
         }
     }
 }

@@ -11,21 +11,16 @@ class ImageStorageManager {
         
         // App Documents'a kaydet (Files uygulamasından erişilebilir)
         if let documentsPath = saveToAppDocuments(image: image, customerName: customerName, isGallery: isGallery) {
-            print("✅ App Documents'a kaydedildi: \(documentsPath)")
             
             // Relative path'i de göster
             if let documentsDir = getAppDocumentsDirectory() {
                 let relativePath = documentsPath.replacingOccurrences(of: documentsDir.path, with: "Documents")
-                print("📱 Files App'te görünecek yol: \(relativePath)")
             }
             
             // Dosya kontrol et
             let fileExists = FileManager.default.fileExists(atPath: documentsPath)
-            print("📁 Dosya kontrolü: \(fileExists ? "✅ MEVCUT" : "❌ YOK")")
             
             // 🗄️ Database'e kaydet 
-            print("🗄️ Database'e kaydediliyor: \(customerName)")
-            print("📁 Path: \(documentsPath)")
             
             let dbManager = DatabaseManager.getInstance()
             let dbSaved = dbManager.insertBarkodResim(
@@ -35,19 +30,16 @@ class ImageStorageManager {
             )
             
             if dbSaved {
-                print("✅ Database'e kaydedildi")
                 dbManager.printDatabaseInfo()
                 
                 // Upload tetikle
                 triggerUploadAfterSave()
             } else {
-                print("❌ Database kayıt hatası")
             }
             
             return documentsPath
         }
         
-        print("❌ Resim kaydedilemedi")
         return nil
     }
     
@@ -56,7 +48,6 @@ class ImageStorageManager {
         // UserDefaults'tan WiFi ayarını oku
         let wifiOnly = UserDefaults.standard.bool(forKey: Constants.UserDefaults.wifiOnly)
         
-        print("🚀 Upload tetikleniyor - WiFi only: \(wifiOnly)")
         
         // Upload servisini başlat
         UploadService.shared.startUploadService(wifiOnly: wifiOnly)
@@ -65,35 +56,26 @@ class ImageStorageManager {
     // MARK: - Debug: Print actual Documents path
     private static func printActualDocumentsPath() {
         if let documentsDir = getAppDocumentsDirectory() {
-            print("📱 ACTUAL Documents Path: \(documentsDir.path)")
-            print("📁 Envanto klasör yolu: \(documentsDir.appendingPathComponent("Envanto").path)")
-            print("💡 Files App'te 'Bu iPhone/iPad' > 'Envanto Barkod' altında görünür")
             
             // Envanto klasörü var mı kontrol et
             let envantoDir = documentsDir.appendingPathComponent("Envanto")
             if FileManager.default.fileExists(atPath: envantoDir.path) {
-                print("✅ Envanto klasörü mevcut")
                 
                 do {
                     let contents = try FileManager.default.contentsOfDirectory(atPath: envantoDir.path)
-                    print("📁 Envanto içindeki müşteri klasörleri: \(contents)")
                     
                     // Her müşteri klasöründe kaç resim var
                     for customerFolder in contents.prefix(3) {
                         let customerPath = envantoDir.appendingPathComponent(customerFolder)
                         if let customerContents = try? FileManager.default.contentsOfDirectory(atPath: customerPath.path) {
                             let imageCount = customerContents.filter { $0.hasSuffix(".jpg") || $0.hasSuffix(".jpeg") || $0.hasSuffix(".png") }.count
-                            print("   👤 \(customerFolder): \(imageCount) resim")
                         }
                     }
                 } catch {
-                    print("❌ Envanto klasörü içeriği okunamadı: \(error)")
                 }
             } else {
-                print("❌ Envanto klasörü henüz oluşturulmamış")
             }
         } else {
-            print("❌ Documents directory alınamadı")
         }
     }
 
@@ -101,7 +83,6 @@ class ImageStorageManager {
     // MARK: - Save to App Documents (Files App Access)
     private static func saveToAppDocuments(image: UIImage, customerName: String, isGallery: Bool) -> String? {
         guard let customerDir = getAppDocumentsCustomerDir(for: customerName) else {
-            print("❌ App Documents müşteri klasörü alınamadı")
             return nil
         }
         
@@ -112,27 +93,22 @@ class ImageStorageManager {
         // Aynı isimde dosya varsa sayı ekle (Android mantığı)
         let finalPath = getUniqueFilePath(basePath: filePath)
         
-        print("💾 Kaydetme yolu: \(finalPath.path)")
         
         // Resmi JPEG olarak kaydet
         guard let imageData = image.jpegData(compressionQuality: 0.8) else {
-            print("❌ Resim JPEG'e dönüştürülemedi")
             return nil
         }
         
         do {
             try imageData.write(to: finalPath)
-            print("✅ App Documents'a kaydedildi: \(finalPath.path)")
             
             // Dosya boyutunu da kontrol et
             if let attributes = try? FileManager.default.attributesOfItem(atPath: finalPath.path),
                let fileSize = attributes[.size] as? Int64 {
-                print("📏 Dosya boyutu: \(fileSize) bytes")
             }
             
             return finalPath.path
         } catch {
-            print("❌ App Documents kaydetme hatası: \(error.localizedDescription)")
             return nil
         }
     }
@@ -141,7 +117,6 @@ class ImageStorageManager {
     static func saveImageFromURL(sourceURL: URL, customerName: String, yukleyen: String) async -> String? {
         guard let imageData = try? Data(contentsOf: sourceURL),
               let image = UIImage(data: imageData) else {
-            print("❌ URL'den resim yüklenemedi: \(sourceURL)")
             return nil
         }
         
@@ -171,7 +146,6 @@ class ImageStorageManager {
     
     private static func getAppDocumentsCustomerDir(for customerName: String) -> URL? {
         guard let documentsDir = getAppDocumentsDirectory() else {
-            print("❌ App Documents directory alınamadı")
             return nil
         }
         
@@ -190,9 +164,7 @@ class ImageStorageManager {
                 try FileManager.default.createDirectory(at: customerDir, 
                                                       withIntermediateDirectories: true, 
                                                       attributes: nil)
-                print("📁 App Documents müşteri klasörü oluşturuldu: \(customerDir.path)")
             } catch {
-                print("❌ App Documents müşteri klasörü oluşturulamadı: \(error.localizedDescription)")
                 return nil
             }
         }
@@ -220,7 +192,6 @@ class ImageStorageManager {
         // App Documents'tan ara
         let documentsImages = getAppDocumentsImages(customerName: customerName)
         
-        print("📋 \(customerName) için App Documents'ta \(documentsImages.count) resim bulundu")
         return documentsImages.sorted()
     }
     
@@ -242,7 +213,6 @@ class ImageStorageManager {
             
             return imagePaths
         } catch {
-            print("❌ App Documents müşteri resimleri listeleme hatası: \(error.localizedDescription)")
             return []
         }
     }
@@ -253,13 +223,11 @@ class ImageStorageManager {
         
         do {
             try FileManager.default.removeItem(at: fileURL)
-            print("🗑️ App Documents'tan resim silindi: \(path)")
             
             // Boş klasörleri temizle
             cleanupEmptyDirectories(fileURL.deletingLastPathComponent())
             return true
         } catch {
-            print("❌ App Documents silme hatası: \(error.localizedDescription)")
             return false
         }
     }
@@ -273,52 +241,42 @@ class ImageStorageManager {
         if contents?.isEmpty == true && directory.lastPathComponent != "Envanto" {
             do {
                 try FileManager.default.removeItem(at: directory)
-                print("🧹 Boş klasör silindi: \(directory.path)")
                 
                 // Üst klasörü de kontrol et
                 cleanupEmptyDirectories(directory.deletingLastPathComponent())
             } catch {
-                print("❌ Boş klasör silme hatası: \(error.localizedDescription)")
             }
         }
     }
     
     // MARK: - Delete Customer Images (App Documents)
     static func deleteCustomerImages(customerName: String) async -> Bool {
-        print("🗑️ deleteCustomerImages çağrıldı: '\(customerName)'")
         
         // 🎯 Klasör adını aynı şekilde dönüştür (getAppDocumentsCustomerDir ile aynı mantık)
         let safeCustomerName = customerName.replacingOccurrences(of: "[^a-zA-Z0-9.-]", 
                                                                 with: "_", 
                                                                 options: .regularExpression)
-        print("🗑️ Güvenli klasör adı: '\(safeCustomerName)'")
         
         var fileSuccess = false
         var dbSuccess = false
         
         // 1️⃣ Database kayıtlarını sil
-        print("🗄️ Database kayıtları siliniyor...")
         dbSuccess = DatabaseManager.getInstance().deleteCustomerImages(musteriAdi: customerName)
         
         // 2️⃣ App Documents müşteri klasörünü sil
         if let customerDir = getAppDocumentsCustomerDir(for: customerName) {
-            print("🗑️ Silinecek klasör: \(customerDir.path)")
             do {
                 try FileManager.default.removeItem(at: customerDir)
-                print("✅ App Documents müşteri klasörü silindi: \(customerDir.path)")
                 cleanupEmptyDirectories(customerDir.deletingLastPathComponent())
                 fileSuccess = true
             } catch {
-                print("❌ App Documents müşteri klasörü silme hatası: \(error.localizedDescription)")
                 fileSuccess = false
             }
         } else {
-            print("❌ Müşteri klasörü bulunamadı: '\(customerName)' → '\(safeCustomerName)'")
             fileSuccess = false
         }
         
         // 3️⃣ Sonuç değerlendirmesi
-        print("📊 Silme sonucu - Database: \(dbSuccess ? "✅" : "❌"), Dosyalar: \(fileSuccess ? "✅" : "❌")")
         
         // En az birisi başarılıysa UI'ı güncelle
         return dbSuccess || fileSuccess

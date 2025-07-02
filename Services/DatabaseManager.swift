@@ -42,18 +42,14 @@ class DatabaseManager {
     
     // MARK: - Initialization
     private init() {
-        print("🔄 \(DatabaseManager.TAG): === DATABASE MANAGER BAŞLATILUYOR ===")
         openDatabase()
         
         // Database açılma kontrol
         if db != nil {
-            print("✅ \(DatabaseManager.TAG): Database açıldı, tablolar oluşturuluyor...")
             createTables()
         } else {
-            print("❌ \(DatabaseManager.TAG): Database açılamadı, tablolar oluşturulamaz")
         }
         
-        print("🔄 \(DatabaseManager.TAG): === DATABASE MANAGER HAZIR ===")
     }
     
     deinit {
@@ -62,27 +58,19 @@ class DatabaseManager {
     
     // MARK: - Database Operations
     private func openDatabase() {
-        print("🔄 \(DatabaseManager.TAG): Database açılıyor...")
         
         guard let dbPath = getDatabasePath() else {
-            print("❌ \(DatabaseManager.TAG): Database path alınamadı")
             return
         }
         
-        print("📱 \(DatabaseManager.TAG): Database yolu: \(dbPath)")
         
         // Dosya var mı kontrol et
         let fileExists = FileManager.default.fileExists(atPath: dbPath)
-        print("📁 \(DatabaseManager.TAG): Database dosyası mevcut: \(fileExists)")
         
         let openResult = sqlite3_open(dbPath, &db)
         if openResult == SQLITE_OK {
-            print("✅ \(DatabaseManager.TAG): Database açıldı başarıyla")
-            print("🔗 \(DatabaseManager.TAG): DB pointer: \(String(describing: db))")
         } else {
-            print("❌ \(DatabaseManager.TAG): Database açılamadı - Result: \(openResult)")
             if let errorMessage = sqlite3_errmsg(db) {
-                print("❌ \(DatabaseManager.TAG): SQLite Open Error: \(String(cString: errorMessage))")
             }
             db = nil
         }
@@ -90,9 +78,7 @@ class DatabaseManager {
     
     private func closeDatabase() {
         if sqlite3_close(db) == SQLITE_OK {
-            print("✅ \(DatabaseManager.TAG): Database kapatıldı")
         } else {
-            print("❌ \(DatabaseManager.TAG): Database kapatılamadı")
         }
         db = nil
     }
@@ -100,23 +86,19 @@ class DatabaseManager {
     private func getDatabasePath() -> String? {
         guard let documentsDir = FileManager.default.urls(for: .documentDirectory, 
                                                           in: .userDomainMask).first else {
-            print("❌ \(DatabaseManager.TAG): Documents directory alınamadı")
             return nil
         }
         
         let dbPath = documentsDir.appendingPathComponent(DatabaseManager.DATABASE_NAME).path
-        print("📁 \(DatabaseManager.TAG): Database path: \(dbPath)")
         
         // Documents klasörüne yazma iznimiz var mı?
         let documentsPath = documentsDir.path
         let isWritable = FileManager.default.isWritableFile(atPath: documentsPath)
-        print("✏️ \(DatabaseManager.TAG): Documents yazılabilir: \(isWritable)")
         
         // Database dosyası var mı ve yazılabilir mi?
         let dbExists = FileManager.default.fileExists(atPath: dbPath)
         if dbExists {
             let isDBWritable = FileManager.default.isWritableFile(atPath: dbPath)
-            print("📝 \(DatabaseManager.TAG): DB dosyası yazılabilir: \(isDBWritable)")
         }
         
         return dbPath
@@ -124,26 +106,21 @@ class DatabaseManager {
     
     // MARK: - Create Tables (Android ile aynı yapı)
     private func createTables() {
-        print("🔄 \(DatabaseManager.TAG): === TABLO OLUŞTURMA BAŞLIYOR ===")
         
         guard db != nil else {
-            print("❌ \(DatabaseManager.TAG): Database connection NULL - tablolar oluşturulamaz")
             return
         }
         
-        print("✅ \(DatabaseManager.TAG): Database connection OK - tablolar oluşturuluyor")
         
         createBarkodResimlerTable()
         createCihazYetkiTable()
         
-        print("🔄 \(DatabaseManager.TAG): === TABLO OLUŞTURMA BİTTİ ===")
         
         // Tabloların gerçekten oluşup oluşmadığını kontrol et
         checkTableExists()
     }
     
     private func createBarkodResimlerTable() {
-        print("🔄 \(DatabaseManager.TAG): barkod_resimler tablosu oluşturuluyor...")
         
         let createTableSQL = """
             CREATE TABLE IF NOT EXISTS \(DatabaseManager.TABLE_BARKOD_RESIMLER) (
@@ -156,21 +133,16 @@ class DatabaseManager {
             )
         """
         
-        print("📝 \(DatabaseManager.TAG): SQL: \(createTableSQL)")
         
         let result = sqlite3_exec(db, createTableSQL, nil, nil, nil)
         if result == SQLITE_OK {
-            print("✅ \(DatabaseManager.TAG): barkod_resimler tablosu BAŞARIYLA oluşturuldu")
         } else {
-            print("❌ \(DatabaseManager.TAG): barkod_resimler tablosu oluşturulamadı - Result: \(result)")
             if let errorMessage = sqlite3_errmsg(db) {
-                print("❌ \(DatabaseManager.TAG): SQLite CREATE Error: \(String(cString: errorMessage))")
             }
         }
     }
     
     private func createCihazYetkiTable() {
-        print("🔄 \(DatabaseManager.TAG): cihaz_yetki tablosu oluşturuluyor...")
         
         let createTableSQL = """
             CREATE TABLE IF NOT EXISTS \(DatabaseManager.TABLE_CIHAZ_YETKI) (
@@ -182,46 +154,32 @@ class DatabaseManager {
             )
         """
         
-        print("📝 \(DatabaseManager.TAG): SQL: \(createTableSQL)")
         
         let result = sqlite3_exec(db, createTableSQL, nil, nil, nil)
         if result == SQLITE_OK {
-            print("✅ \(DatabaseManager.TAG): cihaz_yetki tablosu BAŞARIYLA oluşturuldu")
         } else {
-            print("❌ \(DatabaseManager.TAG): cihaz_yetki tablosu oluşturulamadı - Result: \(result)")
             if let errorMessage = sqlite3_errmsg(db) {
-                print("❌ \(DatabaseManager.TAG): SQLite CREATE Error: \(String(cString: errorMessage))")
             }
         }
     }
     
     // MARK: - Insert Barkod Resim (Android metoduna benzer)
     func insertBarkodResim(musteriAdi: String, resimYolu: String, yukleyen: String) -> Bool {
-        print("🔄 \(DatabaseManager.TAG): insertBarkodResim başlatıldı")
-        print("   📝 Müşteri: \(musteriAdi)")
-        print("   📁 Yol: \(resimYolu)")
-        print("   👤 Yukleyen: \(yukleyen)")
         
         guard db != nil else {
-            print("❌ \(DatabaseManager.TAG): Database bağlantısı yok - db pointer nil")
             return false
         }
         
         // 🚫 MÜKERRER KAYIT KONTROLÜ
         if isImageAlreadyInDatabase(resimYolu: resimYolu, musteriAdi: musteriAdi) {
-            print("⚠️ \(DatabaseManager.TAG): BU RESİM ZATEN KAYITLI! - \(resimYolu)")
-            print("   📝 Müşteri: \(musteriAdi)")
-            print("   🚫 MÜKERRER KAYIT ENGELLENDİ!")
             return true  // Zaten var, başarılı kabul et
         }
         
-        print("✅ \(DatabaseManager.TAG): Database bağlantısı OK, mükerrer kayıt yok")
         
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
         let tarih = dateFormatter.string(from: Date())
         
-        print("📅 \(DatabaseManager.TAG): Tarih: \(tarih)")
         
         let insertSQL = """
             INSERT INTO \(DatabaseManager.TABLE_BARKOD_RESIMLER) 
@@ -230,42 +188,32 @@ class DatabaseManager {
             VALUES (?, ?, ?, ?, 0)
         """
         
-        print("🗃️ \(DatabaseManager.TAG): SQL hazırlanıyor...")
         
         var statement: OpaquePointer?
         
         let prepareResult = sqlite3_prepare_v2(db, insertSQL, -1, &statement, nil)
         if prepareResult == SQLITE_OK {
-            print("✅ \(DatabaseManager.TAG): SQL prepare başarılı")
             
             sqlite3_bind_text(statement, 1, musteriAdi, -1, SQLITE_TRANSIENT)
             sqlite3_bind_text(statement, 2, resimYolu, -1, SQLITE_TRANSIENT)
             sqlite3_bind_text(statement, 3, tarih, -1, SQLITE_TRANSIENT)
             sqlite3_bind_text(statement, 4, yukleyen, -1, SQLITE_TRANSIENT)
             
-            print("🔗 \(DatabaseManager.TAG): Parametreler bind edildi")
             
             let stepResult = sqlite3_step(statement)
             if stepResult == SQLITE_DONE {
-                print("✅ \(DatabaseManager.TAG): Barkod resim kaydedildi - Müşteri: \(musteriAdi)")
-                print("🎉 \(DatabaseManager.TAG): Database kayıt işlemi BAŞARILI!")
                 sqlite3_finalize(statement)
                 return true
             } else {
-                print("❌ \(DatabaseManager.TAG): sqlite3_step başarısız - Result: \(stepResult)")
                 if let errorMessage = sqlite3_errmsg(db) {
-                    print("❌ \(DatabaseManager.TAG): SQLite Error: \(String(cString: errorMessage))")
                 }
             }
         } else {
-            print("❌ \(DatabaseManager.TAG): sqlite3_prepare_v2 başarısız - Result: \(prepareResult)")
             if let errorMessage = sqlite3_errmsg(db) {
-                print("❌ \(DatabaseManager.TAG): SQLite Prepare Error: \(String(cString: errorMessage))")
             }
         }
         
         sqlite3_finalize(statement)
-        print("❌ \(DatabaseManager.TAG): insertBarkodResim BAŞARISIZ!")
         return false
     }
     
@@ -276,9 +224,6 @@ class DatabaseManager {
         // Hem path hem de dosya adı bazlı kontrol yapalım
         let fileName = URL(fileURLWithPath: resimYolu).lastPathComponent
         
-        print("🔍 \(DatabaseManager.TAG): Mükerrer kontrol - Path: \(resimYolu)")
-        print("🔍 \(DatabaseManager.TAG): Mükerrer kontrol - FileName: \(fileName)")
-        print("🔍 \(DatabaseManager.TAG): Mükerrer kontrol - Müşteri: \(musteriAdi)")
         
         // 1. Tam path kontrolü
         let pathCheckSQL = """
@@ -295,13 +240,11 @@ class DatabaseManager {
             
             if sqlite3_step(statement) == SQLITE_ROW {
                 count = Int(sqlite3_column_int(statement, 0))
-                print("🔍 \(DatabaseManager.TAG): Tam path kontrolü: \(count) kayıt bulundu")
             }
         }
         sqlite3_finalize(statement)
         
         if count > 0 {
-            print("🚫 \(DatabaseManager.TAG): TAM PATH EŞLEŞMESİ BULUNDU!")
             return true
         }
         
@@ -317,17 +260,14 @@ class DatabaseManager {
             
             if sqlite3_step(statement) == SQLITE_ROW {
                 count = Int(sqlite3_column_int(statement, 0))
-                print("🔍 \(DatabaseManager.TAG): Dosya adı kontrolü: \(count) kayıt bulundu")
             }
         }
         sqlite3_finalize(statement)
         
         if count > 0 {
-            print("🚫 \(DatabaseManager.TAG): DOSYA ADI EŞLEŞMESİ BULUNDU!")
             return true
         }
         
-        print("✅ \(DatabaseManager.TAG): Mükerrer kayıt YOK - Güvenle eklenebilir")
         return false
     }
     
@@ -372,7 +312,6 @@ class DatabaseManager {
         guard db != nil else { return [] }
         
         // Debug: Database'deki müşteri adı formatını kontrol et
-        print("🔍 getCustomerImages: Aranan müşteri: '\(musteriAdi)'")
         
         let selectSQL = """
             SELECT \(DatabaseManager.COLUMN_ID), \(DatabaseManager.COLUMN_MUSTERI_ADI), 
@@ -389,7 +328,6 @@ class DatabaseManager {
         if sqlite3_prepare_v2(db, selectSQL, -1, &statement, nil) == SQLITE_OK {
             sqlite3_bind_text(statement, 1, musteriAdi, -1, SQLITE_TRANSIENT)
             
-            print("🔍 getCustomerImages: Aranan müşteri: '\(musteriAdi)'")
             
             while sqlite3_step(statement) == SQLITE_ROW {
                 let id = Int(sqlite3_column_int(statement, 0))
@@ -409,11 +347,9 @@ class DatabaseManager {
                 
                 let yuklendi = Int(sqlite3_column_int(statement, 5))
                 
-                print("🔍 getCustomerImages DEBUG: ID=\(id), Customer='\(musteriAdiResult)', Path='\(resimYolu)', Uploaded=\(yuklendi)")
                 
                 // Boş kayıtları atla
                 if musteriAdiResult.isEmpty || resimYolu.isEmpty {
-                    print("   ⚠️ Boş kayıt atlanıyor: Customer='\(musteriAdiResult)', Path='\(resimYolu)'")
                     continue
                 }
                 
@@ -429,11 +365,9 @@ class DatabaseManager {
                 results.append(barkodResim)
             }
         } else {
-            print("❌ getCustomerImages: SQL prepare hatası")
         }
         
         sqlite3_finalize(statement)
-        print("📊 getCustomerImages: '\(musteriAdi)' için \(results.count) kayıt bulundu")
         return results
     }
     
@@ -441,7 +375,6 @@ class DatabaseManager {
     func getAllPendingImages() -> [BarkodResim] {
         guard db != nil else { return [] }
         
-        print("🔍 \(DatabaseManager.TAG): === DATABASE READ DEBUG ===")
         
         let selectSQL = """
             SELECT \(DatabaseManager.COLUMN_ID), \(DatabaseManager.COLUMN_MUSTERI_ADI), 
@@ -452,7 +385,6 @@ class DatabaseManager {
             ORDER BY \(DatabaseManager.COLUMN_TARIH) ASC
         """
         
-        print("📝 \(DatabaseManager.TAG): SQL: \(selectSQL)")
         
         var statement: OpaquePointer?
         var results: [BarkodResim] = []
@@ -467,43 +399,30 @@ class DatabaseManager {
                 // Güvenli string okuma (NULL kontrol)
                 let musteriAdiPtr = sqlite3_column_text(statement, 1)
                 let musteriAdi = musteriAdiPtr != nil ? String(cString: musteriAdiPtr!) : {
-                    print("   ⚠️ Column 1 (musteriAdi) is NULL")
                     return ""
                 }()
                 
                 let resimYoluPtr = sqlite3_column_text(statement, 2)
                 let resimYolu = resimYoluPtr != nil ? String(cString: resimYoluPtr!) : {
-                    print("   ⚠️ Column 2 (resimYolu) is NULL")
                     return ""
                 }()
                 
                 let tarihPtr = sqlite3_column_text(statement, 3)
                 let tarih = tarihPtr != nil ? String(cString: tarihPtr!) : {
-                    print("   ⚠️ Column 3 (tarih) is NULL")
                     return ""
                 }()
                 
                 let yukleyenPtr = sqlite3_column_text(statement, 4)
                 let yukleyen = yukleyenPtr != nil ? String(cString: yukleyenPtr!) : {
-                    print("   ⚠️ Column 4 (yukleyen) is NULL")
                     return ""
                 }()
                 
                 let yuklendi = Int(sqlite3_column_int(statement, 5))
                 
-                print("📋 \(DatabaseManager.TAG): === ROW \(rowCount) DEBUG ===")
-                print("   🆔 ID: \(id)")
-                print("   👤 Müşteri: '\(musteriAdi)'")
-                print("   📁 Path: '\(resimYolu)' (uzunluk: \(resimYolu.count))")
-                print("   📅 Tarih: '\(tarih)'")
-                print("   👨‍💼 Yükleyen: '\(yukleyen)'")
-                print("   🏷️ Yuklendi: \(yuklendi)")
                 
                 // Path boş mu kontrol et
                 if resimYolu.isEmpty {
-                    print("   ❌ PATH BOŞ!")
                 } else {
-                    print("   ✅ Path dolu")
                 }
                 
                 let barkodResim = BarkodResim(
@@ -518,11 +437,9 @@ class DatabaseManager {
                 results.append(barkodResim)
             }
         } else {
-            print("❌ \(DatabaseManager.TAG): SQL prepare hatası")
         }
         
         sqlite3_finalize(statement)
-        print("📊 \(DatabaseManager.TAG): TOPLAM \(results.count) adet yüklenmemiş resim bulundu")
         return results
     }
     
@@ -536,14 +453,12 @@ class DatabaseManager {
         if sqlite3_prepare_v2(db, deleteSQL, -1, &statement, nil) == SQLITE_OK {
             if sqlite3_step(statement) == SQLITE_DONE {
                 let deletedCount = sqlite3_changes(db)
-                print("🗑️ \(DatabaseManager.TAG): \(deletedCount) adet barkod resim kaydı silindi")
                 sqlite3_finalize(statement)
                 return true
             }
         }
         
         sqlite3_finalize(statement)
-        print("❌ \(DatabaseManager.TAG): Barkod resim kayıtları silinemedi")
         return false
     }
     
@@ -608,7 +523,6 @@ class DatabaseManager {
             sqlite3_bind_int(statement, 2, Int32(id))
             
             if sqlite3_step(statement) == SQLITE_DONE {
-                print("✅ \(DatabaseManager.TAG): Upload durumu güncellendi - ID: \(id), Durum: \(yuklendi)")
                 sqlite3_finalize(statement)
                 return true
             }
@@ -631,7 +545,6 @@ class DatabaseManager {
             
             if sqlite3_step(statement) == SQLITE_DONE {
                 let changedRows = sqlite3_changes(db)
-                print("✅ \(DatabaseManager.TAG): \(changedRows) kayıtta yukleyen bilgisi güncellendi")
                 sqlite3_finalize(statement)
                 return true
             }
@@ -712,7 +625,6 @@ class DatabaseManager {
                 sqlite3_bind_text(statement, 4, cihazBilgisi, -1, nil)
                 
                 if sqlite3_step(statement) == SQLITE_DONE {
-                    print("✅ \(DatabaseManager.TAG): Cihaz yetki güncellendi - \(cihazBilgisi)")
                     sqlite3_finalize(statement)
                     return true
                 }
@@ -735,7 +647,6 @@ class DatabaseManager {
                 sqlite3_bind_text(statement, 4, sonKontrol, -1, nil)
                 
                 if sqlite3_step(statement) == SQLITE_DONE {
-                    print("✅ \(DatabaseManager.TAG): Yeni cihaz yetki kaydı eklendi - \(cihazBilgisi)")
                     sqlite3_finalize(statement)
                     return true
                 }
@@ -801,11 +712,9 @@ class DatabaseManager {
     
     // MARK: - Import Existing Images (Mevcut dosyaları database'e aktar)
     func importExistingImages() {
-        print("🔄 \(DatabaseManager.TAG): Mevcut resimler database'e aktarılıyor...")
         
         // App Documents'tan müşteri klasörlerini bul
         guard let documentsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
-            print("❌ \(DatabaseManager.TAG): Documents directory bulunamadı")
             return
         }
         
@@ -843,9 +752,7 @@ class DatabaseManager {
                                 
                                 if success {
                                     importedCount += 1
-                                    print("📥 \(DatabaseManager.TAG): Import edildi - \(customerName): \(fileName)")
                                 } else {
-                                    print("❌ \(DatabaseManager.TAG): Import başarısız - \(customerName): \(fileName)")
                                 }
                             }
                         }
@@ -853,14 +760,12 @@ class DatabaseManager {
                 }
             }
             
-            print("✅ \(DatabaseManager.TAG): Import tamamlandı - \(importedCount) resim eklendi")
             
             if importedCount > 0 {
                 printDatabaseInfo()
             }
             
         } catch {
-            print("❌ \(DatabaseManager.TAG): Import hatası: \(error.localizedDescription)")
         }
     }
     
@@ -887,57 +792,43 @@ class DatabaseManager {
 
     // MARK: - Manual Database Test (Debug için)
     func testDatabaseOperations() {
-        print("🧪 \(DatabaseManager.TAG): === DATABASE TEST BAŞLIYOR ===")
         
         // 1. Connection test
-        print("🧪 \(DatabaseManager.TAG): 1. Connection Test")
         if db != nil {
-            print("✅ \(DatabaseManager.TAG): Database connection ACTIVE")
         } else {
-            print("❌ \(DatabaseManager.TAG): Database connection NULL")
             return
         }
         
         // 2. Simple SQL test
-        print("🧪 \(DatabaseManager.TAG): 2. Simple SQL Test")
         let testSQL = "SELECT 1"
         var statement: OpaquePointer?
         if sqlite3_prepare_v2(db, testSQL, -1, &statement, nil) == SQLITE_OK {
             if sqlite3_step(statement) == SQLITE_ROW {
                 let result = sqlite3_column_int(statement, 0)
-                print("✅ \(DatabaseManager.TAG): Simple SQL çalıştı - Result: \(result)")
             } else {
-                print("❌ \(DatabaseManager.TAG): Simple SQL step başarısız")
             }
         } else {
-            print("❌ \(DatabaseManager.TAG): Simple SQL prepare başarısız")
         }
         sqlite3_finalize(statement)
         
         // 3. Database info
-        print("🧪 \(DatabaseManager.TAG): 3. Database Info")
         if let dbPath = getDatabasePath() {
             let fileExists = FileManager.default.fileExists(atPath: dbPath)
-            print("📁 \(DatabaseManager.TAG): DB File exists: \(fileExists)")
             
             if fileExists {
                 if let attributes = try? FileManager.default.attributesOfItem(atPath: dbPath),
                    let fileSize = attributes[.size] as? Int64 {
-                    print("📏 \(DatabaseManager.TAG): DB File size: \(fileSize) bytes")
                 }
             }
         }
         
         // 4. Table creation test
-        print("🧪 \(DatabaseManager.TAG): 4. Manual Table Creation Test")
         let createTestTableSQL = "CREATE TABLE IF NOT EXISTS test_table (id INTEGER PRIMARY KEY, name TEXT)"
         if sqlite3_exec(db, createTestTableSQL, nil, nil, nil) == SQLITE_OK {
-            print("✅ \(DatabaseManager.TAG): Test table oluşturuldu")
             
             // Test insert
             let insertTestSQL = "INSERT INTO test_table (name) VALUES ('test')"
             if sqlite3_exec(db, insertTestSQL, nil, nil, nil) == SQLITE_OK {
-                print("✅ \(DatabaseManager.TAG): Test insert başarılı")
                 
                 // Test select
                 let selectTestSQL = "SELECT COUNT(*) FROM test_table"
@@ -945,7 +836,6 @@ class DatabaseManager {
                 if sqlite3_prepare_v2(db, selectTestSQL, -1, &selectStatement, nil) == SQLITE_OK {
                     if sqlite3_step(selectStatement) == SQLITE_ROW {
                         let count = sqlite3_column_int(selectStatement, 0)
-                        print("✅ \(DatabaseManager.TAG): Test select başarılı - Count: \(count)")
                     }
                 }
                 sqlite3_finalize(selectStatement)
@@ -953,88 +843,65 @@ class DatabaseManager {
                 // Test table'ı temizle
                 sqlite3_exec(db, "DROP TABLE test_table", nil, nil, nil)
             } else {
-                print("❌ \(DatabaseManager.TAG): Test insert başarısız")
             }
         } else {
-            print("❌ \(DatabaseManager.TAG): Test table oluşturulamadı")
             if let errorMessage = sqlite3_errmsg(db) {
-                print("❌ \(DatabaseManager.TAG): Error: \(String(cString: errorMessage))")
             }
         }
         
-        print("🧪 \(DatabaseManager.TAG): === DATABASE TEST BİTTİ ===")
     }
 
     // MARK: - Debug Methods
     func printDatabaseInfo() {
-        print("🔍 \(DatabaseManager.TAG): === DATABASE INFO START ===")
         
         // Database connection durumu
-        print("🔗 \(DatabaseManager.TAG): DB Connection: \(db != nil ? "ACTIVE" : "NULL")")
         if let dbPtr = db {
-            print("🔗 \(DatabaseManager.TAG): DB Pointer: \(String(describing: dbPtr))")
         }
         
         // Database dosya durumu
         if let dbPath = getDatabasePath() {
-            print("📁 \(DatabaseManager.TAG): Database dosyası: \(dbPath)")
             let fileExists = FileManager.default.fileExists(atPath: dbPath)
-            print("📁 \(DatabaseManager.TAG): Dosya mevcut: \(fileExists)")
             
             if fileExists {
                 if let attributes = try? FileManager.default.attributesOfItem(atPath: dbPath),
                    let fileSize = attributes[.size] as? Int64 {
-                    print("📏 \(DatabaseManager.TAG): Dosya boyutu: \(fileSize) bytes")
                 }
             }
         }
         
         // Database tablo kontrolü
-        print("🗃️ \(DatabaseManager.TAG): Tablo durumları kontrol ediliyor...")
         checkTableExists()
         
         let totalCount = getUploadedImagesCount()
         let pendingCount = getPendingUploadCount()
         
-        print("📊 \(DatabaseManager.TAG): Toplam resim: \(totalCount)")
-        print("📊 \(DatabaseManager.TAG): Bekleyen yükleme: \(pendingCount)")
-        print("📊 \(DatabaseManager.TAG): Tamamlanan yükleme: \(totalCount - pendingCount)")
         
         // Son kayıtları göster
         if totalCount > 0 {
-            print("📋 \(DatabaseManager.TAG): Son 3 kayıt:")
             let recentImages = getRecentImages(limit: 3)
             for (index, image) in recentImages.enumerated() {
-                print("   \(index + 1). \(image.musteriAdi) - \(image.tarih) - \(image.uploadStatusText)")
             }
         }
         
         // Cihaz sahibi bilgisini de göster
         let currentDeviceOwner = UserDefaults.standard.string(forKey: "device_owner") ?? "Belirtilmemiş"
-        print("👤 \(DatabaseManager.TAG): Aktif cihaz sahibi: \(currentDeviceOwner)")
         
         // Cihaz yetki durumunu da göster
         let deviceId = DeviceIdentifier.getUniqueDeviceId()
         if let cihazYetki = getCihazYetki(cihazBilgisi: deviceId) {
-            print("🔐 \(DatabaseManager.TAG): Cihaz onay durumu: \(cihazYetki.cihazOnay == 1 ? "Yetkili" : "Yetkisiz")")
         } else {
-            print("🔐 \(DatabaseManager.TAG): Cihaz yetki kaydı bulunamadı")
         }
         
-        print("🔍 \(DatabaseManager.TAG): === DATABASE INFO END ===")
     }
     
     // Tabloların var olup olmadığını kontrol et
     private func checkTableExists() {
         guard db != nil else {
-            print("❌ \(DatabaseManager.TAG): DB connection yok, tablo kontrolü yapılamadı")
             return
         }
         
-        print("🔍 \(DatabaseManager.TAG): === TABLO KONTROL BAŞLIYOR ===")
         
         // Önce tüm tabloları listele
-        print("📋 \(DatabaseManager.TAG): Mevcut tüm tablolar:")
         let listTablesSQL = "SELECT name FROM sqlite_master WHERE type='table'"
         var listStatement: OpaquePointer?
         var foundTables: [String] = []
@@ -1043,10 +910,8 @@ class DatabaseManager {
             while sqlite3_step(listStatement) == SQLITE_ROW {
                 let tableName = String(cString: sqlite3_column_text(listStatement, 0))
                 foundTables.append(tableName)
-                print("   📄 \(DatabaseManager.TAG): Tablo: '\(tableName)'")
             }
         } else {
-            print("❌ \(DatabaseManager.TAG): Tablo listesi alınamadı")
         }
         sqlite3_finalize(listStatement)
         
@@ -1055,18 +920,13 @@ class DatabaseManager {
         let hasCihazYetki = foundTables.contains(DatabaseManager.TABLE_CIHAZ_YETKI)
         
         if hasBarkodResimler {
-            print("✅ \(DatabaseManager.TAG): barkod_resimler tablosu MEVCUT")
         } else {
-            print("❌ \(DatabaseManager.TAG): barkod_resimler tablosu BULUNAMADI")
         }
         
         if hasCihazYetki {
-            print("✅ \(DatabaseManager.TAG): cihaz_yetki tablosu MEVCUT")
         } else {
-            print("❌ \(DatabaseManager.TAG): cihaz_yetki tablosu BULUNAMADI")
         }
         
-        print("🔍 \(DatabaseManager.TAG): === TABLO KONTROL BİTTİ ===")
     }
     
     // Son kayıtları getir
@@ -1166,7 +1026,6 @@ class DatabaseManager {
         }
         
         sqlite3_finalize(statement)
-        print("📊 getAllImages: Toplam \(results.count) resim kaydı döndürüldü")
         return results
     }
     
@@ -1174,18 +1033,14 @@ class DatabaseManager {
     func clearAllPendingUploads() -> Bool {
         guard db != nil else { return false }
         
-        print("🚨 \(DatabaseManager.TAG): === GÜVENLİK TEMİZLİĞİ BAŞLATILIYOR ===")
-        print("🚨 \(DatabaseManager.TAG): Cihaz yetkisiz - Tüm bekleyen yüklemeler silinecek")
         
         // Önce silinecek resimlerin bilgilerini al
         let pendingImages = getAllPendingImages()
         
         if pendingImages.isEmpty {
-            print("ℹ️ \(DatabaseManager.TAG): Silinecek bekleyen resim bulunamadı")
             return true
         }
         
-        print("🗑️ \(DatabaseManager.TAG): \(pendingImages.count) adet bekleyen resim silinecek")
         
         var deletedFiles = 0
         var deletedFolders = 0
@@ -1200,12 +1055,9 @@ class DatabaseManager {
                 do {
                     try FileManager.default.removeItem(atPath: filePath)
                     deletedFiles += 1
-                    print("🗑️ \(DatabaseManager.TAG): Dosya silindi: \(filePath)")
                 } catch {
-                    print("❌ \(DatabaseManager.TAG): Dosya silinemedi: \(filePath) - \(error)")
                 }
             } else {
-                print("⚠️ \(DatabaseManager.TAG): Dosya zaten yok: \(filePath)")
             }
         }
         
@@ -1222,12 +1074,9 @@ class DatabaseManager {
                     if contents.isEmpty {
                         try FileManager.default.removeItem(at: customerDir)
                         deletedFolders += 1
-                        print("🗑️ \(DatabaseManager.TAG): Boş klasör silindi: \(customerDir.path)")
                     } else {
-                        print("📂 \(DatabaseManager.TAG): Klasör boş değil, korunuyor: \(customerDir.path)")
                     }
                 } catch {
-                    print("⚠️ \(DatabaseManager.TAG): Klasör kontrol edilemedi: \(customerDir.path) - \(error)")
                 }
             }
         }
@@ -1240,22 +1089,14 @@ class DatabaseManager {
         if sqlite3_prepare_v2(db, deleteSQL, -1, &statement, nil) == SQLITE_OK {
             if sqlite3_step(statement) == SQLITE_DONE {
                 deletedRows = Int(sqlite3_changes(db))
-                print("✅ \(DatabaseManager.TAG): Database kayıtları silindi: \(deletedRows) kayıt")
             } else {
-                print("❌ \(DatabaseManager.TAG): Database silme işlemi başarısız")
             }
         } else {
-            print("❌ \(DatabaseManager.TAG): Database delete SQL prepare hatası")
         }
         
         sqlite3_finalize(statement)
         
         // 4. SONUÇLARI RAPOR ET
-        print("✅ \(DatabaseManager.TAG): === GÜVENLİK TEMİZLİĞİ TAMAMLANDI ===")
-        print("📊 \(DatabaseManager.TAG): - \(deletedRows) database kaydı silindi")
-        print("📊 \(DatabaseManager.TAG): - \(deletedFiles) resim dosyası silindi")
-        print("📊 \(DatabaseManager.TAG): - \(deletedFolders) boş klasör silindi")
-        print("👥 \(DatabaseManager.TAG): - \(customerNames.count) müşteri klasörü kontrol edildi")
         
         return deletedRows > 0
     }

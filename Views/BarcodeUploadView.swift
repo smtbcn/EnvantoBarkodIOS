@@ -167,8 +167,7 @@ class CameraModel: NSObject, ObservableObject {
         captureDevice = device
         
         // Torch durumunu kontrol et ve logla
-        print("🔦 Cihaz torch durumu: \(device.hasTorch ? "VAR" : "YOK")")
-        print("📸 Cihaz flash durumu: \(device.hasFlash ? "VAR" : "YOK")")
+        
         
         do {
             // Kamera input
@@ -196,7 +195,7 @@ class CameraModel: NSObject, ObservableObject {
             device.unlockForConfiguration()
             
         } catch {
-            print("❌ Kamera ayarlama hatası: \(error)")
+            // Kamera ayarlama hatası
         }
         
         session.commitConfiguration()
@@ -227,7 +226,7 @@ class CameraModel: NSObject, ObservableObject {
             // Photo flash varsa onu kullan
             if device.hasFlash {
                 settings.flashMode = isFlashOn ? .on : .off
-                print("📸 Photo flash kullanılıyor: \(isFlashOn ? "AÇIK" : "KAPALI")")
+    
             } 
             // Torch açıksa ve photo flash yoksa, torch'u geçici olarak güçlendir
             else if device.hasTorch && isFlashOn {
@@ -235,9 +234,9 @@ class CameraModel: NSObject, ObservableObject {
                     try device.lockForConfiguration()
                     device.torchMode = .on
                     device.unlockForConfiguration()
-                    print("🔦 Torch ile çekim yapılıyor")
+    
                 } catch {
-                    print("❌ Torch ayarlanamadı: \(error)")
+    
                 }
             }
         }
@@ -246,16 +245,13 @@ class CameraModel: NSObject, ObservableObject {
     }
     
     func toggleFlash() {
-        print("🔦 Flash toggle çağrıldı. Mevcut durum: \(isFlashOn)")
         
         // Flash/Torch varlığını kontrol et
         guard let device = captureDevice else {
-            print("❌ Capture device bulunamadı")
             return
         }
         
         guard device.hasTorch else {
-            print("❌ Bu cihazda torch/flash bulunmuyor")
             return
         }
         
@@ -264,10 +260,8 @@ class CameraModel: NSObject, ObservableObject {
             
             if isFlashOn {
                 device.torchMode = .off
-                print("🔦 Torch kapatıldı")
             } else {
                 device.torchMode = .on
-                print("🔦 Torch açıldı")
             }
             
             device.unlockForConfiguration()
@@ -275,11 +269,9 @@ class CameraModel: NSObject, ObservableObject {
             // UI state'i güncelle
             DispatchQueue.main.async {
                 self.isFlashOn.toggle()
-                print("✅ Flash UI durumu güncellendi: \(self.isFlashOn)")
             }
             
         } catch {
-            print("❌ Torch ayarlanamadı: \(error)")
         }
     }
     
@@ -301,7 +293,6 @@ class CameraModel: NSObject, ObservableObject {
             
             device.unlockForConfiguration()
         } catch {
-            print("❌ Odaklama hatası: \(error)")
         }
     }
 }
@@ -314,7 +305,6 @@ extension CameraModel: AVCapturePhotoCaptureDelegate {
         }
         
         if let error = error {
-            print("❌ Foto çekim hatası: \(error)")
             photoCompletion?(nil)
             return
         }
@@ -434,7 +424,6 @@ struct BarcodeUploadView: View {
             // Upload tamamlandığında resim listesini yenile
             DispatchQueue.main.async {
                 viewModel.loadCustomerImageGroups()
-                print("🔄 BarcodeUploadView: Upload tamamlandı, resim listesi yenileniyor")
             }
         }
     }

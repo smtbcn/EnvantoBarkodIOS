@@ -60,11 +60,9 @@ class MainViewModel: ObservableObject {
         // DeviceAuthManager'dan gelen cihaz sahibini al
         if let authOwner = userDefaults.string(forKey: "device_owner"), !authOwner.isEmpty {
             deviceOwner = authOwner
-            print("👤 MainViewModel: DeviceAuthManager'dan cihaz sahibi: \(authOwner)")
         } else {
             // Fallback: Constants'tan al
             deviceOwner = userDefaults.string(forKey: Constants.UserDefaults.deviceOwner) ?? ""
-            print("👤 MainViewModel: Constants'tan cihaz sahibi: \(deviceOwner)")
         }
     }
     
@@ -82,7 +80,6 @@ class MainViewModel: ObservableObject {
             let dbManager = DatabaseManager.getInstance()
             let updated = dbManager.updateYukleyenInfo(oldYukleyen: oldOwner, newYukleyen: owner)
             if updated {
-                print("🔄 Veritabanında cihaz sahibi bilgisi güncellendi: \(oldOwner) → \(owner)")
             }
         }
     }

@@ -44,12 +44,6 @@ class DeviceIdentifier {
         // MD5 hash ile kısalt (Android ile uyumlu format)
         let deviceId = combinedString.md5
         
-        print("🔧 DeviceIdentifier: Yeni device ID oluşturuldu: \(deviceId)")
-        print("📱 DeviceIdentifier: Cihaz bilgileri:")
-        print("   - Model: \(deviceModel)")
-        print("   - System: \(systemName) \(systemVersion)")
-        print("   - Name: \(deviceName)")
-        print("   - Vendor ID: \(vendorId)")
         
         return deviceId
     }

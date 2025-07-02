@@ -27,7 +27,6 @@ class BarcodeService: ObservableObject {
             }
             
             if let error = error {
-                print("Barkod tarama hatası: \(error.localizedDescription)")
                 return
             }
             
@@ -65,7 +64,6 @@ class BarcodeService: ObservableObject {
             do {
                 try handler.perform([request])
             } catch {
-                print("Barkod tarama gerçekleştirilemedi: \(error.localizedDescription)")
                 DispatchQueue.main.async {
                     self.isProcessing = false
                 }

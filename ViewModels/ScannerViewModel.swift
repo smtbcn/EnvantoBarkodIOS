@@ -35,7 +35,6 @@ class ScannerViewModel: NSObject, ObservableObject {
             
             // Kamera cihazını ayarla
             guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else {
-                print("Kamera bulunamadı")
                 return
             }
             
@@ -47,7 +46,6 @@ class ScannerViewModel: NSObject, ObservableObject {
                     self.captureSession.addInput(input)
                 }
             } catch {
-                print("Kamera girişi eklenemedi: \(error)")
                 return
             }
             
@@ -104,7 +102,6 @@ class ScannerViewModel: NSObject, ObservableObject {
                 self.isFlashOn.toggle()
             }
         } catch {
-            print("Flash ayarlanamadı: \(error)")
         }
     }
     
@@ -138,7 +135,6 @@ class ScannerViewModel: NSObject, ObservableObject {
             guard let self = self else { return }
             
             if let error = error {
-                print("Barkod tarama hatası: \(error)")
                 return
             }
             
@@ -169,7 +165,6 @@ class ScannerViewModel: NSObject, ObservableObject {
         do {
             try handler.perform([request])
         } catch {
-            print("Barkod tarama gerçekleştirilemedi: \(error)")
         }
     }
 }

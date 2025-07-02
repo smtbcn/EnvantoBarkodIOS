@@ -62,9 +62,6 @@ class NetworkUtils: ObservableObject {
         
         // Bağlantı durumu değişti mi?
         if wasConnected != nowConnected || wasWiFiConnected != nowWiFiConnected {
-            print("🌐 NetworkUtils: Bağlantı durumu değişti")
-            print("   - Was connected: \(wasConnected) -> Now connected: \(nowConnected)")
-            print("   - Was WiFi: \(wasWiFiConnected) -> Now WiFi: \(nowWiFiConnected)")
             
             // Bağlantı geldi ve WiFi ayarları varsa upload'ı tetikle
             if nowConnected && (!wasConnected || (!wasWiFiConnected && nowWiFiConnected)) {
@@ -81,10 +78,8 @@ class NetworkUtils: ObservableObject {
         let wifiOnly = UserDefaults.standard.bool(forKey: "wifi_only")
         
         if wifiOnly && isWiFiConnected {
-            print("🚀 NetworkUtils: WiFi bağlandı - Upload servisi tetikleniyor")
             UploadService.shared.startUploadService(wifiOnly: true)
         } else if !wifiOnly && isConnected {
-            print("🚀 NetworkUtils: İnternet bağlandı - Upload servisi tetikleniyor")
             UploadService.shared.startUploadService(wifiOnly: false)
         }
     }

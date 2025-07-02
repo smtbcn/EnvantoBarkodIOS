@@ -154,7 +154,7 @@ struct MainMenuView: View {
         // Upload servisini başlat
         UploadService.shared.startUploadService(wifiOnly: wifiOnly)
         
-        print("🚀 MainMenuView: Upload servisi başlatıldı - WiFi only: \(wifiOnly)")
+
     }
 }
 

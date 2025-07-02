@@ -64,7 +64,6 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         dbManager.printDatabaseInfo()
         
         // Mevcut resimleri database'e import et (ilk çalıştırmada)
-        print("🔄 Mevcut resimler database'e import ediliyor...")
         dbManager.importExistingImages()
     }
     
@@ -95,14 +94,12 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
                          UserDefaults.standard.string(forKey: Constants.UserDefaults.deviceOwner) ?? ""
         
         if !deviceOwner.isEmpty {
-            print("👤 Yukleyen (Sunucudan): \(deviceOwner)")
             return deviceOwner
         } else {
             // Fallback: Cihaz bilgisi (sadece cihaz sahibi bilgisi yoksa)
             let deviceName = UIDevice.current.name
             let deviceModel = UIDevice.current.model
             let fallbackInfo = "\(deviceName) (\(deviceModel))"
-            print("👤 Yukleyen (Fallback): \(fallbackInfo)")
             return fallbackInfo
         }
     }
@@ -206,7 +203,6 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
             isSearching = false
             
         } catch {
-            print("🔍 Müşteri arama hatası: \(error.localizedDescription)")
             // Fallback: Offline arama
             customers = searchOfflineCustomers(query: searchText)
             isSearching = false
@@ -230,8 +226,6 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         let bodyString = "action=search&query=\(query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
         request.httpBody = bodyString.data(using: .utf8)
         
-        print("🔗 API URL: \(url)")
-        print("📋 Parametreler: \(bodyString)")
         
         let (data, response) = try await URLSession.shared.data(for: request)
         
@@ -242,7 +236,6 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         
         // JSON string'i debug için yazdır
         if let jsonString = String(data: data, encoding: .utf8) {
-            print("📥 Müşteri API yanıtı: \(jsonString)")
         }
         
         // ASP yanıtını decode et
@@ -296,10 +289,8 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
                 UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "customer_cache_time")
             }
             
-            print("📦 \(allCustomers.count) müşteri cache'e kaydedildi")
             
         } catch {
-            print("🔍 Müşteri cache güncelleme hatası: \(error.localizedDescription)")
         }
     }
     
@@ -319,8 +310,6 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         let bodyString = "action=getall"
         request.httpBody = bodyString.data(using: .utf8)
         
-        print("🔗 All Customers API URL: \(url)")
-        print("📋 Parametreler: \(bodyString)")
         
         let (data, response) = try await URLSession.shared.data(for: request)
         
@@ -331,7 +320,6 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         
         // JSON string'i debug için yazdır
         if let jsonString = String(data: data, encoding: .utf8) {
-            print("📥 Tüm müşteriler API yanıtı: \(jsonString)")
         }
         
         // ASP yanıtını decode et
@@ -369,7 +357,6 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
     private func loadAllCustomerImages() async {
         // ImageStorageManager'dan tüm müşteri klasörlerini al
         if let storageInfo = await getStorageInfo() {
-            print("📋 Storage Info: \(storageInfo)")
         }
         
         let dbManager = DatabaseManager.getInstance()
@@ -377,7 +364,6 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         
         // 🗄️ DATABASE-FIRST YAKLAŞIM: Database'deki tüm resimleri al
         let allDatabaseImages = dbManager.getAllImages()  // Tüm resimler (pending + uploaded)
-        print("📊 Database'den toplam \(allDatabaseImages.count) resim kaydı alındı")
         
         // Müşterileri gruplara ayır
         let customerGroups = Dictionary(grouping: allDatabaseImages) { record in
@@ -385,13 +371,11 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         }
         
         for (customerName, imageRecords) in customerGroups {
-            print("📂 Müşteri: '\(customerName)' - \(imageRecords.count) resim")
             
             let savedImages = imageRecords.compactMap { record -> SavedImage? in
                 // Dosya var mı kontrol et ama dosya yoksa da kayıt göster
                 let fileExists = FileManager.default.fileExists(atPath: record.resimYolu)
                 if !fileExists {
-                    print("   ⚠️ Dosya bulunamadı ama database kaydı mevcut: \(record.resimYolu)")
                 }
                 
                 // 🎯 Display format customer name
@@ -422,7 +406,6 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         // Gruplari tarih sırasına göre sırala (en yeni önce)
         customerImageGroups = groups.sorted { $0.lastUpdated > $1.lastUpdated }
         
-        print("📊 \(customerImageGroups.count) müşteri için resim grubu oluşturuldu")
     }
     
     // 📅 Database tarih string'ini Date'e çevir
@@ -438,10 +421,6 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         let dbCustomerName = customerName.replacingOccurrences(of: "_", with: " ") // SAMET_BICEN -> SAMET BICEN
         let fsCustomerName = customerName.replacingOccurrences(of: " ", with: "_") // SAMET BICEN -> SAMET_BICEN
         
-        print("🔍 checkDatabaseUploadStatus: Path: '\(path)'")
-        print("🔍 checkDatabaseUploadStatus: Original Customer: '\(customerName)'")
-        print("🔍 checkDatabaseUploadStatus: DB Format: '\(dbCustomerName)'")
-        print("🔍 checkDatabaseUploadStatus: FS Format: '\(fsCustomerName)'")
         
         // Önce database formatıyla dene
         var allImages = dbManager.getCustomerImages(musteriAdi: dbCustomerName)
@@ -454,14 +433,11 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
             allImages = dbManager.getCustomerImages(musteriAdi: fsCustomerName)
         }
         
-        print("🔍 checkDatabaseUploadStatus: DB'den gelen kayıt sayısı: \(allImages.count)")
         
         // Dosya yoluna göre eşleştir
         for (index, imageRecord) in allImages.enumerated() {
-            print("   🔍 DB Kayıt \(index + 1): Path='\(imageRecord.resimYolu)', Uploaded=\(imageRecord.isUploaded)")
             
             if imageRecord.resimYolu == path {
-                print("   ✅ PATH EŞLEŞTİ! Upload durumu: \(imageRecord.isUploaded)")
                 return imageRecord.isUploaded
             }
             
@@ -470,12 +446,10 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
             let fileSystemFileName = URL(fileURLWithPath: path).lastPathComponent
             
             if dbFileName == fileSystemFileName {
-                print("   ✅ DOSYA ADI EŞLEŞTİ! Upload durumu: \(imageRecord.isUploaded)")
                 return imageRecord.isUploaded
             }
         }
         
-        print("   ❌ DB'de eşleşen kayıt BULUNAMADI - Yüklenmemiş kabul ediliyor")
         // Database'de bulunamadıysa yüklenmemiş kabul et
         return false
     }
@@ -506,7 +480,6 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
                     // Dosya var mı kontrol et ama dosya yoksa da kayıt göster
                     let fileExists = FileManager.default.fileExists(atPath: record.resimYolu)
                     if !fileExists {
-                        print("   ⚠️ Dosya bulunamadı ama database kaydı mevcut: \(record.resimYolu)")
                     }
                     
                     // 🎯 Display format customer name
@@ -524,9 +497,6 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
                     )
                 }
                 
-                print("📊 \(customerName) için \(savedImages.count) resim yüklendi")
-                print("📊 Yüklenen resimler: \(savedImages.filter(\.isUploaded).count)")
-                print("📊 Bekleyen resimler: \(savedImages.filter { !$0.isUploaded }.count)")
             }
         }
     }
@@ -604,7 +574,6 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         // Cihaz sahibi bilgisini al
         let yukleyen = getDeviceOwnerInfo()
         
-        print("🔄 directSaveImage başlatılıyor: Müşteri: \(customer.name), Yükleyen: \(yukleyen), Gallery: \(isGallery)")
         
         // ImageStorageManager ile resmi Documents klasörüne kaydet ve veritabanına ekle
         if let savedPath = await ImageStorageManager.saveImage(
@@ -613,14 +582,11 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
             isGallery: isGallery,
             yukleyen: yukleyen
         ) {
-            print("✅ Resim başarıyla kaydedildi: \(savedPath)")
-            print("👤 Yukleyen: \(yukleyen)")
             
             // TODO: Sunucuya upload işlemi burada yapılacak
             // Android'deki gibi: server upload ve yuklendi durumu güncelleme
             
         } else {
-            print("❌ directSaveImage: Resim kaydetme başarısız")
             showError("❌ Resim kaydetme hatası")
         }
     }
@@ -704,17 +670,14 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
             
             // 1️⃣ Önce database kaydını sil
             let dbDeleteSuccess = dbManager.deleteBarkodResim(id: image.databaseId)
-            print("🗑️ Database silme durumu: \(dbDeleteSuccess ? "BAŞARILI" : "BAŞARISIZ") - ID: \(image.databaseId)")
             
             // 2️⃣ Sonra dosyayı sil (ImageStorageManager)
             let fileDeleteSuccess = await ImageStorageManager.deleteImage(at: image.localPath)
-            print("🗑️ Dosya silme durumu: \(fileDeleteSuccess ? "BAŞARILI" : "BAŞARISIZ") - Path: \(image.localPath)")
             
             await MainActor.run {
                 if dbDeleteSuccess || fileDeleteSuccess {
                     // En az birisi başarılıysa UI'dan kaldır
                     savedImages.removeAll { $0.id == image.id }
-                    print("✅ Resim başarıyla silindi: \(image.localPath)")
                     
                     // Müşteri gruplarını güncelle
                     loadCustomerImageGroups()
@@ -735,20 +698,14 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
             let dbCustomerName = customerName.replacingOccurrences(of: " ", with: "_") // SAMET BICEN → SAMET_BICEN
             let displayCustomerName = customerName // UI format
             
-            print("🗑️ ======= MÜŞTERİ KLASÖRÜ SİLME BAŞLADI =======")
-            print("   UI Customer Name: '\(displayCustomerName)'")
-            print("   DB Customer Name: '\(dbCustomerName)'")
             
             // Önce müşterinin database'deki kayıtlarını kontrol et
             let existingRecords1 = dbManager.getCustomerImages(musteriAdi: displayCustomerName)
             let existingRecords2 = dbManager.getCustomerImages(musteriAdi: dbCustomerName)
-            print("   📊 Mevcut DB kayıtları (display format): \(existingRecords1.count)")
-            print("   📊 Mevcut DB kayıtları (db format): \(existingRecords2.count)")
             
             // 🔍 Database'deki GERÇEK müşteri adlarını göster
             let allImages = dbManager.getAllImages()
             let uniqueCustomers = Set(allImages.map { $0.musteriAdi })
-            print("   🔍 Database'deki TÜM müşteriler: \(Array(uniqueCustomers))")
             
             // Bu müşteriyle eşleşen kayıtları bul
             let matchingRecords = allImages.filter { record in
@@ -757,59 +714,45 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
                 record.musteriAdi.lowercased() == displayCustomerName.lowercased() ||
                 record.musteriAdi.lowercased() == dbCustomerName.lowercased()
             }
-            print("   🎯 Eşleşen kayıtlar: \(matchingRecords.count)")
             for record in matchingRecords.prefix(3) {
-                print("      • ID: \(record.id), Müşteri: '\(record.musteriAdi)', Path: \(record.resimYolu)")
             }
             
             // 1️⃣ Önce database'den tüm kayıtları sil (her iki format için de dene)
-            print("   🗄️ Database silme işlemi başlatılıyor...")
             var dbDeleteSuccess = false
             
             // Eşleşen kayıtlar varsa, gerçek müşteri adını kullan
             if !matchingRecords.isEmpty {
                 let realCustomerName = matchingRecords.first!.musteriAdi
-                print("   🎯 Gerçek müşteri adı kullanılıyor: '\(realCustomerName)'")
                 dbDeleteSuccess = dbManager.deleteCustomerImages(musteriAdi: realCustomerName)
-                print("   🗄️ Gerçek format ile silme: \(dbDeleteSuccess ? "BAŞARILI" : "BAŞARISIZ")")
             } else {
                 // Eşleşen kayıt yoksa eski yöntemi dene
                 dbDeleteSuccess = dbManager.deleteCustomerImages(musteriAdi: displayCustomerName)
-                print("   🗄️ Display format ile silme: \(dbDeleteSuccess ? "BAŞARILI" : "BAŞARISIZ")")
                 
                 if !dbDeleteSuccess {
                     // Display format başarısız olduysa database format dene
                     dbDeleteSuccess = dbManager.deleteCustomerImages(musteriAdi: dbCustomerName)
-                    print("   🗄️ DB format ile silme: \(dbDeleteSuccess ? "BAŞARILI" : "BAŞARISIZ")")
                 }
             }
             
             // 2️⃣ Sonra dosya klasörünü sil (ImageStorageManager)
-            print("   📁 Dosya klasörü silme işlemi başlatılıyor...")
             let fileDeleteSuccess = await ImageStorageManager.deleteCustomerImages(customerName: customerName)
-            print("   📁 Dosya klasörü silme: \(fileDeleteSuccess ? "BAŞARILI" : "BAŞARISIZ")")
             
             // Sonuç değerlendirmesi
-            print("   📊 SONUÇ: DB=\(dbDeleteSuccess ? "✅" : "❌"), File=\(fileDeleteSuccess ? "✅" : "❌")")
             
             await MainActor.run {
                 if dbDeleteSuccess || fileDeleteSuccess {
                     // En az birisi başarılıysa UI'dan kaldır
                     let removedCount = savedImages.filter { $0.customerName == customerName }.count
                     savedImages.removeAll { $0.customerName == customerName }
-                    print("   🎯 UI'dan \(removedCount) resim kaldırıldı")
                     
                     // Müşteri gruplarını güncelle
                     loadCustomerImageGroups()
-                    print("✅ Müşteri klasörü başarıyla silindi: \(customerName)")
                 } else {
                     // Her ikisi de başarısızsa hata mesajı
-                    print("❌ Müşteri klasörü silme başarısız: Her iki işlem de başarısız")
                     showError("Müşteri klasörü silme hatası: Hem database hem dosya silme başarısız")
                 }
             }
             
-            print("🗑️ ======= MÜŞTERİ KLASÖRÜ SİLME BİTTİ =======")
         }
     }
     
