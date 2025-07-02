@@ -1150,10 +1150,8 @@ struct AndroidImageRow: View {
     }
     
     private func getUploaderName() -> String {
-        // Device sahibi bilgisini al
-        let deviceOwner = UserDefaults.standard.string(forKey: "device_owner") ?? "Bilinmeyen Kullanıcı"
-        let deviceInfo = DeviceIdentifier.getReadableDeviceInfo()
-        return "\(deviceOwner) - \(deviceInfo)"
+        // 🗄️ Database'den yukleyen bilgisini kullan
+        return image.yukleyen.isEmpty ? "Bilinmeyen Kullanıcı" : image.yukleyen
     }
     
     private func getUploadStatusIcon() -> String {

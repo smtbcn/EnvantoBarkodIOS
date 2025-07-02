@@ -375,42 +375,47 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         let dbManager = DatabaseManager.getInstance()
         var groups: [CustomerImageGroup] = []
         
-        // Documents/Envanto klasöründeki tüm müşteri klasörlerini tara
-        if let documentsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
-            let envantoDir = documentsDir.appendingPathComponent("Envanto")
+        // 🗄️ DATABASE-FIRST YAKLAŞIM: Database'deki tüm resimleri al
+        let allDatabaseImages = dbManager.getAllImages()  // Tüm resimler (pending + uploaded)
+        print("📊 Database'den toplam \(allDatabaseImages.count) resim kaydı alındı")
+        
+        // Müşterileri gruplara ayır
+        let customerGroups = Dictionary(grouping: allDatabaseImages) { record in
+            record.musteriAdi
+        }
+        
+        for (customerName, imageRecords) in customerGroups {
+            print("📂 Müşteri: '\(customerName)' - \(imageRecords.count) resim")
             
-            do {
-                let customerDirs = try FileManager.default.contentsOfDirectory(at: envantoDir, includingPropertiesForKeys: nil)
-                
-                for customerDir in customerDirs where customerDir.hasDirectoryPath {
-                    let customerName = customerDir.lastPathComponent
-                    
-                    // Bu müşterinin resimlerini yükle
-                    let imagePaths = await ImageStorageManager.listCustomerImages(customerName: customerName)
-                    
-                    if !imagePaths.isEmpty {
-                        let savedImages = imagePaths.map { path in
-                            // Database'den upload durumunu kontrol et
-                            let uploadStatus = checkDatabaseUploadStatus(path: path, customerName: customerName, dbManager: dbManager)
-                            
-                            return SavedImage(
-                                customerName: customerName,
-                                imagePath: path,
-                                localPath: path,
-                                uploadDate: getFileCreationDate(path: path),
-                                isUploaded: uploadStatus
-                            )
-                        }
-                        
-                        let group = CustomerImageGroup(
-                            customerName: customerName,
-                            images: savedImages.sorted { $0.uploadDate > $1.uploadDate }
-                        )
-                        groups.append(group)
-                    }
+            let savedImages = imageRecords.compactMap { record -> SavedImage? in
+                // Dosya var mı kontrol et
+                let fileExists = FileManager.default.fileExists(atPath: record.resimYolu)
+                if !fileExists {
+                    print("   ⚠️ Dosya bulunamadı: \(record.resimYolu)")
+                    return nil
                 }
-            } catch {
-                print("❌ Müşteri klasörleri listelenemedi: \(error)")
+                
+                // 🎯 CUSTOMER NAME FIX: Underscore'ları boşlukla değiştir
+                let displayCustomerName = customerName.replacingOccurrences(of: "_", with: " ")
+                
+                // Database verilerinden SavedImage oluştur
+                return SavedImage(
+                    customerName: displayCustomerName,  // 📝 SAMET_BICEN → SAMET BICEN
+                    imagePath: record.resimYolu,
+                    localPath: record.resimYolu,
+                    uploadDate: parseDatabaseDate(record.tarih),  // 📅 Database'den tarih
+                    isUploaded: record.isUploaded,  // ✅ Database'den upload durumu
+                    yukleyen: record.yukleyen,  // 👤 Database'den yükleyen bilgisi
+                    databaseId: record.id  // 🆔 Database ID referansı
+                )
+            }
+            
+            if !savedImages.isEmpty {
+                let group = CustomerImageGroup(
+                    customerName: customerName.replacingOccurrences(of: "_", with: " "),  // Display format
+                    images: savedImages.sorted { $0.uploadDate > $1.uploadDate }
+                )
+                groups.append(group)
             }
         }
         
@@ -418,6 +423,13 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         customerImageGroups = groups.sorted { $0.lastUpdated > $1.lastUpdated }
         
         print("📊 \(customerImageGroups.count) müşteri için resim grubu oluşturuldu")
+    }
+    
+    // 📅 Database tarih string'ini Date'e çevir
+    private func parseDatabaseDate(_ dateString: String) -> Date {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        return formatter.date(from: dateString) ?? Date()
     }
     
     // MARK: - Database Upload Status Check
@@ -474,21 +486,41 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
     
     private func loadSavedImagesForCustomer(_ customerName: String) {
         Task {
-            // ImageStorageManager ile müşteri resimlerini yükle
-            let imagePaths = await ImageStorageManager.listCustomerImages(customerName: customerName)
             let dbManager = DatabaseManager.getInstance()
             
+            // 🗄️ DATABASE-FIRST: Müşteri adı format denemesi
+            let dbCustomerName = customerName.replacingOccurrences(of: "_", with: " ") // SAMET_BICEN → SAMET BICEN
+            let fsCustomerName = customerName.replacingOccurrences(of: " ", with: "_") // SAMET BICEN → SAMET_BICEN
+            
+            // Müşterinin database kayıtlarını al
+            var customerImages = dbManager.getCustomerImages(musteriAdi: dbCustomerName)
+            if customerImages.isEmpty && dbCustomerName != customerName {
+                customerImages = dbManager.getCustomerImages(musteriAdi: customerName)
+            }
+            if customerImages.isEmpty && fsCustomerName != customerName {
+                customerImages = dbManager.getCustomerImages(musteriAdi: fsCustomerName)
+            }
+            
             await MainActor.run {
-                savedImages = imagePaths.map { path in
-                    // Database'den upload durumunu kontrol et
-                    let uploadStatus = checkDatabaseUploadStatus(path: path, customerName: customerName, dbManager: dbManager)
+                savedImages = customerImages.compactMap { record in
+                    // Dosya var mı kontrol et
+                    let fileExists = FileManager.default.fileExists(atPath: record.resimYolu)
+                    if !fileExists {
+                        print("   ⚠️ Dosya bulunamadı: \(record.resimYolu)")
+                        return nil
+                    }
+                    
+                    // 🎯 Display format customer name
+                    let displayCustomerName = record.musteriAdi.replacingOccurrences(of: "_", with: " ")
                     
                     return SavedImage(
-                        customerName: customerName,
-                        imagePath: path,
-                        localPath: path,
-                        uploadDate: getFileCreationDate(path: path),
-                        isUploaded: uploadStatus
+                        customerName: displayCustomerName,  // 📝 SAMET_BICEN → SAMET BICEN
+                        imagePath: record.resimYolu,
+                        localPath: record.resimYolu,
+                        uploadDate: parseDatabaseDate(record.tarih),  // 📅 Database'den tarih
+                        isUploaded: record.isUploaded,  // ✅ Database'den upload durumu
+                        yukleyen: record.yukleyen,  // 👤 Database'den yükleyen bilgisi
+                        databaseId: record.id  // 🆔 Database ID referansı
                     )
                 }
                 
@@ -728,6 +760,8 @@ struct SavedImage: Identifiable {
     let localPath: String
     let uploadDate: Date
     let isUploaded: Bool
+    let yukleyen: String
+    let databaseId: Int  // Database record ID'si
 } 
 
 // MARK: - Customer Image Group Model (Müşteri bazlı resim gruplandırması)

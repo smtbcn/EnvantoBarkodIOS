@@ -1090,6 +1090,63 @@ class DatabaseManager {
         sqlite3_finalize(statement)
         return results
     }
+    
+    // MARK: - Get All Images (pending + uploaded)
+    func getAllImages() -> [BarkodResim] {
+        guard db != nil else { return [] }
+        
+        let selectSQL = """
+            SELECT \(DatabaseManager.COLUMN_ID), \(DatabaseManager.COLUMN_MUSTERI_ADI), 
+                   \(DatabaseManager.COLUMN_RESIM_YOLU), \(DatabaseManager.COLUMN_TARIH), 
+                   \(DatabaseManager.COLUMN_YUKLEYEN), \(DatabaseManager.COLUMN_YUKLENDI)
+            FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) 
+            ORDER BY \(DatabaseManager.COLUMN_TARIH) DESC
+        """
+        
+        var statement: OpaquePointer?
+        var results: [BarkodResim] = []
+        
+        if sqlite3_prepare_v2(db, selectSQL, -1, &statement, nil) == SQLITE_OK {
+            while sqlite3_step(statement) == SQLITE_ROW {
+                let id = Int(sqlite3_column_int(statement, 0))
+                
+                // Güvenli string okuma (NULL kontrol)
+                let musteriAdiPtr = sqlite3_column_text(statement, 1)
+                let musteriAdi = musteriAdiPtr != nil ? String(cString: musteriAdiPtr!) : ""
+                
+                let resimYoluPtr = sqlite3_column_text(statement, 2)
+                let resimYolu = resimYoluPtr != nil ? String(cString: resimYoluPtr!) : ""
+                
+                let tarihPtr = sqlite3_column_text(statement, 3)
+                let tarih = tarihPtr != nil ? String(cString: tarihPtr!) : ""
+                
+                let yukleyenPtr = sqlite3_column_text(statement, 4)
+                let yukleyen = yukleyenPtr != nil ? String(cString: yukleyenPtr!) : ""
+                
+                let yuklendi = Int(sqlite3_column_int(statement, 5))
+                
+                // Boş kayıtları atla
+                if musteriAdi.isEmpty || resimYolu.isEmpty {
+                    continue
+                }
+                
+                let barkodResim = BarkodResim(
+                    id: id,
+                    musteriAdi: musteriAdi,
+                    resimYolu: resimYolu,
+                    tarih: tarih,
+                    yukleyen: yukleyen,
+                    yuklendi: yuklendi
+                )
+                
+                results.append(barkodResim)
+            }
+        }
+        
+        sqlite3_finalize(statement)
+        print("📊 getAllImages: Toplam \(results.count) resim kaydı döndürüldü")
+        return results
+    }
 }
 
 // MARK: - BarkodResim Model (Android'deki model ile aynı)
