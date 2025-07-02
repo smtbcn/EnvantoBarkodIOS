@@ -745,15 +745,43 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
             print("   📊 Mevcut DB kayıtları (display format): \(existingRecords1.count)")
             print("   📊 Mevcut DB kayıtları (db format): \(existingRecords2.count)")
             
+            // 🔍 Database'deki GERÇEK müşteri adlarını göster
+            let allImages = dbManager.getAllImages()
+            let uniqueCustomers = Set(allImages.map { $0.musteriAdi })
+            print("   🔍 Database'deki TÜM müşteriler: \(Array(uniqueCustomers))")
+            
+            // Bu müşteriyle eşleşen kayıtları bul
+            let matchingRecords = allImages.filter { record in
+                record.musteriAdi == displayCustomerName || 
+                record.musteriAdi == dbCustomerName ||
+                record.musteriAdi.lowercased() == displayCustomerName.lowercased() ||
+                record.musteriAdi.lowercased() == dbCustomerName.lowercased()
+            }
+            print("   🎯 Eşleşen kayıtlar: \(matchingRecords.count)")
+            for record in matchingRecords.prefix(3) {
+                print("      • ID: \(record.id), Müşteri: '\(record.musteriAdi)', Path: \(record.resimYolu)")
+            }
+            
             // 1️⃣ Önce database'den tüm kayıtları sil (her iki format için de dene)
             print("   🗄️ Database silme işlemi başlatılıyor...")
-            var dbDeleteSuccess = dbManager.deleteCustomerImages(musteriAdi: displayCustomerName)
-            print("   🗄️ Display format ile silme: \(dbDeleteSuccess ? "BAŞARILI" : "BAŞARISIZ")")
+            var dbDeleteSuccess = false
             
-            if !dbDeleteSuccess {
-                // Display format başarısız olduysa database format dene
-                dbDeleteSuccess = dbManager.deleteCustomerImages(musteriAdi: dbCustomerName)
-                print("   🗄️ DB format ile silme: \(dbDeleteSuccess ? "BAŞARILI" : "BAŞARISIZ")")
+            // Eşleşen kayıtlar varsa, gerçek müşteri adını kullan
+            if !matchingRecords.isEmpty {
+                let realCustomerName = matchingRecords.first!.musteriAdi
+                print("   🎯 Gerçek müşteri adı kullanılıyor: '\(realCustomerName)'")
+                dbDeleteSuccess = dbManager.deleteCustomerImages(musteriAdi: realCustomerName)
+                print("   🗄️ Gerçek format ile silme: \(dbDeleteSuccess ? "BAŞARILI" : "BAŞARISIZ")")
+            } else {
+                // Eşleşen kayıt yoksa eski yöntemi dene
+                dbDeleteSuccess = dbManager.deleteCustomerImages(musteriAdi: displayCustomerName)
+                print("   🗄️ Display format ile silme: \(dbDeleteSuccess ? "BAŞARILI" : "BAŞARISIZ")")
+                
+                if !dbDeleteSuccess {
+                    // Display format başarısız olduysa database format dene
+                    dbDeleteSuccess = dbManager.deleteCustomerImages(musteriAdi: dbCustomerName)
+                    print("   🗄️ DB format ile silme: \(dbDeleteSuccess ? "BAŞARILI" : "BAŞARISIZ")")
+                }
             }
             
             // 2️⃣ Sonra dosya klasörünü sil (ImageStorageManager)
