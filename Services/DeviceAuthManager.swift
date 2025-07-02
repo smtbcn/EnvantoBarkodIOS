@@ -103,6 +103,16 @@ class DeviceAuthManager {
                     
                     print("❌ Cihaz yetkili değil: \(authResponse.message)")
                     
+                    // 🚨 GÜVENLİK TEMİZLİĞİ: Yetkisiz cihazın resimlerini sil
+                    print("🚨 DeviceAuthManager: Yetkisiz cihaz tespit edildi - Güvenlik temizliği başlatılıyor")
+                    let cleanupResult = dbManager.clearAllPendingUploads()
+                    
+                    if cleanupResult {
+                        print("✅ DeviceAuthManager: Güvenlik temizliği tamamlandı")
+                    } else {
+                        print("⚠️ DeviceAuthManager: Güvenlik temizliği sırasında sorun oluştu")
+                    }
+                    
                     // UI alert kaldırıldı - BarcodeUploadView'deki tasarım kullanılıyor
                     callback.onAuthFailure()
                 }
@@ -126,6 +136,17 @@ class DeviceAuthManager {
                     callback.onAuthSuccess()
                 } else {
                     print("💥 Sunucu hatası ve SQLite'da yetki yok: \(error.localizedDescription)")
+                    
+                    // 🚨 GÜVENLİK TEMİZLİĞİ: Yetki bulunamadı - Güvenlik önlemi
+                    print("🚨 DeviceAuthManager: Yetki bulunamadı - Güvenlik temizliği başlatılıyor")
+                    let dbManager = DatabaseManager.getInstance()
+                    let cleanupResult = dbManager.clearAllPendingUploads()
+                    
+                    if cleanupResult {
+                        print("✅ DeviceAuthManager: Güvenlik temizliği tamamlandı")
+                    } else {
+                        print("⚠️ DeviceAuthManager: Güvenlik temizliği sırasında sorun oluştu")
+                    }
                     
                     // UI alert kaldırıldı - BarcodeUploadView'deki tasarım kullanılıyor
                     callback.onAuthFailure()

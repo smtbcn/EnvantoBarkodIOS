@@ -1147,6 +1147,96 @@ class DatabaseManager {
         print("📊 getAllImages: Toplam \(results.count) resim kaydı döndürüldü")
         return results
     }
+    
+    // MARK: - Clear All Pending Uploads (Security Cleanup - Android benzeri)
+    func clearAllPendingUploads() -> Bool {
+        guard db != nil else { return false }
+        
+        print("🚨 \(DatabaseManager.TAG): === GÜVENLİK TEMİZLİĞİ BAŞLATILIYOR ===")
+        print("🚨 \(DatabaseManager.TAG): Cihaz yetkisiz - Tüm bekleyen yüklemeler silinecek")
+        
+        // Önce silinecek resimlerin bilgilerini al
+        let pendingImages = getAllPendingImages()
+        
+        if pendingImages.isEmpty {
+            print("ℹ️ \(DatabaseManager.TAG): Silinecek bekleyen resim bulunamadı")
+            return true
+        }
+        
+        print("🗑️ \(DatabaseManager.TAG): \(pendingImages.count) adet bekleyen resim silinecek")
+        
+        var deletedFiles = 0
+        var deletedFolders = 0
+        let customerNames = Set(pendingImages.map { $0.musteriAdi })
+        
+        // 1. DOSYALARI SİL
+        for imageRecord in pendingImages {
+            let filePath = imageRecord.resimYolu
+            
+            // Dosya var mı kontrol et ve sil
+            if FileManager.default.fileExists(atPath: filePath) {
+                do {
+                    try FileManager.default.removeItem(atPath: filePath)
+                    deletedFiles += 1
+                    print("🗑️ \(DatabaseManager.TAG): Dosya silindi: \(filePath)")
+                } catch {
+                    print("❌ \(DatabaseManager.TAG): Dosya silinemedi: \(filePath) - \(error)")
+                }
+            } else {
+                print("⚠️ \(DatabaseManager.TAG): Dosya zaten yok: \(filePath)")
+            }
+        }
+        
+        // 2. BOŞ MÜŞTERİ KLASÖRLER İNİ KONTROL ET VE SİL
+        if let documentsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+            let envantoDir = documentsDir.appendingPathComponent("Envanto")
+            
+            for customerName in customerNames {
+                let customerDir = envantoDir.appendingPathComponent(customerName)
+                
+                // Müşteri klasörü var mı ve boş mu kontrol et
+                do {
+                    let contents = try FileManager.default.contentsOfDirectory(atPath: customerDir.path)
+                    if contents.isEmpty {
+                        try FileManager.default.removeItem(at: customerDir)
+                        deletedFolders += 1
+                        print("🗑️ \(DatabaseManager.TAG): Boş klasör silindi: \(customerDir.path)")
+                    } else {
+                        print("📂 \(DatabaseManager.TAG): Klasör boş değil, korunuyor: \(customerDir.path)")
+                    }
+                } catch {
+                    print("⚠️ \(DatabaseManager.TAG): Klasör kontrol edilemedi: \(customerDir.path) - \(error)")
+                }
+            }
+        }
+        
+        // 3. DATABASE KAYITLARINI SİL
+        let deleteSQL = "DELETE FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) WHERE \(DatabaseManager.COLUMN_YUKLENDI) = 0"
+        var statement: OpaquePointer?
+        var deletedRows = 0
+        
+        if sqlite3_prepare_v2(db, deleteSQL, -1, &statement, nil) == SQLITE_OK {
+            if sqlite3_step(statement) == SQLITE_DONE {
+                deletedRows = Int(sqlite3_changes(db))
+                print("✅ \(DatabaseManager.TAG): Database kayıtları silindi: \(deletedRows) kayıt")
+            } else {
+                print("❌ \(DatabaseManager.TAG): Database silme işlemi başarısız")
+            }
+        } else {
+            print("❌ \(DatabaseManager.TAG): Database delete SQL prepare hatası")
+        }
+        
+        sqlite3_finalize(statement)
+        
+        // 4. SONUÇLARI RAPOR ET
+        print("✅ \(DatabaseManager.TAG): === GÜVENLİK TEMİZLİĞİ TAMAMLANDI ===")
+        print("📊 \(DatabaseManager.TAG): - \(deletedRows) database kaydı silindi")
+        print("📊 \(DatabaseManager.TAG): - \(deletedFiles) resim dosyası silindi")
+        print("📊 \(DatabaseManager.TAG): - \(deletedFolders) boş klasör silindi")
+        print("👥 \(DatabaseManager.TAG): - \(customerNames.count) müşteri klasörü kontrol edildi")
+        
+        return deletedRows > 0
+    }
 }
 
 // MARK: - BarkodResim Model (Android'deki model ile aynı)

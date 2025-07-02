@@ -151,6 +151,23 @@ class UploadService: ObservableObject {
             uploadProgress = (0, totalCount)
             isUploading = false
             print("🚫 \(UploadService.TAG): Cihaz yetkili değil - Upload işlemi durduruldu")
+            
+            // 🚨 GÜVENLİK TEMİZLİĞİ: Android benzeri güvenlik önlemi
+            print("🚨 \(UploadService.TAG): Güvenlik temizliği başlatılıyor...")
+            let cleanupResult = dbManager.clearAllPendingUploads()
+            
+            if cleanupResult {
+                print("✅ \(UploadService.TAG): Güvenlik temizliği tamamlandı - Yetkisiz cihaz resimleri silindi")
+                
+                // UI refresh tetikle (temizlik sonrası liste güncellensin)
+                DispatchQueue.main.async {
+                    NotificationCenter.default.post(name: .uploadCompleted, object: nil)
+                    print("📢 \(UploadService.TAG): Güvenlik temizliği sonrası UI refresh tetiklendi")
+                }
+            } else {
+                print("⚠️ \(UploadService.TAG): Güvenlik temizliği sırasında hata oluştu")
+            }
+            
             return
         }
         
