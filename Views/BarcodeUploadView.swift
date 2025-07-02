@@ -341,14 +341,12 @@ struct CameraPreview: UIViewRepresentable {
 struct BarcodeUploadView: View {
     @StateObject private var viewModel = BarcodeUploadViewModel()
     @StateObject private var uploadService = UploadService.shared
-    @State private var showingCamera = false
     @State private var selectedPhotos: [PhotosPickerItem] = []
-    @State private var expandedCustomerId: String?
-    @State private var showingDeleteCustomerAlert = false
-    @State private var customerToDelete: String?
-    @FocusState private var isSearchFieldFocused: Bool  // Focus state eklendi
     @State private var showingAlert = false
     @State private var alertMessage = ""
+    @State private var expandedCustomerId: String? = nil // Accordion state
+    @State private var showingDeleteCustomerAlert = false
+    @State private var customerToDelete: String = ""
     
     var body: some View {
         ZStack {
@@ -386,10 +384,10 @@ struct BarcodeUploadView: View {
                     if expandedCustomerId == customerToDelete {
                         expandedCustomerId = nil
                     }
-                    customerToDelete = nil
+                    customerToDelete = ""
                 }
             } message: {
-                Text("'\(customerToDelete ?? "")' müşterisine ait tüm resimler silinecek. Bu işlem geri alınamaz.")
+                Text("'\(customerToDelete)' müşterisine ait tüm resimler silinecek. Bu işlem geri alınamaz.")
         }
             .onChange(of: selectedPhotos) { photos in
                 Task {
@@ -586,11 +584,6 @@ struct BarcodeUploadView: View {
                 
                 TextField("Müşteri ara...", text: $viewModel.searchText)
                     .textFieldStyle(PlainTextFieldStyle())
-                    .font(.system(size: 16))  // Font boyutu ayarla
-                    .autocapitalization(.none)  // Otomatik büyük harf kapatma
-                    .disableAutocorrection(true)  // Otomatik düzeltme kapatma
-                    .textContentType(.name)  // İçerik tipi belirleme
-                    .focused($isSearchFieldFocused)  // Focus state bağla
                     .onChange(of: viewModel.searchText) { newValue in
                         if newValue.count >= 2 {
                             viewModel.searchCustomers()
@@ -605,25 +598,19 @@ struct BarcodeUploadView: View {
                         .scaleEffect(0.8)
                 }
             }
-            .padding(.horizontal, 16)  // Yatay padding artırıldı
-            .padding(.vertical, 14)     // Dikey padding artırıldı (yükseklik için)
+                    .padding(.horizontal, 12)
+            .padding(.vertical, 10)
             .background(
-                RoundedRectangle(cornerRadius: 10)  // Corner radius artırıldı
-                    .fill(Color(.systemBackground))
-                    .stroke(viewModel.searchText.isEmpty ? Color(.systemGray4) : Color.blue, lineWidth: 1)
-            )
-            .contentShape(Rectangle())  // Tüm alan tıklanabilir
-            .onTapGesture {
-                // Modern focus yönetimi - Anında klavye açılması için
-                isSearchFieldFocused = true
-            }
+                        RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color(.systemGray4), lineWidth: 1)
+                    )
             
             // Dropdown müşteri listesi
             if viewModel.showDropdown && !viewModel.customers.isEmpty {
                 customerDropdown
+                }
             }
         }
-    }
     
     // Müşteri dropdown listesi
     private var customerDropdown: some View {
@@ -635,7 +622,6 @@ struct BarcodeUploadView: View {
                         viewModel.showDropdown = false
                         viewModel.searchText = ""
                         viewModel.customers = []
-                        isSearchFieldFocused = false  // Klavye kapat
                     }
                 }
             }
@@ -1180,6 +1166,56 @@ struct AndroidImageRow: View {
     
     private func getUploadStatusText() -> String {
         return image.isUploaded ? "SUNUCUYA YÜKLENDİ" : "YÜKLEME BEKLİYOR"
+    }
+}
+
+// MARK: - Saved Image Card (Legacy - artık kullanılmıyor)
+struct SavedImageCard: View {
+    let image: SavedImage
+    let onDelete: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 8) {
+            AsyncImage(url: URL(fileURLWithPath: image.localPath)) { phase in
+                switch phase {
+                case .success(let image):
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 60, height: 60)
+                        .clipped()
+                        .cornerRadius(6)
+                        
+                case .failure(_):
+                    Image(systemName: "photo")
+                        .font(.system(size: 20))
+                        .foregroundColor(.secondary)
+                        .frame(width: 60, height: 60)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(6)
+                        
+                case .empty:
+                    ProgressView()
+                        .frame(width: 60, height: 60)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(6)
+                        
+                @unknown default:
+                    EmptyView()
+                }
+            }
+            
+            Text(image.customerName)
+                .font(.caption2)
+                .lineLimit(1)
+                .truncationMode(.tail)
+            
+            Button("Sil") {
+                onDelete()
+            }
+            .font(.caption)
+            .foregroundColor(.red)
+        }
     }
 }
 
