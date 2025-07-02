@@ -700,17 +700,27 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
     // MARK: - Delete Image
     func deleteImage(_ image: SavedImage) {
         Task {
-            // ImageStorageManager ile dosyayı sil
-            if await ImageStorageManager.deleteImage(at: image.localPath) {
-                await MainActor.run {
+            let dbManager = DatabaseManager.getInstance()
+            
+            // 1️⃣ Önce database kaydını sil
+            let dbDeleteSuccess = dbManager.deleteBarkodResim(id: image.databaseId)
+            print("🗑️ Database silme durumu: \(dbDeleteSuccess ? "BAŞARILI" : "BAŞARISIZ") - ID: \(image.databaseId)")
+            
+            // 2️⃣ Sonra dosyayı sil (ImageStorageManager)
+            let fileDeleteSuccess = await ImageStorageManager.deleteImage(at: image.localPath)
+            print("🗑️ Dosya silme durumu: \(fileDeleteSuccess ? "BAŞARILI" : "BAŞARISIZ") - Path: \(image.localPath)")
+            
+            await MainActor.run {
+                if dbDeleteSuccess || fileDeleteSuccess {
+                    // En az birisi başarılıysa UI'dan kaldır
                     savedImages.removeAll { $0.id == image.id }
-                    print("🗑️ Resim başarıyla silindi: \(image.localPath)")
+                    print("✅ Resim başarıyla silindi: \(image.localPath)")
+                    
                     // Müşteri gruplarını güncelle
                     loadCustomerImageGroups()
-                }
-            } else {
-                await MainActor.run {
-                    showError("Resim silme hatası")
+                } else {
+                    // Her ikisi de başarısızsa hata mesajı
+                    showError("Resim silme hatası: Hem database hem dosya silme başarısız")
                 }
             }
         }
@@ -719,18 +729,39 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
     // MARK: - Delete Customer Folder (Tüm müşteri klasörünü sil)
     func deleteCustomerFolder(_ customerName: String) {
         Task {
-            // ImageStorageManager ile müşteri klasörünü sil
-            if await ImageStorageManager.deleteCustomerImages(customerName: customerName) {
-                await MainActor.run {
-                    // SavedImages'dan bu müşteriye ait tüm resimleri kaldır
+            let dbManager = DatabaseManager.getInstance()
+            
+            // 🎯 Müşteri adı format kontrolü (database vs UI format)
+            let dbCustomerName = customerName.replacingOccurrences(of: " ", with: "_") // SAMET BICEN → SAMET_BICEN
+            let displayCustomerName = customerName // UI format
+            
+            print("🗑️ Müşteri klasörü siliniyor...")
+            print("   Display Name: '\(displayCustomerName)'")
+            print("   Database Name: '\(dbCustomerName)'")
+            
+            // 1️⃣ Önce database'den tüm kayıtları sil (her iki format için de dene)
+            var dbDeleteSuccess = dbManager.deleteCustomerImages(musteriAdi: displayCustomerName)
+            if !dbDeleteSuccess {
+                // Display format başarısız olduysa database format dene
+                dbDeleteSuccess = dbManager.deleteCustomerImages(musteriAdi: dbCustomerName)
+            }
+            print("🗑️ Database silme durumu: \(dbDeleteSuccess ? "BAŞARILI" : "BAŞARISIZ")")
+            
+            // 2️⃣ Sonra dosya klasörünü sil (ImageStorageManager)
+            let fileDeleteSuccess = await ImageStorageManager.deleteCustomerImages(customerName: customerName)
+            print("🗑️ Dosya klasörü silme durumu: \(fileDeleteSuccess ? "BAŞARILI" : "BAŞARISIZ")")
+            
+            await MainActor.run {
+                if dbDeleteSuccess || fileDeleteSuccess {
+                    // En az birisi başarılıysa UI'dan kaldır
                     savedImages.removeAll { $0.customerName == customerName }
-                    print("🗑️ Müşteri klasörü başarıyla silindi: \(customerName)")
+                    print("✅ Müşteri klasörü başarıyla silindi: \(customerName)")
+                    
                     // Müşteri gruplarını güncelle
                     loadCustomerImageGroups()
-                }
-            } else {
-                await MainActor.run {
-                    showError("Müşteri klasörü silme hatası")
+                } else {
+                    // Her ikisi de başarısızsa hata mesajı
+                    showError("Müşteri klasörü silme hatası: Hem database hem dosya silme başarısız")
                 }
             }
         }
