@@ -348,6 +348,10 @@ struct BarcodeUploadView: View {
     @State private var showingDeleteCustomerAlert = false
     @State private var customerToDelete: String = ""
     
+    // 🎯 iOS 15+ Focus State for TextField
+    @available(iOS 15.0, *)
+    @FocusState private var isSearchFieldFocused: Bool
+    
     var body: some View {
         ZStack {
                 VStack(spacing: 0) {
@@ -505,6 +509,12 @@ struct BarcodeUploadView: View {
             }
             .padding()
         }
+        .onTapGesture {
+            // Background'a tap yapıldığında focus'u kaldır
+            if #available(iOS 15.0, *) {
+                isSearchFieldFocused = false
+            }
+        }
     }
     
     // MARK: - Müşteri Seçimi (Android style)
@@ -578,39 +588,78 @@ struct BarcodeUploadView: View {
     // Müşteri arama input'u
     private var customerSearchInput: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
+            HStack(spacing: 12) {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(.secondary)
+                    .font(.system(size: 16, weight: .medium))
                 
-                TextField("Müşteri ara...", text: $viewModel.searchText)
-                    .textFieldStyle(PlainTextFieldStyle())
-                    .onChange(of: viewModel.searchText) { newValue in
-                        if newValue.count >= 2 {
-                            viewModel.searchCustomers()
-                        } else if newValue.isEmpty {
-                            viewModel.customers = []
-                            viewModel.showDropdown = false
-                        }
+                Group {
+                    if #available(iOS 15.0, *) {
+                        // iOS 15+ gelişmiş özellikler
+                        TextField("Müşteri ara...", text: $viewModel.searchText)
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 16))
+                            .autocorrectionDisabled()
+                            .textInputAutocapitalization(.words)
+                            .submitLabel(.search)
+                            .focused($isSearchFieldFocused)
+                            .onSubmit {
+                                if viewModel.searchText.count >= 2 {
+                                    viewModel.searchCustomers()
+                                }
+                            }
+                            .onTapGesture {
+                                // Manuel focus tetikle
+                                isSearchFieldFocused = true
+                            }
+                    } else {
+                        // iOS 14 fallback
+                        TextField("Müşteri ara...", text: $viewModel.searchText)
+                            .textFieldStyle(PlainTextFieldStyle())
+                            .font(.system(size: 16))
+                            .autocapitalization(.words)
+                            .disableAutocorrection(true)
                     }
+                }
+                .onChange(of: viewModel.searchText) { newValue in
+                    if newValue.count >= 2 {
+                        viewModel.searchCustomers()
+                    } else if newValue.isEmpty {
+                        viewModel.customers = []
+                        viewModel.showDropdown = false
+                    }
+                }
                 
                 if viewModel.isSearching {
-                    ProgressView()
-                        .scaleEffect(0.8)
+                    if #available(iOS 15.0, *) {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                            .progressViewStyle(CircularProgressViewStyle(tint: .blue))
+                    } else {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                            .progressViewStyle(CircularProgressViewStyle())
+                    }
                 }
             }
-                    .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+            .padding(.horizontal, 16)  // Horizontal padding artırıldı
+            .padding(.vertical, 16)    // Vertical padding artırıldı (yükseklik için)
             .background(
-                        RoundedRectangle(cornerRadius: 8)
-                    .stroke(Color(.systemGray4), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 12)  // Corner radius artırıldı
+                    .fill(Color(.systemBackground))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color(.systemGray4), lineWidth: 1.5)
                     )
+                    .shadow(color: .black.opacity(0.03), radius: 2, x: 0, y: 1)  // Subtle shadow
+            )
             
             // Dropdown müşteri listesi
             if viewModel.showDropdown && !viewModel.customers.isEmpty {
                 customerDropdown
-                }
             }
         }
+    }
     
     // Müşteri dropdown listesi
     private var customerDropdown: some View {
@@ -622,6 +671,11 @@ struct BarcodeUploadView: View {
                         viewModel.showDropdown = false
                         viewModel.searchText = ""
                         viewModel.customers = []
+                        
+                        // 🎯 iOS 15+ için focus'u kaldır
+                        if #available(iOS 15.0, *) {
+                            isSearchFieldFocused = false
+                        }
                     }
                 }
             }
