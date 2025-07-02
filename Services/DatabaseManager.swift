@@ -1,6 +1,9 @@
 import Foundation
 import SQLite3
 
+// SQLITE_TRANSIENT macro tanımı
+private let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
+
 class DatabaseManager {
     
     // MARK: - Constants
@@ -227,10 +230,10 @@ class DatabaseManager {
         if prepareResult == SQLITE_OK {
             print("✅ \(DatabaseManager.TAG): SQL prepare başarılı")
             
-            sqlite3_bind_text(statement, 1, musteriAdi, -1, nil)
-            sqlite3_bind_text(statement, 2, resimYolu, -1, nil)
-            sqlite3_bind_text(statement, 3, tarih, -1, nil)
-            sqlite3_bind_text(statement, 4, yukleyen, -1, nil)
+            sqlite3_bind_text(statement, 1, musteriAdi, -1, SQLITE_TRANSIENT)
+            sqlite3_bind_text(statement, 2, resimYolu, -1, SQLITE_TRANSIENT)
+            sqlite3_bind_text(statement, 3, tarih, -1, SQLITE_TRANSIENT)
+            sqlite3_bind_text(statement, 4, yukleyen, -1, SQLITE_TRANSIENT)
             
             print("🔗 \(DatabaseManager.TAG): Parametreler bind edildi")
             
@@ -366,33 +369,29 @@ class DatabaseManager {
                 let id = Int(sqlite3_column_int(statement, 0))
                 
                 // Güvenli string okuma (NULL kontrol)
-                let musteriAdi = if let ptr = sqlite3_column_text(statement, 1) {
-                    String(cString: ptr)
-                } else {
+                let musteriAdiPtr = sqlite3_column_text(statement, 1)
+                let musteriAdi = musteriAdiPtr != nil ? String(cString: musteriAdiPtr!) : {
                     print("   ⚠️ Column 1 (musteriAdi) is NULL")
-                    ""
-                }
+                    return ""
+                }()
                 
-                let resimYolu = if let ptr = sqlite3_column_text(statement, 2) {
-                    String(cString: ptr)
-                } else {
+                let resimYoluPtr = sqlite3_column_text(statement, 2)
+                let resimYolu = resimYoluPtr != nil ? String(cString: resimYoluPtr!) : {
                     print("   ⚠️ Column 2 (resimYolu) is NULL")
-                    ""
-                }
+                    return ""
+                }()
                 
-                let tarih = if let ptr = sqlite3_column_text(statement, 3) {
-                    String(cString: ptr)
-                } else {
+                let tarihPtr = sqlite3_column_text(statement, 3)
+                let tarih = tarihPtr != nil ? String(cString: tarihPtr!) : {
                     print("   ⚠️ Column 3 (tarih) is NULL")
-                    ""
-                }
+                    return ""
+                }()
                 
-                let yukleyen = if let ptr = sqlite3_column_text(statement, 4) {
-                    String(cString: ptr)
-                } else {
+                let yukleyenPtr = sqlite3_column_text(statement, 4)
+                let yukleyen = yukleyenPtr != nil ? String(cString: yukleyenPtr!) : {
                     print("   ⚠️ Column 4 (yukleyen) is NULL")
-                    ""
-                }
+                    return ""
+                }()
                 
                 let yuklendi = Int(sqlite3_column_int(statement, 5))
                 
