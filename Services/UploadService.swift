@@ -114,7 +114,7 @@ class UploadService: ObservableObject {
         // Database'den yüklenmemiş resimleri al
         let dbManager = DatabaseManager.getInstance()
         
-        // Gereksiz cleanup mantığı kaldırıldı - sadece upload işlemi
+        print(\"📤 Upload işlemi başlatıldı - WiFi only: \\(wifiOnly)\")
         
         let pendingImages = dbManager.getAllPendingImages()
         let totalCount = pendingImages.count

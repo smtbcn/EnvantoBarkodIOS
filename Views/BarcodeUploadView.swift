@@ -13,7 +13,7 @@ struct CameraView: View {
     @State private var showSuccessIndicator = false
     
     var body: some View {
-        ZStack {
+            ZStack {
             // Kamera preview
             CameraPreview(session: cameraModel.session)
                 .ignoresSafeArea()
@@ -362,8 +362,8 @@ struct BarcodeUploadView: View {
             }
         }
         .navigationTitle("Barkod Yükleme")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button("Yenile") {
                     viewModel.refreshSavedImages()
@@ -443,7 +443,7 @@ struct BarcodeUploadView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
                 
-                HStack {
+            HStack {
                     Text(DeviceIdentifier.getUniqueDeviceId())
                         .font(.system(.body, design: .monospaced))
                         .padding(.horizontal, 12)
@@ -507,7 +507,7 @@ struct BarcodeUploadView: View {
                     .font(.headline)
                     .fontWeight(.semibold)
                 
-            if let selectedCustomer = viewModel.selectedCustomer {
+                if let selectedCustomer = viewModel.selectedCustomer {
                 // Seçilen müşteri card'ı (Android like)
                 selectedCustomerCard(customer: selectedCustomer)
             } else {
@@ -553,12 +553,12 @@ struct BarcodeUploadView: View {
                             viewModel.selectedCustomer = nil
                             viewModel.searchText = ""
                     viewModel.customers = []
-                    viewModel.showDropdown = false
-                }
+                            viewModel.showDropdown = false
+                        }
             }
             .font(.subheadline)
-            .foregroundColor(.blue)
-        }
+                        .foregroundColor(.blue)
+                    }
         .padding()
         .background(
             RoundedRectangle(cornerRadius: 12)
@@ -710,7 +710,7 @@ struct BarcodeUploadView: View {
                     
                     Text("Henüz müşteriye ait resim yok")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                            .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
                 }
                 .frame(maxWidth: .infinity)
@@ -752,7 +752,7 @@ struct BarcodeUploadView: View {
             HStack {
                 // Status ikonu
                 Image(systemName: getStatusIcon())
-                    .font(.title2)
+                .font(.title2)
                     .foregroundColor(getStatusColor())
                 
                 VStack(alignment: .leading, spacing: 4) {
@@ -791,7 +791,7 @@ struct BarcodeUploadView: View {
                 
                 Text(getNetworkStatus())
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                .foregroundColor(.secondary)
                 
                 Spacer()
                 
@@ -979,9 +979,9 @@ struct CustomerImageCard: View {
                             .foregroundColor(.primary)
                         
                         Text("Kayıtlı Resimler (\(group.imageCount))")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
                     
                     Spacer()
                     
@@ -992,8 +992,8 @@ struct CustomerImageCard: View {
                         Image(systemName: "trash")
                             .font(.system(size: 16))
                             .foregroundColor(.red)
-                    }
-                    .buttonStyle(PlainButtonStyle())
+        }
+        .buttonStyle(PlainButtonStyle())
                     
                     // Expand/Collapse ikonu
                     Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
@@ -1107,7 +1107,7 @@ struct AndroidImageRow: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Tarih: \(formattedDate(image.uploadDate))")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                    .foregroundColor(.secondary)
                         .lineLimit(1)
                     
                     Text("Yükleyen: \(getUploaderName())")
