@@ -21,8 +21,23 @@ class ImageStorageManager {
                 print("📱 Files App'te görünecek yol: \(relativePath)")
             }
             
-            // Debug: Dosya gerçekten var mı kontrol et
-            if FileManager.default.fileExists(atPath: documentsPath) {
+            // Debug: Dosya gerçekten var mı kontrol et (birkaç deneme yap)
+            var fileExists = false
+            var attempt = 1
+            let maxAttempts = 3
+            
+            while !fileExists && attempt <= maxAttempts {
+                fileExists = FileManager.default.fileExists(atPath: documentsPath)
+                print("🔍 Dosya varlık kontrolü (Deneme \(attempt)/\(maxAttempts)): \(fileExists ? "BULUNDU" : "BULUNAMADI")")
+                
+                if !fileExists && attempt < maxAttempts {
+                    // Kısa bekleme (dosya sistemi için)
+                    try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 saniye
+                }
+                attempt += 1
+            }
+            
+            if fileExists {
                 print("✅ Dosya doğrulandı: \(documentsPath)")
                 
                 // Dosya boyutunu da göster
@@ -31,6 +46,8 @@ class ImageStorageManager {
                     let fileSizeMB = Double(fileSize) / (1024 * 1024)
                     print("📏 Dosya boyutu: \(String(format: "%.2f", fileSizeMB)) MB")
                 }
+                
+                print("🗄️ Database kayıt işlemi başlıyor...")
                 
                 // 🗄️ Veritabanına kaydet (Android'deki gibi)
                 let dbManager = DatabaseManager.getInstance()
@@ -52,7 +69,25 @@ class ImageStorageManager {
                 }
                 
             } else {
-                print("❌ Dosya bulunamadı: \(documentsPath)")
+                print("❌ Dosya \(maxAttempts) denemede bulunamadı: \(documentsPath)")
+                print("❌ KRITIK: Dosya kaydedildi ama erişilemiyor - iOS dosya sistemi gecikmesi olabilir")
+                
+                // Database'e yine de kaydet (dosya vardır ama geç erişilebilir)
+                print("🔄 Yine de database'e kaydediliyor...")
+                let dbManager = DatabaseManager.getInstance()
+                let dbSaved = dbManager.insertBarkodResim(
+                    musteriAdi: customerName,
+                    resimYolu: documentsPath,
+                    yukleyen: yukleyen
+                )
+                
+                if dbSaved {
+                    print("🗄️ Veritabanına kaydedildi (dosya gecikmeli): \(customerName) - \(documentsPath)")
+                    dbManager.printDatabaseInfo()
+                    triggerUploadAfterSave()
+                } else {
+                    print("❌ Veritabanına kaydedilemedi (dosya gecikmeli)")
+                }
             }
             
             return documentsPath
