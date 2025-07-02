@@ -735,35 +735,53 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
             let dbCustomerName = customerName.replacingOccurrences(of: " ", with: "_") // SAMET BICEN → SAMET_BICEN
             let displayCustomerName = customerName // UI format
             
-            print("🗑️ Müşteri klasörü siliniyor...")
-            print("   Display Name: '\(displayCustomerName)'")
-            print("   Database Name: '\(dbCustomerName)'")
+            print("🗑️ ======= MÜŞTERİ KLASÖRÜ SİLME BAŞLADI =======")
+            print("   UI Customer Name: '\(displayCustomerName)'")
+            print("   DB Customer Name: '\(dbCustomerName)'")
+            
+            // Önce müşterinin database'deki kayıtlarını kontrol et
+            let existingRecords1 = dbManager.getCustomerImages(musteriAdi: displayCustomerName)
+            let existingRecords2 = dbManager.getCustomerImages(musteriAdi: dbCustomerName)
+            print("   📊 Mevcut DB kayıtları (display format): \(existingRecords1.count)")
+            print("   📊 Mevcut DB kayıtları (db format): \(existingRecords2.count)")
             
             // 1️⃣ Önce database'den tüm kayıtları sil (her iki format için de dene)
+            print("   🗄️ Database silme işlemi başlatılıyor...")
             var dbDeleteSuccess = dbManager.deleteCustomerImages(musteriAdi: displayCustomerName)
+            print("   🗄️ Display format ile silme: \(dbDeleteSuccess ? "BAŞARILI" : "BAŞARISIZ")")
+            
             if !dbDeleteSuccess {
                 // Display format başarısız olduysa database format dene
                 dbDeleteSuccess = dbManager.deleteCustomerImages(musteriAdi: dbCustomerName)
+                print("   🗄️ DB format ile silme: \(dbDeleteSuccess ? "BAŞARILI" : "BAŞARISIZ")")
             }
-            print("🗑️ Database silme durumu: \(dbDeleteSuccess ? "BAŞARILI" : "BAŞARISIZ")")
             
             // 2️⃣ Sonra dosya klasörünü sil (ImageStorageManager)
+            print("   📁 Dosya klasörü silme işlemi başlatılıyor...")
             let fileDeleteSuccess = await ImageStorageManager.deleteCustomerImages(customerName: customerName)
-            print("🗑️ Dosya klasörü silme durumu: \(fileDeleteSuccess ? "BAŞARILI" : "BAŞARISIZ")")
+            print("   📁 Dosya klasörü silme: \(fileDeleteSuccess ? "BAŞARILI" : "BAŞARISIZ")")
+            
+            // Sonuç değerlendirmesi
+            print("   📊 SONUÇ: DB=\(dbDeleteSuccess ? "✅" : "❌"), File=\(fileDeleteSuccess ? "✅" : "❌")")
             
             await MainActor.run {
                 if dbDeleteSuccess || fileDeleteSuccess {
                     // En az birisi başarılıysa UI'dan kaldır
+                    let removedCount = savedImages.filter { $0.customerName == customerName }.count
                     savedImages.removeAll { $0.customerName == customerName }
-                    print("✅ Müşteri klasörü başarıyla silindi: \(customerName)")
+                    print("   🎯 UI'dan \(removedCount) resim kaldırıldı")
                     
                     // Müşteri gruplarını güncelle
                     loadCustomerImageGroups()
+                    print("✅ Müşteri klasörü başarıyla silindi: \(customerName)")
                 } else {
                     // Her ikisi de başarısızsa hata mesajı
+                    print("❌ Müşteri klasörü silme başarısız: Her iki işlem de başarısız")
                     showError("Müşteri klasörü silme hatası: Hem database hem dosya silme başarısız")
                 }
             }
+            
+            print("🗑️ ======= MÜŞTERİ KLASÖRÜ SİLME BİTTİ =======")
         }
     }
     
