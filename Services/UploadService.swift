@@ -192,13 +192,37 @@ class UploadService: ObservableObject {
             
             if success {
                 uploadedCount += 1
+                
+                print("🎯 \(UploadService.TAG): === UPLOAD BAŞARILI - DATABASE GÜNCELLEMESİ ===")
+                print("📊 \(UploadService.TAG): Record ID: \(imageRecord.id)")
+                print("👤 \(UploadService.TAG): Müşteri: \(imageRecord.musteriAdi)")
+                print("📁 \(UploadService.TAG): Path: \(imageRecord.resimYolu)")
+                print("🏷️ \(UploadService.TAG): Eski yuklendi değeri: \(imageRecord.yuklendi)")
+                
                 // Database'de yuklendi flag'ini güncelle
-                _ = dbManager.updateUploadStatus(id: imageRecord.id, yuklendi: 1)
+                let updateResult = dbManager.updateUploadStatus(id: imageRecord.id, yuklendi: 1)
+                
+                if updateResult {
+                    print("✅ \(UploadService.TAG): Database güncelleme BAŞARILI! ID: \(imageRecord.id) → yuklendi=1")
+                    
+                    // Güncelleme sonrası doğrulama
+                    let allPending = dbManager.getAllPendingImages()
+                    let stillPending = allPending.first(where: { $0.id == imageRecord.id })
+                    
+                    if stillPending == nil {
+                        print("✅ \(UploadService.TAG): DOĞRULAMA OK - Resim artık pending listesinde yok")
+                    } else {
+                        print("⚠️ \(UploadService.TAG): DOĞRULAMA BAŞARISIZ - Resim hala pending listesinde!")
+                        print("   Güncel yuklendi değeri: \(stillPending?.yuklendi ?? -1)")
+                    }
+                } else {
+                    print("❌ \(UploadService.TAG): Database güncelleme BAŞARISIZ! ID: \(imageRecord.id)")
+                }
                 
                 uploadProgress = (uploadedCount, totalCount)
                 uploadStatus = "Yüklendi: \(uploadedCount)/\(totalCount)"
                 
-                print("✅ \(UploadService.TAG): Resim başarıyla yüklendi: \(imageRecord.musteriAdi) - \(imageRecord.resimYolu)")
+                print("✅ \(UploadService.TAG): Resim başarıyla yüklendi: \(imageRecord.musteriAdi)")
                 
                 // Her başarılı upload sonrasında UI'ı anında güncelle
                 DispatchQueue.main.async {

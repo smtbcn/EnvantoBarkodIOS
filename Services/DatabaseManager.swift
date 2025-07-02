@@ -207,7 +207,15 @@ class DatabaseManager {
             return false
         }
         
-        print("✅ \(DatabaseManager.TAG): Database bağlantısı OK")
+        // 🚫 MÜKERRER KAYIT KONTROLÜ
+        if isImageAlreadyInDatabase(resimYolu: resimYolu, musteriAdi: musteriAdi) {
+            print("⚠️ \(DatabaseManager.TAG): BU RESİM ZATEN KAYITLI! - \(resimYolu)")
+            print("   📝 Müşteri: \(musteriAdi)")
+            print("   🚫 MÜKERRER KAYIT ENGELLENDİ!")
+            return true  // Zaten var, başarılı kabul et
+        }
+        
+        print("✅ \(DatabaseManager.TAG): Database bağlantısı OK, mükerrer kayıt yok")
         
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
@@ -258,6 +266,68 @@ class DatabaseManager {
         
         sqlite3_finalize(statement)
         print("❌ \(DatabaseManager.TAG): insertBarkodResim BAŞARISIZ!")
+        return false
+    }
+    
+    // MARK: - Mükerrer Kayıt Kontrolü
+    private func isImageAlreadyInDatabase(resimYolu: String, musteriAdi: String) -> Bool {
+        guard db != nil else { return false }
+        
+        // Hem path hem de dosya adı bazlı kontrol yapalım
+        let fileName = URL(fileURLWithPath: resimYolu).lastPathComponent
+        
+        print("🔍 \(DatabaseManager.TAG): Mükerrer kontrol - Path: \(resimYolu)")
+        print("🔍 \(DatabaseManager.TAG): Mükerrer kontrol - FileName: \(fileName)")
+        print("🔍 \(DatabaseManager.TAG): Mükerrer kontrol - Müşteri: \(musteriAdi)")
+        
+        // 1. Tam path kontrolü
+        let pathCheckSQL = """
+            SELECT COUNT(*) FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) 
+            WHERE \(DatabaseManager.COLUMN_RESIM_YOLU) = ? AND \(DatabaseManager.COLUMN_MUSTERI_ADI) = ?
+        """
+        
+        var statement: OpaquePointer?
+        var count = 0
+        
+        if sqlite3_prepare_v2(db, pathCheckSQL, -1, &statement, nil) == SQLITE_OK {
+            sqlite3_bind_text(statement, 1, resimYolu, -1, SQLITE_TRANSIENT)
+            sqlite3_bind_text(statement, 2, musteriAdi, -1, SQLITE_TRANSIENT)
+            
+            if sqlite3_step(statement) == SQLITE_ROW {
+                count = Int(sqlite3_column_int(statement, 0))
+                print("🔍 \(DatabaseManager.TAG): Tam path kontrolü: \(count) kayıt bulundu")
+            }
+        }
+        sqlite3_finalize(statement)
+        
+        if count > 0 {
+            print("🚫 \(DatabaseManager.TAG): TAM PATH EŞLEŞMESİ BULUNDU!")
+            return true
+        }
+        
+        // 2. Dosya adı kontrolü (path format farklı olabilir)
+        let fileCheckSQL = """
+            SELECT COUNT(*) FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) 
+            WHERE \(DatabaseManager.COLUMN_RESIM_YOLU) LIKE '%' || ? AND \(DatabaseManager.COLUMN_MUSTERI_ADI) = ?
+        """
+        
+        if sqlite3_prepare_v2(db, fileCheckSQL, -1, &statement, nil) == SQLITE_OK {
+            sqlite3_bind_text(statement, 1, fileName, -1, SQLITE_TRANSIENT)
+            sqlite3_bind_text(statement, 2, musteriAdi, -1, SQLITE_TRANSIENT)
+            
+            if sqlite3_step(statement) == SQLITE_ROW {
+                count = Int(sqlite3_column_int(statement, 0))
+                print("🔍 \(DatabaseManager.TAG): Dosya adı kontrolü: \(count) kayıt bulundu")
+            }
+        }
+        sqlite3_finalize(statement)
+        
+        if count > 0 {
+            print("🚫 \(DatabaseManager.TAG): DOSYA ADI EŞLEŞMESİ BULUNDU!")
+            return true
+        }
+        
+        print("✅ \(DatabaseManager.TAG): Mükerrer kayıt YOK - Güvenle eklenebilir")
         return false
     }
     
