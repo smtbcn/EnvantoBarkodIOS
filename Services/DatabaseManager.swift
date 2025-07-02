@@ -49,6 +49,8 @@ class DatabaseManager {
     
     // MARK: - Database Operations
     private func openDatabase() {
+        print("🔄 \(DatabaseManager.TAG): Database açılıyor...")
+        
         guard let dbPath = getDatabasePath() else {
             print("❌ \(DatabaseManager.TAG): Database path alınamadı")
             return
@@ -56,10 +58,19 @@ class DatabaseManager {
         
         print("📱 \(DatabaseManager.TAG): Database yolu: \(dbPath)")
         
-        if sqlite3_open(dbPath, &db) == SQLITE_OK {
-            print("✅ \(DatabaseManager.TAG): Database açıldı")
+        // Dosya var mı kontrol et
+        let fileExists = FileManager.default.fileExists(atPath: dbPath)
+        print("📁 \(DatabaseManager.TAG): Database dosyası mevcut: \(fileExists)")
+        
+        let openResult = sqlite3_open(dbPath, &db)
+        if openResult == SQLITE_OK {
+            print("✅ \(DatabaseManager.TAG): Database açıldı başarıyla")
+            print("🔗 \(DatabaseManager.TAG): DB pointer: \(String(describing: db))")
         } else {
-            print("❌ \(DatabaseManager.TAG): Database açılamadı")
+            print("❌ \(DatabaseManager.TAG): Database açılamadı - Result: \(openResult)")
+            if let errorMessage = sqlite3_errmsg(db) {
+                print("❌ \(DatabaseManager.TAG): SQLite Open Error: \(String(cString: errorMessage))")
+            }
             db = nil
         }
     }
@@ -127,14 +138,23 @@ class DatabaseManager {
     
     // MARK: - Insert Barkod Resim (Android metoduna benzer)
     func insertBarkodResim(musteriAdi: String, resimYolu: String, yukleyen: String) -> Bool {
+        print("🔄 \(DatabaseManager.TAG): insertBarkodResim başlatıldı")
+        print("   📝 Müşteri: \(musteriAdi)")
+        print("   📁 Yol: \(resimYolu)")
+        print("   👤 Yukleyen: \(yukleyen)")
+        
         guard db != nil else {
-            print("❌ \(DatabaseManager.TAG): Database bağlantısı yok")
+            print("❌ \(DatabaseManager.TAG): Database bağlantısı yok - db pointer nil")
             return false
         }
+        
+        print("✅ \(DatabaseManager.TAG): Database bağlantısı OK")
         
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
         let tarih = dateFormatter.string(from: Date())
+        
+        print("📅 \(DatabaseManager.TAG): Tarih: \(tarih)")
         
         let insertSQL = """
             INSERT INTO \(DatabaseManager.TABLE_BARKOD_RESIMLER) 
@@ -143,26 +163,42 @@ class DatabaseManager {
             VALUES (?, ?, ?, ?, 0)
         """
         
+        print("🗃️ \(DatabaseManager.TAG): SQL hazırlanıyor...")
+        
         var statement: OpaquePointer?
         
-        if sqlite3_prepare_v2(db, insertSQL, -1, &statement, nil) == SQLITE_OK {
+        let prepareResult = sqlite3_prepare_v2(db, insertSQL, -1, &statement, nil)
+        if prepareResult == SQLITE_OK {
+            print("✅ \(DatabaseManager.TAG): SQL prepare başarılı")
+            
             sqlite3_bind_text(statement, 1, musteriAdi, -1, nil)
             sqlite3_bind_text(statement, 2, resimYolu, -1, nil)
             sqlite3_bind_text(statement, 3, tarih, -1, nil)
             sqlite3_bind_text(statement, 4, yukleyen, -1, nil)
             
-            if sqlite3_step(statement) == SQLITE_DONE {
+            print("🔗 \(DatabaseManager.TAG): Parametreler bind edildi")
+            
+            let stepResult = sqlite3_step(statement)
+            if stepResult == SQLITE_DONE {
                 print("✅ \(DatabaseManager.TAG): Barkod resim kaydedildi - Müşteri: \(musteriAdi)")
+                print("🎉 \(DatabaseManager.TAG): Database kayıt işlemi BAŞARILI!")
                 sqlite3_finalize(statement)
                 return true
             } else {
-                print("❌ \(DatabaseManager.TAG): Barkod resim kaydedilemedi")
+                print("❌ \(DatabaseManager.TAG): sqlite3_step başarısız - Result: \(stepResult)")
+                if let errorMessage = sqlite3_errmsg(db) {
+                    print("❌ \(DatabaseManager.TAG): SQLite Error: \(String(cString: errorMessage))")
+                }
             }
         } else {
-            print("❌ \(DatabaseManager.TAG): Insert sorgusu hazırlanamadı")
+            print("❌ \(DatabaseManager.TAG): sqlite3_prepare_v2 başarısız - Result: \(prepareResult)")
+            if let errorMessage = sqlite3_errmsg(db) {
+                print("❌ \(DatabaseManager.TAG): SQLite Prepare Error: \(String(cString: errorMessage))")
+            }
         }
         
         sqlite3_finalize(statement)
+        print("❌ \(DatabaseManager.TAG): insertBarkodResim BAŞARISIZ!")
         return false
     }
     
@@ -600,12 +636,47 @@ class DatabaseManager {
     
     // MARK: - Debug Methods
     func printDatabaseInfo() {
+        print("🔍 \(DatabaseManager.TAG): === DATABASE INFO START ===")
+        
+        // Database connection durumu
+        print("🔗 \(DatabaseManager.TAG): DB Connection: \(db != nil ? "ACTIVE" : "NULL")")
+        if let dbPtr = db {
+            print("🔗 \(DatabaseManager.TAG): DB Pointer: \(String(describing: dbPtr))")
+        }
+        
+        // Database dosya durumu
+        if let dbPath = getDatabasePath() {
+            print("📁 \(DatabaseManager.TAG): Database dosyası: \(dbPath)")
+            let fileExists = FileManager.default.fileExists(atPath: dbPath)
+            print("📁 \(DatabaseManager.TAG): Dosya mevcut: \(fileExists)")
+            
+            if fileExists {
+                if let attributes = try? FileManager.default.attributesOfItem(atPath: dbPath),
+                   let fileSize = attributes[.size] as? Int64 {
+                    print("📏 \(DatabaseManager.TAG): Dosya boyutu: \(fileSize) bytes")
+                }
+            }
+        }
+        
+        // Database tablo kontrolü
+        print("🗃️ \(DatabaseManager.TAG): Tablo durumları kontrol ediliyor...")
+        checkTableExists()
+        
         let totalCount = getUploadedImagesCount()
         let pendingCount = getPendingUploadCount()
         
         print("📊 \(DatabaseManager.TAG): Toplam resim: \(totalCount)")
         print("📊 \(DatabaseManager.TAG): Bekleyen yükleme: \(pendingCount)")
         print("📊 \(DatabaseManager.TAG): Tamamlanan yükleme: \(totalCount - pendingCount)")
+        
+        // Son kayıtları göster
+        if totalCount > 0 {
+            print("📋 \(DatabaseManager.TAG): Son 3 kayıt:")
+            let recentImages = getRecentImages(limit: 3)
+            for (index, image) in recentImages.enumerated() {
+                print("   \(index + 1). \(image.musteriAdi) - \(image.tarih) - \(image.uploadStatusText)")
+            }
+        }
         
         // Cihaz sahibi bilgisini de göster
         let currentDeviceOwner = UserDefaults.standard.string(forKey: "device_owner") ?? "Belirtilmemiş"
@@ -619,9 +690,86 @@ class DatabaseManager {
             print("🔐 \(DatabaseManager.TAG): Cihaz yetki kaydı bulunamadı")
         }
         
-        if let dbPath = getDatabasePath() {
-            print("📁 \(DatabaseManager.TAG): Database dosyası: \(dbPath)")
+        print("🔍 \(DatabaseManager.TAG): === DATABASE INFO END ===")
+    }
+    
+    // Tabloların var olup olmadığını kontrol et
+    private func checkTableExists() {
+        guard db != nil else {
+            print("❌ \(DatabaseManager.TAG): DB connection yok, tablo kontrolü yapılamadı")
+            return
         }
+        
+        let tableCheckSQL = "SELECT name FROM sqlite_master WHERE type='table' AND name=?"
+        var statement: OpaquePointer?
+        
+        // barkod_resimler tablosu kontrolü
+        if sqlite3_prepare_v2(db, tableCheckSQL, -1, &statement, nil) == SQLITE_OK {
+            sqlite3_bind_text(statement, 1, DatabaseManager.TABLE_BARKOD_RESIMLER, -1, nil)
+            
+            if sqlite3_step(statement) == SQLITE_ROW {
+                print("✅ \(DatabaseManager.TAG): barkod_resimler tablosu mevcut")
+            } else {
+                print("❌ \(DatabaseManager.TAG): barkod_resimler tablosu bulunamadı!")
+            }
+        }
+        sqlite3_finalize(statement)
+        
+        // cihaz_yetki tablosu kontrolü
+        if sqlite3_prepare_v2(db, tableCheckSQL, -1, &statement, nil) == SQLITE_OK {
+            sqlite3_bind_text(statement, 1, DatabaseManager.TABLE_CIHAZ_YETKI, -1, nil)
+            
+            if sqlite3_step(statement) == SQLITE_ROW {
+                print("✅ \(DatabaseManager.TAG): cihaz_yetki tablosu mevcut")
+            } else {
+                print("❌ \(DatabaseManager.TAG): cihaz_yetki tablosu bulunamadı!")
+            }
+        }
+        sqlite3_finalize(statement)
+    }
+    
+    // Son kayıtları getir
+    private func getRecentImages(limit: Int) -> [BarkodResim] {
+        guard db != nil else { return [] }
+        
+        let selectSQL = """
+            SELECT \(DatabaseManager.COLUMN_ID), \(DatabaseManager.COLUMN_MUSTERI_ADI), 
+                   \(DatabaseManager.COLUMN_RESIM_YOLU), \(DatabaseManager.COLUMN_TARIH), 
+                   \(DatabaseManager.COLUMN_YUKLEYEN), \(DatabaseManager.COLUMN_YUKLENDI)
+            FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) 
+            ORDER BY \(DatabaseManager.COLUMN_ID) DESC 
+            LIMIT ?
+        """
+        
+        var statement: OpaquePointer?
+        var results: [BarkodResim] = []
+        
+        if sqlite3_prepare_v2(db, selectSQL, -1, &statement, nil) == SQLITE_OK {
+            sqlite3_bind_int(statement, 1, Int32(limit))
+            
+            while sqlite3_step(statement) == SQLITE_ROW {
+                let id = Int(sqlite3_column_int(statement, 0))
+                let musteriAdi = String(cString: sqlite3_column_text(statement, 1))
+                let resimYolu = String(cString: sqlite3_column_text(statement, 2))
+                let tarih = String(cString: sqlite3_column_text(statement, 3))
+                let yukleyen = String(cString: sqlite3_column_text(statement, 4))
+                let yuklendi = Int(sqlite3_column_int(statement, 5))
+                
+                let barkodResim = BarkodResim(
+                    id: id,
+                    musteriAdi: musteriAdi,
+                    resimYolu: resimYolu,
+                    tarih: tarih,
+                    yukleyen: yukleyen,
+                    yuklendi: yuklendi
+                )
+                
+                results.append(barkodResim)
+            }
+        }
+        
+        sqlite3_finalize(statement)
+        return results
     }
 }
 
