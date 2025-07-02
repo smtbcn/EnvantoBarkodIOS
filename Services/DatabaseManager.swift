@@ -564,9 +564,9 @@ class DatabaseManager {
             sqlite3_bind_int(statement, 1, Int32(id))
             
             if sqlite3_step(statement) == SQLITE_DONE {
-                print("✅ \(DatabaseManager.TAG): Barkod resim kaydı silindi - ID: \(id)")
+                let deletedCount = sqlite3_changes(db)
                 sqlite3_finalize(statement)
-                return true
+                return deletedCount > 0  // Gerçekten silinip silinmediğini kontrol et
             }
         }
         
@@ -578,36 +578,22 @@ class DatabaseManager {
     func deleteCustomerImages(musteriAdi: String) -> Bool {
         guard db != nil else { return false }
         
-        // Önce müşterinin tüm ID'lerini al
-        let selectSQL = "SELECT \(DatabaseManager.COLUMN_ID) FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) WHERE \(DatabaseManager.COLUMN_MUSTERI_ADI) = ?"
+        // Direkt SQL DELETE kullan (tekli silme yerine)
+        let deleteSQL = "DELETE FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) WHERE \(DatabaseManager.COLUMN_MUSTERI_ADI) = ?"
         var statement: OpaquePointer?
-        var imageIds: [Int] = []
         
-        if sqlite3_prepare_v2(db, selectSQL, -1, &statement, nil) == SQLITE_OK {
+        if sqlite3_prepare_v2(db, deleteSQL, -1, &statement, nil) == SQLITE_OK {
             sqlite3_bind_text(statement, 1, musteriAdi, -1, nil)
             
-            while sqlite3_step(statement) == SQLITE_ROW {
-                let id = Int(sqlite3_column_int(statement, 0))
-                imageIds.append(id)
+            if sqlite3_step(statement) == SQLITE_DONE {
+                let deletedCount = sqlite3_changes(db)
+                sqlite3_finalize(statement)
+                return deletedCount > 0
             }
         }
+        
         sqlite3_finalize(statement)
-        
-        // Hiç kayıt yoksa başarılı say
-        if imageIds.isEmpty {
-            return true
-        }
-        
-        // Her bir kaydı tekli silme ile sil (çalışan kodu kullan)
-        var deletedCount = 0
-        for imageId in imageIds {
-            if deleteBarkodResim(id: imageId) {
-                deletedCount += 1
-            }
-        }
-        
-        print("✅ \(DatabaseManager.TAG): '\(musteriAdi)' müşterisinin \(deletedCount)/\(imageIds.count) resim kaydı silindi")
-        return deletedCount > 0
+        return false
     }
     
     // MARK: - Update Upload Status
