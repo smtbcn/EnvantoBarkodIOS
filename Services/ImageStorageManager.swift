@@ -151,11 +151,26 @@ class ImageStorageManager {
     
     // MARK: - App Documents Directory Functions (Files App Access)
     private static func getAppDocumentsDirectory() -> URL? {
-        let paths = FileManager.default.urls(for: .documentDirectory, 
-                                           in: .userDomainMask)
-        let documentsDirectory = paths[0]
-        print("📱 Documents Dizini: \(documentsDirectory.path)")
-        return documentsDirectory
+        // Uygulamanın Documents dizinini al
+        guard let documentsDir = FileManager.default.urls(for: .documentDirectory, 
+                                                       in: .userDomainMask).first else {
+            print("❌ Documents dizini alınamadı")
+            return nil
+        }
+        
+        // Documents dizinini dışa aktar
+        do {
+            // Bu satır, dosyanın iCloud ve Dosyalar uygulamasında görünmesini sağlar
+            var resourceValues = URLResourceValues()
+            resourceValues.isExcludedFromBackup = false
+            try documentsDir.setResourceValues(resourceValues)
+            
+            print("📱 Documents Dizini: \(documentsDir.path)")
+            return documentsDir
+        } catch {
+            print("❌ Documents dizini dışa aktarılamadı: \(error.localizedDescription)")
+            return documentsDir
+        }
     }
     
     private static func getAppDocumentsCustomerDir(for customerName: String) -> URL? {
