@@ -347,6 +347,7 @@ struct BarcodeUploadView: View {
     @State private var expandedCustomerId: String? = nil // Accordion state
     @State private var showingDeleteCustomerAlert = false
     @State private var customerToDelete: String = ""
+    @FocusState private var isSearchFocused: Bool  // 🎯 TextField focus control
     
     var body: some View {
         ZStack {
@@ -578,12 +579,22 @@ struct BarcodeUploadView: View {
     // Müşteri arama input'u
     private var customerSearchInput: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
+            HStack(spacing: 12) {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(.secondary)
+                    .font(.system(size: 16))
                 
                 TextField("Müşteri ara...", text: $viewModel.searchText)
-                    .textFieldStyle(PlainTextFieldStyle())
+                    .textFieldStyle(RoundedBorderTextFieldStyle())  // 🎯 Daha responsive style
+                    .autocapitalization(.none)
+                    .disableAutocorrection(true)
+                    .submitLabel(.search)
+                    .focused($isSearchFocused)  // 🎯 Focus state binding
+                    .onTapGesture {
+                        // 🎯 Anında klavye açılması için focus trigger
+                        isSearchFocused = true
+                        print("🔍 TextField tapped - focus activated")
+                    }
                     .onChange(of: viewModel.searchText) { newValue in
                         if newValue.count >= 2 {
                             viewModel.searchCustomers()
@@ -596,21 +607,34 @@ struct BarcodeUploadView: View {
                 if viewModel.isSearching {
                     ProgressView()
                         .scaleEffect(0.8)
+                        .frame(width: 20, height: 20)
                 }
             }
-                    .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+            .padding(.horizontal, 16)   // 🎯 Daha geniş padding
+            .padding(.vertical, 16)     // 🎯 Yükseklik arttırıldı (10 → 16)
             .background(
-                        RoundedRectangle(cornerRadius: 8)
-                    .stroke(Color(.systemGray4), lineWidth: 1)
-                    )
+                RoundedRectangle(cornerRadius: 12)  // 🎯 Daha yumuşak köşeler
+                    .fill(Color(.systemGray6))      // 🎯 Background rengi eklendi
+                    .stroke(isSearchFocused || !viewModel.searchText.isEmpty ? Color.blue : Color.clear, lineWidth: 2)  // 🎯 Focus state border
+            )
+            .overlay(
+                // 🎯 Focus/active efekti için overlay
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.blue.opacity(0.05))
+                    .opacity(isSearchFocused ? 1 : 0)
+            )
+            .onTapGesture {
+                // 🎯 Container'a tıklayınca da TextField focus olsun
+                isSearchFocused = true
+                print("🔍 Search container tapped - focus activated")
+            }
             
             // Dropdown müşteri listesi
             if viewModel.showDropdown && !viewModel.customers.isEmpty {
                 customerDropdown
-                }
             }
         }
+    }
     
     // Müşteri dropdown listesi
     private var customerDropdown: some View {
@@ -622,6 +646,7 @@ struct BarcodeUploadView: View {
                         viewModel.showDropdown = false
                         viewModel.searchText = ""
                         viewModel.customers = []
+                        isSearchFocused = false  // 🎯 Klavyeyi kapat
                     }
                 }
             }
