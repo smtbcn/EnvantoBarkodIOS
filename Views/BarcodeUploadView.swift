@@ -34,7 +34,7 @@ struct CameraView: View {
                 HStack {
                     // Sol Grid - Flash Button (48dp equivalent)
                     Group {
-                        if cameraModel.captureDevice?.hasFlash == true {
+                        if cameraModel.captureDevice?.hasTorch == true {
                             Button(action: {
                                 cameraModel.toggleFlash()
                             }) {
@@ -166,8 +166,9 @@ class CameraModel: NSObject, ObservableObject {
         
         captureDevice = device
         
-        // Flash durumunu kontrol et ve logla
-        print("📱 Cihaz flash durumu: \(device.hasFlash ? "VAR" : "YOK")")
+        // Torch durumunu kontrol et ve logla
+        print("🔦 Cihaz torch durumu: \(device.hasTorch ? "VAR" : "YOK")")
+        print("📸 Cihaz flash durumu: \(device.hasFlash ? "VAR" : "YOK")")
         
         do {
             // Kamera input
@@ -221,9 +222,24 @@ class CameraModel: NSObject, ObservableObject {
         
         let settings = AVCapturePhotoSettings()
         
-        // Flash ayarı
-        if captureDevice?.hasFlash == true {
-            settings.flashMode = isFlashOn ? .on : .off
+        // Flash ayarı - hem photo flash hem torch kontrol et
+        if let device = captureDevice {
+            // Photo flash varsa onu kullan
+            if device.hasFlash {
+                settings.flashMode = isFlashOn ? .on : .off
+                print("📸 Photo flash kullanılıyor: \(isFlashOn ? "AÇIK" : "KAPALI")")
+            } 
+            // Torch açıksa ve photo flash yoksa, torch'u geçici olarak güçlendir
+            else if device.hasTorch && isFlashOn {
+                do {
+                    try device.lockForConfiguration()
+                    device.torchMode = .on
+                    device.unlockForConfiguration()
+                    print("🔦 Torch ile çekim yapılıyor")
+                } catch {
+                    print("❌ Torch ayarlanamadı: \(error)")
+                }
+            }
         }
         
         photoOutput.capturePhoto(with: settings, delegate: self)
@@ -232,19 +248,39 @@ class CameraModel: NSObject, ObservableObject {
     func toggleFlash() {
         print("🔦 Flash toggle çağrıldı. Mevcut durum: \(isFlashOn)")
         
-        // Flash varlığını kontrol et
+        // Flash/Torch varlığını kontrol et
         guard let device = captureDevice else {
             print("❌ Capture device bulunamadı")
             return
         }
         
-        if !device.hasFlash {
-            print("❌ Bu cihazda flash bulunmuyor")
+        guard device.hasTorch else {
+            print("❌ Bu cihazda torch/flash bulunmuyor")
             return
         }
         
-        isFlashOn.toggle()
-        print("✅ Flash durumu değiştirildi: \(isFlashOn)")
+        do {
+            try device.lockForConfiguration()
+            
+            if isFlashOn {
+                device.torchMode = .off
+                print("🔦 Torch kapatıldı")
+            } else {
+                device.torchMode = .on
+                print("🔦 Torch açıldı")
+            }
+            
+            device.unlockForConfiguration()
+            
+            // UI state'i güncelle
+            DispatchQueue.main.async {
+                self.isFlashOn.toggle()
+                print("✅ Flash UI durumu güncellendi: \(self.isFlashOn)")
+            }
+            
+        } catch {
+            print("❌ Torch ayarlanamadı: \(error)")
+        }
     }
     
     func focusAt(point: CGPoint) {
