@@ -578,6 +578,19 @@ class DatabaseManager {
     func deleteCustomerImages(musteriAdi: String) -> Bool {
         guard db != nil else { return false }
         
+        // 🔍 Önce database'deki tüm müşteri adlarını görelim
+        print("🔍 \(DatabaseManager.TAG): Database'deki tüm müşteri adları:")
+        let allCustomersSQL = "SELECT DISTINCT \(DatabaseManager.COLUMN_MUSTERI_ADI) FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER)"
+        var allStatement: OpaquePointer?
+        
+        if sqlite3_prepare_v2(db, allCustomersSQL, -1, &allStatement, nil) == SQLITE_OK {
+            while sqlite3_step(allStatement) == SQLITE_ROW {
+                let dbCustomerName = String(cString: sqlite3_column_text(allStatement, 0))
+                print("   📋 DB'de: '\(dbCustomerName)'")
+            }
+        }
+        sqlite3_finalize(allStatement)
+        
         // Hem boşluklu hem underscore'lu formatı dene
         let formatlar = [
             musteriAdi,                                    // SAMET BICEN
