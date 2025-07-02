@@ -944,15 +944,37 @@ class DatabaseManager {
         
         // barkod_resimler tablosu kontrolü
         print("🔍 \(DatabaseManager.TAG): '\(DatabaseManager.TABLE_BARKOD_RESIMLER)' tablosu aranıyor...")
-        if sqlite3_prepare_v2(db, tableCheckSQL, -1, &statement, nil) == SQLITE_OK {
+        print("📝 \(DatabaseManager.TAG): Aranan string: '\(DatabaseManager.TABLE_BARKOD_RESIMLER)'")
+        print("📝 \(DatabaseManager.TAG): String length: \(DatabaseManager.TABLE_BARKOD_RESIMLER.count)")
+        
+        // Case insensitive arama deneyelim
+        let caseInsensitiveSQL = "SELECT name FROM sqlite_master WHERE type='table' AND LOWER(name) = LOWER(?)"
+        
+        if sqlite3_prepare_v2(db, caseInsensitiveSQL, -1, &statement, nil) == SQLITE_OK {
             sqlite3_bind_text(statement, 1, DatabaseManager.TABLE_BARKOD_RESIMLER, -1, nil)
             
             let stepResult = sqlite3_step(statement)
             if stepResult == SQLITE_ROW {
                 let foundName = String(cString: sqlite3_column_text(statement, 0))
-                print("✅ \(DatabaseManager.TAG): barkod_resimler tablosu BULUNDU: '\(foundName)'")
+                print("✅ \(DatabaseManager.TAG): barkod_resimler tablosu BULUNDU (case insensitive): '\(foundName)'")
             } else {
-                print("❌ \(DatabaseManager.TAG): barkod_resimler tablosu bulunamadı! Step result: \(stepResult)")
+                print("❌ \(DatabaseManager.TAG): barkod_resimler tablosu bulunamadı (case insensitive)! Step result: \(stepResult)")
+                
+                // Exact match da deneyelim
+                sqlite3_reset(statement)
+                sqlite3_finalize(statement)
+                
+                if sqlite3_prepare_v2(db, tableCheckSQL, -1, &statement, nil) == SQLITE_OK {
+                    sqlite3_bind_text(statement, 1, DatabaseManager.TABLE_BARKOD_RESIMLER, -1, nil)
+                    
+                    let exactResult = sqlite3_step(statement)
+                    print("🔍 \(DatabaseManager.TAG): Exact match result: \(exactResult)")
+                    
+                    if exactResult == SQLITE_ROW {
+                        let foundName = String(cString: sqlite3_column_text(statement, 0))
+                        print("✅ \(DatabaseManager.TAG): barkod_resimler EXACT BULUNDU: '\(foundName)'")
+                    }
+                }
             }
         } else {
             print("❌ \(DatabaseManager.TAG): barkod_resimler kontrol sorgusu hazırlanamadı")
