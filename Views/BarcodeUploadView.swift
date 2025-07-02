@@ -347,7 +347,6 @@ struct BarcodeUploadView: View {
     @State private var expandedCustomerId: String? = nil // Accordion state
     @State private var showingDeleteCustomerAlert = false
     @State private var customerToDelete: String = ""
-    // iOS 14+ uyumlu TextField focus management
     
     var body: some View {
         ZStack {
@@ -579,15 +578,13 @@ struct BarcodeUploadView: View {
     // Müşteri arama input'u
     private var customerSearchInput: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 12) {
+            HStack {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(.secondary)
-                    .font(.system(size: 16))
                 
-                SearchTextField(
-                    placeholder: "Müşteri ara...",
-                    text: $viewModel.searchText,
-                    onTextChange: { newValue in
+                TextField("Müşteri ara...", text: $viewModel.searchText)
+                    .textFieldStyle(PlainTextFieldStyle())
+                    .onChange(of: viewModel.searchText) { newValue in
                         if newValue.count >= 2 {
                             viewModel.searchCustomers()
                         } else if newValue.isEmpty {
@@ -595,33 +592,25 @@ struct BarcodeUploadView: View {
                             viewModel.showDropdown = false
                         }
                     }
-                )
-                .font(.system(size: 16))
                 
                 if viewModel.isSearching {
                     ProgressView()
                         .scaleEffect(0.8)
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 16)  // Yüksekliği artırdık: 10 → 16
+                    .padding(.horizontal, 12)
+            .padding(.vertical, 10)
             .background(
-                RoundedRectangle(cornerRadius: 12)  // Köşe radius artırdık: 8 → 12
-                    .fill(Color(.systemBackground))
+                        RoundedRectangle(cornerRadius: 8)
                     .stroke(Color(.systemGray4), lineWidth: 1)
-            )
-            .contentShape(Rectangle())  // Tüm alanı dokunulabilir yap
-            .onTapGesture {
-                // TextField'a focus ver (iOS 14+ uyumlu)
-                UIApplication.shared.sendAction(#selector(UIResponder.becomeFirstResponder), to: nil, from: nil, for: nil)
-            }
+                    )
             
             // Dropdown müşteri listesi
             if viewModel.showDropdown && !viewModel.customers.isEmpty {
                 customerDropdown
+                }
             }
         }
-    }
     
     // Müşteri dropdown listesi
     private var customerDropdown: some View {
@@ -1252,54 +1241,6 @@ struct LoadingOverlay: View {
                 RoundedRectangle(cornerRadius: 15)
                     .fill(Color.black.opacity(0.8))
             )
-        }
-    }
-}
-
-// MARK: - iOS 14+ Uyumlu Search TextField
-struct SearchTextField: UIViewRepresentable {
-    let placeholder: String
-    @Binding var text: String
-    let onTextChange: (String) -> Void
-    
-    func makeUIView(context: Context) -> UITextField {
-        let textField = UITextField()
-        textField.placeholder = placeholder
-        textField.borderStyle = .none
-        textField.delegate = context.coordinator
-        textField.addTarget(context.coordinator, action: #selector(Coordinator.textChanged), for: .editingChanged)
-        
-        // Anında responsiveness için
-        textField.isUserInteractionEnabled = true
-        
-        return textField
-    }
-    
-    func updateUIView(_ uiView: UITextField, context: Context) {
-        uiView.text = text
-    }
-    
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
-    
-    class Coordinator: NSObject, UITextFieldDelegate {
-        let parent: SearchTextField
-        
-        init(_ parent: SearchTextField) {
-            self.parent = parent
-        }
-        
-        @objc func textChanged(_ textField: UITextField) {
-            DispatchQueue.main.async {
-                self.parent.text = textField.text ?? ""
-                self.parent.onTextChange(textField.text ?? "")
-            }
-        }
-        
-        func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-            textField.resignFirstResponder()
-            return true
         }
     }
 }
