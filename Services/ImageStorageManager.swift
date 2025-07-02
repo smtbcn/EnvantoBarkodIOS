@@ -285,20 +285,30 @@ class ImageStorageManager {
     
     // MARK: - Delete Customer Images (App Documents)
     static func deleteCustomerImages(customerName: String) async -> Bool {
+        print("🗑️ deleteCustomerImages çağrıldı: '\(customerName)'")
+        
+        // 🎯 Klasör adını aynı şekilde dönüştür (getAppDocumentsCustomerDir ile aynı mantık)
+        let safeCustomerName = customerName.replacingOccurrences(of: "[^a-zA-Z0-9.-]", 
+                                                                with: "_", 
+                                                                options: .regularExpression)
+        print("🗑️ Güvenli klasör adı: '\(safeCustomerName)'")
+        
         // App Documents müşteri klasörünü sil
         if let customerDir = getAppDocumentsCustomerDir(for: customerName) {
+            print("🗑️ Silinecek klasör: \(customerDir.path)")
             do {
                 try FileManager.default.removeItem(at: customerDir)
-                print("🗑️ App Documents müşteri klasörü silindi: \(customerDir.path)")
+                print("✅ App Documents müşteri klasörü silindi: \(customerDir.path)")
                 cleanupEmptyDirectories(customerDir.deletingLastPathComponent())
                 return true
             } catch {
                 print("❌ App Documents müşteri klasörü silme hatası: \(error.localizedDescription)")
                 return false
             }
+        } else {
+            print("❌ Müşteri klasörü bulunamadı: '\(customerName)' → '\(safeCustomerName)'")
+            return false
         }
-        
-        return false
     }
     
     // MARK: - Get Storage Info
