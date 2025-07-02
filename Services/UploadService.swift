@@ -113,15 +113,23 @@ class UploadService: ObservableObject {
         
         // Database'den yüklenmemiş resimleri al
         let dbManager = DatabaseManager.getInstance()
-        let pendingImages = dbManager.getAllPendingImages()
         
+        // Önce geçersiz kayıtları temizle (dosyası olmayan)
+        let cleanedCount = dbManager.clearInvalidImageRecords()
+        if cleanedCount > 0 {
+            print("🧹 \(UploadService.TAG): \(cleanedCount) adet geçersiz kayıt temizlendi")
+        }
+        
+        let pendingImages = dbManager.getAllPendingImages()
         let totalCount = pendingImages.count
         print("📊 \(UploadService.TAG): Bekleyen resim sayısı: \(totalCount)")
         
+        // Bekleyen resim yoksa erken çıkış
         if totalCount == 0 {
             uploadStatus = "Yüklenecek resim yok"
             uploadProgress = (0, 0)
-            print("ℹ️ \(UploadService.TAG): Yüklenecek resim bulunamadı")
+            isUploading = false
+            print("ℹ️ \(UploadService.TAG): Yüklenecek resim bulunamadı - Upload işlemi durduruldu")
             return
         }
         
@@ -132,6 +140,8 @@ class UploadService: ObservableObject {
         if !uploadCheck.canUpload {
             uploadStatus = uploadCheck.reason
             uploadProgress = (0, totalCount)
+            isUploading = false
+            print("⚠️ \(UploadService.TAG): Network uygun değil - Upload işlemi bekletildi")
             return
         }
         
@@ -143,10 +153,12 @@ class UploadService: ObservableObject {
         if !isAuthorized {
             uploadStatus = "Cihaz yetkili değil"
             uploadProgress = (0, totalCount)
+            isUploading = false
+            print("🚫 \(UploadService.TAG): Cihaz yetkili değil - Upload işlemi durduruldu")
             return
         }
         
-        // Upload işlemini başlat
+        // Tüm kontroller geçti - Upload işlemini başlat
         isUploading = true
         uploadStatus = "Yükleniyor..."
         print("🚀 \(UploadService.TAG): Upload işlemi başlatılıyor - \(totalCount) resim")

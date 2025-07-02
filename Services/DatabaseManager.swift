@@ -289,6 +289,69 @@ class DatabaseManager {
         return results
     }
     
+    // MARK: - Clear All Barkod Resimler (Database temizleme)
+    func clearAllBarkodResimler() -> Bool {
+        guard db != nil else { return false }
+        
+        let deleteSQL = "DELETE FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER)"
+        var statement: OpaquePointer?
+        
+        if sqlite3_prepare_v2(db, deleteSQL, -1, &statement, nil) == SQLITE_OK {
+            if sqlite3_step(statement) == SQLITE_DONE {
+                let deletedCount = sqlite3_changes(db)
+                print("🗑️ \(DatabaseManager.TAG): \(deletedCount) adet barkod resim kaydı silindi")
+                sqlite3_finalize(statement)
+                return true
+            }
+        }
+        
+        sqlite3_finalize(statement)
+        print("❌ \(DatabaseManager.TAG): Barkod resim kayıtları silinemedi")
+        return false
+    }
+    
+    // MARK: - Clear Invalid Image Records (Dosyası olmayan kayıtları temizle)
+    func clearInvalidImageRecords() -> Int {
+        guard db != nil else { return 0 }
+        
+        let selectSQL = """
+            SELECT \(DatabaseManager.COLUMN_ID), \(DatabaseManager.COLUMN_RESIM_YOLU)
+            FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER)
+        """
+        
+        var statement: OpaquePointer?
+        var invalidIds: [Int] = []
+        
+        // Önce geçersiz kayıtları bul
+        if sqlite3_prepare_v2(db, selectSQL, -1, &statement, nil) == SQLITE_OK {
+            while sqlite3_step(statement) == SQLITE_ROW {
+                let id = Int(sqlite3_column_int(statement, 0))
+                let resimYolu = String(cString: sqlite3_column_text(statement, 1))
+                
+                // Dosya mevcut mu kontrol et
+                if !FileManager.default.fileExists(atPath: resimYolu) {
+                    invalidIds.append(id)
+                }
+            }
+        }
+        sqlite3_finalize(statement)
+        
+        // Geçersiz kayıtları sil
+        for id in invalidIds {
+            let deleteSQL = "DELETE FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) WHERE \(DatabaseManager.COLUMN_ID) = ?"
+            var deleteStatement: OpaquePointer?
+            
+            if sqlite3_prepare_v2(db, deleteSQL, -1, &deleteStatement, nil) == SQLITE_OK {
+                sqlite3_bind_int(deleteStatement, 1, Int32(id))
+                sqlite3_step(deleteStatement)
+            }
+            sqlite3_finalize(deleteStatement)
+        }
+        
+        print("🧹 \(DatabaseManager.TAG): \(invalidIds.count) adet geçersiz resim kaydı temizlendi")
+        return invalidIds.count
+    }
+    
     // MARK: - Delete Image Record
     func deleteBarkodResim(id: Int) -> Bool {
         guard db != nil else { return false }

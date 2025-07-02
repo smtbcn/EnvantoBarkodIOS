@@ -10,6 +10,7 @@ struct SettingsView: View {
     @State private var wifiOnlyUpload = false
     @State private var showingURLAlert = false
     @State private var showingResetAlert = false
+    @State private var showingClearDatabaseAlert = false
     
     var body: some View {
         Form {
@@ -67,6 +68,17 @@ struct SettingsView: View {
                 // Tehlikeli İşlemler
                 Section(header: Text("Tehlikeli İşlemler")) {
                     Button(action: {
+                        showingClearDatabaseAlert = true
+                    }) {
+                        HStack {
+                            Image(systemName: "externaldrive.badge.minus")
+                                .foregroundColor(.orange)
+                            Text("Resim Veritabanını Temizle")
+                                .foregroundColor(.orange)
+                        }
+                    }
+                    
+                    Button(action: {
                         showingResetAlert = true
                     }) {
                         HStack {
@@ -105,6 +117,14 @@ struct SettingsView: View {
             Button("İptal", role: .cancel) { }
         } message: {
             Text("Tüm ayarlar varsayılan değerlere sıfırlanacak. Bu işlem geri alınamaz.")
+        }
+        .alert("Resim Veritabanını Temizle", isPresented: $showingClearDatabaseAlert) {
+            Button("Temizle", role: .destructive) {
+                clearDatabase()
+            }
+            Button("İptal", role: .cancel) { }
+        } message: {
+            Text("Barkod resim veritabanındaki tüm kayıtlar silinecek. Dosyalar korunur ancak yükleme geçmişi kaybolur. Bu işlem geri alınamaz.")
         }
         .onAppear {
             loadSettings()
@@ -152,6 +172,22 @@ struct SettingsView: View {
         baseURL = Constants.Network.defaultBaseURL
         wifiOnlyUpload = false
         viewModel.updateDeviceOwner("")
+    }
+    
+    private func clearDatabase() {
+        // Database'deki tüm barkod resim kayıtlarını temizle
+        let dbManager = DatabaseManager.getInstance()
+        let success = dbManager.clearAllBarkodResimler()
+        
+        if success {
+            print("✅ Database başarıyla temizlendi")
+            
+            // Upload servisini durdur
+            UploadService.shared.stopUploadService()
+            print("🛑 Upload servisi durduruldu")
+        } else {
+            print("❌ Database temizleme başarısız")
+        }
     }
 }
 
