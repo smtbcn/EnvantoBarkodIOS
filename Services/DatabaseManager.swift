@@ -578,87 +578,36 @@ class DatabaseManager {
     func deleteCustomerImages(musteriAdi: String) -> Bool {
         guard db != nil else { return false }
         
-        // 🔍 Önce database'deki tüm müşteri adlarını görelim
-        print("🔍 \(DatabaseManager.TAG): Database'deki tüm müşteri adları:")
-        let allCustomersSQL = "SELECT DISTINCT \(DatabaseManager.COLUMN_MUSTERI_ADI) FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER)"
-        var allStatement: OpaquePointer?
+        // Önce müşterinin tüm ID'lerini al
+        let selectSQL = "SELECT \(DatabaseManager.COLUMN_ID) FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) WHERE \(DatabaseManager.COLUMN_MUSTERI_ADI) = ?"
+        var statement: OpaquePointer?
+        var imageIds: [Int] = []
         
-        if sqlite3_prepare_v2(db, allCustomersSQL, -1, &allStatement, nil) == SQLITE_OK {
-            while sqlite3_step(allStatement) == SQLITE_ROW {
-                let dbCustomerName = String(cString: sqlite3_column_text(allStatement, 0))
-                print("   📋 DB'de: '\(dbCustomerName)'")
+        if sqlite3_prepare_v2(db, selectSQL, -1, &statement, nil) == SQLITE_OK {
+            sqlite3_bind_text(statement, 1, musteriAdi, -1, nil)
+            
+            while sqlite3_step(statement) == SQLITE_ROW {
+                let id = Int(sqlite3_column_int(statement, 0))
+                imageIds.append(id)
             }
         }
-        sqlite3_finalize(allStatement)
+        sqlite3_finalize(statement)
         
-        // Hem boşluklu hem underscore'lu formatı dene
-        let formatlar = [
-            musteriAdi,                                    // SAMET BICEN
-            musteriAdi.replacingOccurrences(of: " ", with: "_")  // SAMET_BICEN
-        ]
-        
-        for format in formatlar {
-            print("🔍 \(DatabaseManager.TAG): '\(format)' formatıyla silme deneniyor...")
-            print("🔍 \(DatabaseManager.TAG): Format uzunluğu: \(format.count), Hex: \(format.data(using: .utf8)?.map { String(format: "%02x", $0) }.joined(separator: " ") ?? "nil")")
-            
-            // Önce kaç kayıt silineceğini kontrol et
-            let countSQL = "SELECT COUNT(*) FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) WHERE \(DatabaseManager.COLUMN_MUSTERI_ADI) = ?"
-            var countStatement: OpaquePointer?
-            var recordCount = 0
-            
-            if sqlite3_prepare_v2(db, countSQL, -1, &countStatement, nil) == SQLITE_OK {
-                sqlite3_bind_text(countStatement, 1, format, -1, nil)
-                if sqlite3_step(countStatement) == SQLITE_ROW {
-                    recordCount = Int(sqlite3_column_int(countStatement, 0))
-                }
-            }
-            sqlite3_finalize(countStatement)
-            
-            if recordCount == 0 {
-                print("ℹ️ \(DatabaseManager.TAG): '\(format)' için silinecek kayıt bulunamadı")
-                
-                // 🔍 LIKE ile de deneyelim (fuzzy match)
-                let likeSQL = "SELECT COUNT(*) FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) WHERE \(DatabaseManager.COLUMN_MUSTERI_ADI) LIKE ?"
-                var likeStatement: OpaquePointer?
-                var likeCount = 0
-                
-                if sqlite3_prepare_v2(db, likeSQL, -1, &likeStatement, nil) == SQLITE_OK {
-                    sqlite3_bind_text(likeStatement, 1, "%\(format)%", -1, nil)
-                    if sqlite3_step(likeStatement) == SQLITE_ROW {
-                        likeCount = Int(sqlite3_column_int(likeStatement, 0))
-                    }
-                }
-                sqlite3_finalize(likeStatement)
-                
-                print("🔍 \(DatabaseManager.TAG): LIKE '%\(format)%' ile \(likeCount) kayıt bulundu")
-                continue  // Bir sonraki formatı dene
-            }
-            
-            print("🎯 \(DatabaseManager.TAG): '\(format)' formatında \(recordCount) kayıt bulundu")
-            
-            // Müşterinin tüm kayıtlarını sil
-            let deleteSQL = "DELETE FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) WHERE \(DatabaseManager.COLUMN_MUSTERI_ADI) = ?"
-            var statement: OpaquePointer?
-            
-            if sqlite3_prepare_v2(db, deleteSQL, -1, &statement, nil) == SQLITE_OK {
-                sqlite3_bind_text(statement, 1, format, -1, nil)
-                
-                if sqlite3_step(statement) == SQLITE_DONE {
-                    let deletedCount = sqlite3_changes(db)
-                    print("✅ \(DatabaseManager.TAG): '\(format)' müşterisinin \(deletedCount) resim kaydı silindi")
-                    sqlite3_finalize(statement)
-                    
-                    // Gerçekten kayıt silindiyse başarılı
-                    if deletedCount > 0 {
-                        return true
-                    }
-                }
-            }
-            sqlite3_finalize(statement)
+        // Hiç kayıt yoksa başarılı say
+        if imageIds.isEmpty {
+            return true
         }
         
-        print("❌ \(DatabaseManager.TAG): '\(musteriAdi)' müşteri kayıtları hiçbir formatla silinemedi")
-        return false
+        // Her bir kaydı tekli silme ile sil (çalışan kodu kullan)
+        var deletedCount = 0
+        for imageId in imageIds {
+            if deleteBarkodResim(id: imageId) {
+                deletedCount += 1
+            }
+        }
+        
+        print("✅ \(DatabaseManager.TAG): '\(musteriAdi)' müşterisinin \(deletedCount)/\(imageIds.count) resim kaydı silindi")
+        return deletedCount > 0
     }
     
     // MARK: - Update Upload Status
