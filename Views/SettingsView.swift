@@ -12,8 +12,7 @@ struct SettingsView: View {
     @State private var showingResetAlert = false
     
     var body: some View {
-        NavigationView {
-            Form {
+        Form {
                 // Genel Ayarlar
                 Section(header: Text("Genel Ayarlar")) {
                     HStack {
@@ -78,21 +77,13 @@ struct SettingsView: View {
                         }
                     }
                 }
-            }
-            .navigationTitle("Ayarlar")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("İptal") {
-                        dismiss()
-                    }
-                }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Kaydet") {
-                        saveSettings()
-                        dismiss()
-                    }
+        }
+        .navigationTitle("Ayarlar")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("Kaydet") {
+                    saveSettings()
                 }
             }
         }

@@ -347,8 +347,7 @@ struct BarcodeUploadView: View {
     @State private var customerToDelete: String = ""
     
     var body: some View {
-        NavigationView {
-            ZStack {
+        ZStack {
                 VStack(spacing: 0) {
                     if viewModel.isLoading {
                         LoadingOverlay()
@@ -358,17 +357,17 @@ struct BarcodeUploadView: View {
                     } else {
                         mainContent
                     }
+            }
+        }
+        .navigationTitle("Barkod Yükleme")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("Yenile") {
+                    viewModel.refreshSavedImages()
                 }
             }
-            .navigationTitle("Barkod Yükleme")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Yenile") {
-                        viewModel.refreshSavedImages()
-                    }
-                }
-            }
+        }
             .alert("Uyarı", isPresented: $showingAlert) {
                 Button("Tamam") { }
             } message: {
@@ -411,9 +410,8 @@ struct BarcodeUploadView: View {
                 }
         }
         .onAppear {
-                // Sayfa açıldığında müşteri gruplarını yükle
-                viewModel.loadCustomerImageGroups()
-            }
+            // Sayfa açıldığında müşteri gruplarını yükle
+            viewModel.loadCustomerImageGroups()
         }
     }
     

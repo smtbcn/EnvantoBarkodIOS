@@ -4,9 +4,7 @@ import SwiftUI
 
 struct MainMenuView: View {
     @StateObject private var viewModel = MainViewModel()
-    @State private var showingSettings = false
     @State private var showingPermissionAlert = false
-    @State private var showingBarcodeUpload = false
     // AlertType kaldırıldı - sadece kamera izni kontrolü
     @EnvironmentObject var appState: AppStateManager
     
@@ -57,14 +55,15 @@ struct MainMenuView: View {
                                 }
                             }
                             
-                            // Barkod Yükle - Direkt açılır (cihaz yetki kontrolü BarcodeUploadView'da)
-                            GridButton(
-                                title: "Barkod Yükle",
-                                icon: "square.and.arrow.up",
-                                color: .orange
-                            ) {
-                                    showingBarcodeUpload = true
+                            // Barkod Yükle - NavigationLink ile tam sayfa açılır
+                            NavigationLink(destination: BarcodeUploadView()) {
+                                GridButtonContent(
+                                    title: "Barkod Yükle",
+                                    icon: "square.and.arrow.up",
+                                    color: .orange
+                                )
                             }
+                            .buttonStyle(PlainButtonStyle())
                         }
                         
                         HStack(spacing: 16) {
@@ -91,10 +90,8 @@ struct MainMenuView: View {
                 
                 Spacer()
                 
-                // Uygulama Ayarları butonu - her zaman aktif
-                Button(action: {
-                    showingSettings = true
-                }) {
+                // Uygulama Ayarları butonu - NavigationLink ile tam sayfa açılır
+                NavigationLink(destination: SettingsView(viewModel: viewModel)) {
                     HStack {
                         Image(systemName: "gearshape.fill")
                             .font(.title2)
@@ -111,6 +108,7 @@ struct MainMenuView: View {
                             .fill(Color.blue)
                     )
                 }
+                .buttonStyle(PlainButtonStyle())
                 // Loading kaldırıldı - her zaman aktif
                 .padding(.horizontal, 40)
                 
@@ -131,12 +129,6 @@ struct MainMenuView: View {
         }
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarHidden(true)
-        .sheet(isPresented: $showingSettings) {
-            SettingsView(viewModel: viewModel)
-        }
-        .sheet(isPresented: $showingBarcodeUpload) {
-            BarcodeUploadView()
-        }
         .alert("Kamera İzni Gerekli", isPresented: $showingPermissionAlert) {
             Button("Ayarlara Git") {
                 viewModel.openSettings()
