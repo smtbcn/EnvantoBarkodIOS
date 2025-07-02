@@ -103,8 +103,7 @@ class DeviceAuthManager {
                     
                     print("❌ Cihaz yetkili değil: \(authResponse.message)")
                     
-                    // Uyarı diyaloğu göster
-                    showAuthorizationErrorAlert(message: authResponse.message, deviceId: deviceId)
+                    // UI alert kaldırıldı - BarcodeUploadView'deki tasarım kullanılıyor
                     callback.onAuthFailure()
                 }
                 
@@ -128,8 +127,7 @@ class DeviceAuthManager {
                 } else {
                     print("💥 Sunucu hatası ve SQLite'da yetki yok: \(error.localizedDescription)")
                     
-                    let errorMessage = "Sunucu ile iletişim kurulamadı. Lütfen internet bağlantınızı kontrol edin ve cihazınızın yetkilendirildiğinden emin olun."
-                    showAuthorizationErrorAlert(message: errorMessage, deviceId: deviceId)
+                    // UI alert kaldırıldı - BarcodeUploadView'deki tasarım kullanılıyor
                     callback.onAuthFailure()
                 }
             }
@@ -188,82 +186,6 @@ class DeviceAuthManager {
             print("💥 API hatası: \(error.localizedDescription)")
             return .failure(error)
         }
-    }
-    
-
-
-    
-    // MARK: - Yetkilendirme hatası uyarısı
-    @MainActor
-    private static func showAuthorizationErrorAlert(message: String, deviceId: String) {
-        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let window = windowScene.windows.first,
-              let rootViewController = window.rootViewController else {
-            return
-        }
-        
-        let alert = UIAlertController(
-            title: "Yetkilendirme Hatası",
-            message: message,
-            preferredStyle: .alert
-        )
-        
-        // Cihaz ID kopyala
-        alert.addAction(UIAlertAction(title: "Cihaz ID Kopyala", style: .default) { _ in
-            UIPasteboard.general.string = deviceId
-            
-            // Toast benzeri bildirim göster
-            DispatchQueue.main.async {
-                showToast(message: "Cihaz kimliği kopyalandı")
-            }
-        })
-        
-        // Kapat
-        alert.addAction(UIAlertAction(title: "Kapat", style: .cancel) { _ in
-            // Ana menüye dön veya uygulamayı kapat
-            if let navigationController = rootViewController as? UINavigationController {
-                navigationController.popToRootViewController(animated: true)
-            }
-        })
-        
-        rootViewController.present(alert, animated: true)
-    }
-    
-    // MARK: - Toast göster
-    @MainActor
-    private static func showToast(message: String) {
-        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let window = windowScene.windows.first else {
-            return
-        }
-        
-        let toastLabel = UILabel()
-        toastLabel.backgroundColor = UIColor.black.withAlphaComponent(0.6)
-        toastLabel.textColor = UIColor.white
-        toastLabel.textAlignment = .center
-        toastLabel.font = UIFont.systemFont(ofSize: 12.0)
-        toastLabel.text = message
-        toastLabel.alpha = 1.0
-        toastLabel.layer.cornerRadius = 10
-        toastLabel.clipsToBounds = true
-        
-        let toastWidth: CGFloat = 250
-        let toastHeight: CGFloat = 35
-        
-        toastLabel.frame = CGRect(
-            x: (window.frame.size.width - toastWidth) / 2,
-            y: window.frame.size.height - 100,
-            width: toastWidth,
-            height: toastHeight
-        )
-        
-        window.addSubview(toastLabel)
-        
-        UIView.animate(withDuration: 2.0, delay: 0.1, options: .curveEaseOut, animations: {
-            toastLabel.alpha = 0.0
-        }, completion: { _ in
-            toastLabel.removeFromSuperview()
-        })
     }
 }
 
