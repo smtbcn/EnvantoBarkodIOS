@@ -68,6 +68,17 @@ struct SettingsView: View {
                 // Database İşlemleri
                 Section(header: Text("Database İşlemleri")) {
                     Button(action: {
+                        testDatabase()
+                    }) {
+                        HStack {
+                            Image(systemName: "wrench.and.screwdriver")
+                                .foregroundColor(.purple)
+                            Text("Database Test Çalıştır")
+                                .foregroundColor(.purple)
+                        }
+                    }
+                    
+                    Button(action: {
                         importExistingImages()
                     }) {
                         HStack {
@@ -186,6 +197,12 @@ struct SettingsView: View {
         baseURL = Constants.Network.defaultBaseURL
         wifiOnlyUpload = false
         viewModel.updateDeviceOwner("")
+    }
+    
+    private func testDatabase() {
+        print("🧪 Manuel database test başlatıldı")
+        let dbManager = DatabaseManager.getInstance()
+        dbManager.testDatabaseOperations()
     }
     
     private func importExistingImages() {

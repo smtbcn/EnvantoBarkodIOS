@@ -39,8 +39,18 @@ class DatabaseManager {
     
     // MARK: - Initialization
     private init() {
+        print("🔄 \(DatabaseManager.TAG): === DATABASE MANAGER BAŞLATILUYOR ===")
         openDatabase()
-        createTables()
+        
+        // Database açılma kontrol
+        if db != nil {
+            print("✅ \(DatabaseManager.TAG): Database açıldı, tablolar oluşturuluyor...")
+            createTables()
+        } else {
+            print("❌ \(DatabaseManager.TAG): Database açılamadı, tablolar oluşturulamaz")
+        }
+        
+        print("🔄 \(DatabaseManager.TAG): === DATABASE MANAGER HAZIR ===")
     }
     
     deinit {
@@ -87,19 +97,51 @@ class DatabaseManager {
     private func getDatabasePath() -> String? {
         guard let documentsDir = FileManager.default.urls(for: .documentDirectory, 
                                                           in: .userDomainMask).first else {
+            print("❌ \(DatabaseManager.TAG): Documents directory alınamadı")
             return nil
         }
         
-        return documentsDir.appendingPathComponent(DatabaseManager.DATABASE_NAME).path
+        let dbPath = documentsDir.appendingPathComponent(DatabaseManager.DATABASE_NAME).path
+        print("📁 \(DatabaseManager.TAG): Database path: \(dbPath)")
+        
+        // Documents klasörüne yazma iznimiz var mı?
+        let documentsPath = documentsDir.path
+        let isWritable = FileManager.default.isWritableFile(atPath: documentsPath)
+        print("✏️ \(DatabaseManager.TAG): Documents yazılabilir: \(isWritable)")
+        
+        // Database dosyası var mı ve yazılabilir mi?
+        let dbExists = FileManager.default.fileExists(atPath: dbPath)
+        if dbExists {
+            let isDBWritable = FileManager.default.isWritableFile(atPath: dbPath)
+            print("📝 \(DatabaseManager.TAG): DB dosyası yazılabilir: \(isDBWritable)")
+        }
+        
+        return dbPath
     }
     
     // MARK: - Create Tables (Android ile aynı yapı)
     private func createTables() {
+        print("🔄 \(DatabaseManager.TAG): === TABLO OLUŞTURMA BAŞLIYOR ===")
+        
+        guard db != nil else {
+            print("❌ \(DatabaseManager.TAG): Database connection NULL - tablolar oluşturulamaz")
+            return
+        }
+        
+        print("✅ \(DatabaseManager.TAG): Database connection OK - tablolar oluşturuluyor")
+        
         createBarkodResimlerTable()
         createCihazYetkiTable()
+        
+        print("🔄 \(DatabaseManager.TAG): === TABLO OLUŞTURMA BİTTİ ===")
+        
+        // Tabloların gerçekten oluşup oluşmadığını kontrol et
+        checkTableExists()
     }
     
     private func createBarkodResimlerTable() {
+        print("🔄 \(DatabaseManager.TAG): barkod_resimler tablosu oluşturuluyor...")
+        
         let createTableSQL = """
             CREATE TABLE IF NOT EXISTS \(DatabaseManager.TABLE_BARKOD_RESIMLER) (
                 \(DatabaseManager.COLUMN_ID) INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -111,14 +153,22 @@ class DatabaseManager {
             )
         """
         
-        if sqlite3_exec(db, createTableSQL, nil, nil, nil) == SQLITE_OK {
-            print("✅ \(DatabaseManager.TAG): barkod_resimler tablosu oluşturuldu")
+        print("📝 \(DatabaseManager.TAG): SQL: \(createTableSQL)")
+        
+        let result = sqlite3_exec(db, createTableSQL, nil, nil, nil)
+        if result == SQLITE_OK {
+            print("✅ \(DatabaseManager.TAG): barkod_resimler tablosu BAŞARIYLA oluşturuldu")
         } else {
-            print("❌ \(DatabaseManager.TAG): barkod_resimler tablosu oluşturulamadı")
+            print("❌ \(DatabaseManager.TAG): barkod_resimler tablosu oluşturulamadı - Result: \(result)")
+            if let errorMessage = sqlite3_errmsg(db) {
+                print("❌ \(DatabaseManager.TAG): SQLite CREATE Error: \(String(cString: errorMessage))")
+            }
         }
     }
     
     private func createCihazYetkiTable() {
+        print("🔄 \(DatabaseManager.TAG): cihaz_yetki tablosu oluşturuluyor...")
+        
         let createTableSQL = """
             CREATE TABLE IF NOT EXISTS \(DatabaseManager.TABLE_CIHAZ_YETKI) (
                 \(DatabaseManager.COLUMN_CIHAZ_ID) INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -129,10 +179,16 @@ class DatabaseManager {
             )
         """
         
-        if sqlite3_exec(db, createTableSQL, nil, nil, nil) == SQLITE_OK {
-            print("✅ \(DatabaseManager.TAG): cihaz_yetki tablosu oluşturuldu")
+        print("📝 \(DatabaseManager.TAG): SQL: \(createTableSQL)")
+        
+        let result = sqlite3_exec(db, createTableSQL, nil, nil, nil)
+        if result == SQLITE_OK {
+            print("✅ \(DatabaseManager.TAG): cihaz_yetki tablosu BAŞARIYLA oluşturuldu")
         } else {
-            print("❌ \(DatabaseManager.TAG): cihaz_yetki tablosu oluşturulamadı")
+            print("❌ \(DatabaseManager.TAG): cihaz_yetki tablosu oluşturulamadı - Result: \(result)")
+            if let errorMessage = sqlite3_errmsg(db) {
+                print("❌ \(DatabaseManager.TAG): SQLite CREATE Error: \(String(cString: errorMessage))")
+            }
         }
     }
     
@@ -718,6 +774,86 @@ class DatabaseManager {
         
         sqlite3_finalize(statement)
         return exists
+    }
+
+    // MARK: - Manual Database Test (Debug için)
+    func testDatabaseOperations() {
+        print("🧪 \(DatabaseManager.TAG): === DATABASE TEST BAŞLIYOR ===")
+        
+        // 1. Connection test
+        print("🧪 \(DatabaseManager.TAG): 1. Connection Test")
+        if db != nil {
+            print("✅ \(DatabaseManager.TAG): Database connection ACTIVE")
+        } else {
+            print("❌ \(DatabaseManager.TAG): Database connection NULL")
+            return
+        }
+        
+        // 2. Simple SQL test
+        print("🧪 \(DatabaseManager.TAG): 2. Simple SQL Test")
+        let testSQL = "SELECT 1"
+        var statement: OpaquePointer?
+        if sqlite3_prepare_v2(db, testSQL, -1, &statement, nil) == SQLITE_OK {
+            if sqlite3_step(statement) == SQLITE_ROW {
+                let result = sqlite3_column_int(statement, 0)
+                print("✅ \(DatabaseManager.TAG): Simple SQL çalıştı - Result: \(result)")
+            } else {
+                print("❌ \(DatabaseManager.TAG): Simple SQL step başarısız")
+            }
+        } else {
+            print("❌ \(DatabaseManager.TAG): Simple SQL prepare başarısız")
+        }
+        sqlite3_finalize(statement)
+        
+        // 3. Database info
+        print("🧪 \(DatabaseManager.TAG): 3. Database Info")
+        if let dbPath = getDatabasePath() {
+            let fileExists = FileManager.default.fileExists(atPath: dbPath)
+            print("📁 \(DatabaseManager.TAG): DB File exists: \(fileExists)")
+            
+            if fileExists {
+                if let attributes = try? FileManager.default.attributesOfItem(atPath: dbPath),
+                   let fileSize = attributes[.size] as? Int64 {
+                    print("📏 \(DatabaseManager.TAG): DB File size: \(fileSize) bytes")
+                }
+            }
+        }
+        
+        // 4. Table creation test
+        print("🧪 \(DatabaseManager.TAG): 4. Manual Table Creation Test")
+        let createTestTableSQL = "CREATE TABLE IF NOT EXISTS test_table (id INTEGER PRIMARY KEY, name TEXT)"
+        if sqlite3_exec(db, createTestTableSQL, nil, nil, nil) == SQLITE_OK {
+            print("✅ \(DatabaseManager.TAG): Test table oluşturuldu")
+            
+            // Test insert
+            let insertTestSQL = "INSERT INTO test_table (name) VALUES ('test')"
+            if sqlite3_exec(db, insertTestSQL, nil, nil, nil) == SQLITE_OK {
+                print("✅ \(DatabaseManager.TAG): Test insert başarılı")
+                
+                // Test select
+                let selectTestSQL = "SELECT COUNT(*) FROM test_table"
+                var selectStatement: OpaquePointer?
+                if sqlite3_prepare_v2(db, selectTestSQL, -1, &selectStatement, nil) == SQLITE_OK {
+                    if sqlite3_step(selectStatement) == SQLITE_ROW {
+                        let count = sqlite3_column_int(selectStatement, 0)
+                        print("✅ \(DatabaseManager.TAG): Test select başarılı - Count: \(count)")
+                    }
+                }
+                sqlite3_finalize(selectStatement)
+                
+                // Test table'ı temizle
+                sqlite3_exec(db, "DROP TABLE test_table", nil, nil, nil)
+            } else {
+                print("❌ \(DatabaseManager.TAG): Test insert başarısız")
+            }
+        } else {
+            print("❌ \(DatabaseManager.TAG): Test table oluşturulamadı")
+            if let errorMessage = sqlite3_errmsg(db) {
+                print("❌ \(DatabaseManager.TAG): Error: \(String(cString: errorMessage))")
+            }
+        }
+        
+        print("🧪 \(DatabaseManager.TAG): === DATABASE TEST BİTTİ ===")
     }
 
     // MARK: - Debug Methods
