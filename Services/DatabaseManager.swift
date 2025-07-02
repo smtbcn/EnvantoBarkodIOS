@@ -608,7 +608,14 @@ class DatabaseManager {
                 let deletedCount = sqlite3_changes(db)
                 print("✅ \(DatabaseManager.TAG): '\(musteriAdi)' müşterisinin \(deletedCount) resim kaydı silindi")
                 sqlite3_finalize(statement)
-                return true
+                
+                // Gerçekten kayıt silindiyse true döndür
+                if deletedCount > 0 {
+                    return true
+                } else {
+                    print("⚠️ \(DatabaseManager.TAG): '\(musteriAdi)' için silinecek kayıt bulunamadı (eşleşen kayıt yok)")
+                    return false
+                }
             }
         }
         
