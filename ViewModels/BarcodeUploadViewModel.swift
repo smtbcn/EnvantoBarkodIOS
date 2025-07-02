@@ -368,6 +368,7 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
             print("📋 Storage Info: \(storageInfo)")
         }
         
+        let dbManager = DatabaseManager.getInstance()
         var groups: [CustomerImageGroup] = []
         
         // Documents/Envanto klasöründeki tüm müşteri klasörlerini tara
@@ -385,12 +386,15 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
                     
                     if !imagePaths.isEmpty {
                         let savedImages = imagePaths.map { path in
-                            SavedImage(
+                            // Database'den upload durumunu kontrol et
+                            let uploadStatus = checkDatabaseUploadStatus(path: path, customerName: customerName, dbManager: dbManager)
+                            
+                            return SavedImage(
                                 customerName: customerName,
                                 imagePath: path,
                                 localPath: path,
                                 uploadDate: getFileCreationDate(path: path),
-                                isUploaded: false
+                                isUploaded: uploadStatus
                             )
                         }
                         
@@ -412,6 +416,22 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         print("📊 \(customerImageGroups.count) müşteri için resim grubu oluşturuldu")
     }
     
+    // MARK: - Database Upload Status Check
+    private func checkDatabaseUploadStatus(path: String, customerName: String, dbManager: DatabaseManager) -> Bool {
+        // Database'den bu resim yoluna göre upload durumunu kontrol et
+        let allImages = dbManager.getCustomerImages(musteriAdi: customerName)
+        
+        // Dosya yoluna göre eşleştir
+        for imageRecord in allImages {
+            if imageRecord.resimYolu == path {
+                return imageRecord.isUploaded
+            }
+        }
+        
+        // Database'de bulunamadıysa yüklenmemiş kabul et
+        return false
+    }
+    
     private func getStorageInfo() async -> String? {
         return await ImageStorageManager.getStorageInfo()
     }
@@ -420,17 +440,25 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         Task {
             // ImageStorageManager ile müşteri resimlerini yükle
             let imagePaths = await ImageStorageManager.listCustomerImages(customerName: customerName)
+            let dbManager = DatabaseManager.getInstance()
             
             await MainActor.run {
                 savedImages = imagePaths.map { path in
-                    SavedImage(
+                    // Database'den upload durumunu kontrol et
+                    let uploadStatus = checkDatabaseUploadStatus(path: path, customerName: customerName, dbManager: dbManager)
+                    
+                    return SavedImage(
                         customerName: customerName,
                         imagePath: path,
                         localPath: path,
                         uploadDate: getFileCreationDate(path: path),
-                        isUploaded: false // TODO: Upload durumu kontrol edilecek
+                        isUploaded: uploadStatus
                     )
                 }
+                
+                print("📊 \(customerName) için \(savedImages.count) resim yüklendi")
+                print("📊 Yüklenen resimler: \(savedImages.filter(\.isUploaded).count)")
+                print("📊 Bekleyen resimler: \(savedImages.filter { !$0.isUploaded }.count)")
             }
         }
     }

@@ -748,49 +748,167 @@ struct BarcodeUploadView: View {
     // MARK: - Upload Status Card (Android benzeri yükleme durumu)
     private var uploadStatusCard: some View {
         VStack(alignment: .leading, spacing: 12) {
+            // Ana Status Row
             HStack {
-                Image(systemName: uploadService.isUploading ? "icloud.and.arrow.up" : "icloud")
+                // Status ikonu
+                Image(systemName: getStatusIcon())
                     .font(.title2)
-                    .foregroundColor(uploadService.isUploading ? .blue : .secondary)
+                    .foregroundColor(getStatusColor())
                 
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text("Sunucu Yükleme Durumu")
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.primary)
                     
                     Text(uploadService.uploadStatus)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(getStatusColor())
                 }
                 
                 Spacer()
                 
                 // Progress badge
                 if uploadService.uploadProgress.total > 0 {
-                    VStack(spacing: 2) {
+                    VStack(spacing: 4) {
                         Text("\(uploadService.uploadProgress.current)/\(uploadService.uploadProgress.total)")
-                            .font(.caption2)
-                            .fontWeight(.medium)
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
                         
-                        if uploadService.uploadProgress.total > 0 {
-                            let progress = Double(uploadService.uploadProgress.current) / Double(uploadService.uploadProgress.total)
-                            ProgressView(value: progress)
-                                .scaleEffect(x: 1, y: 0.5, anchor: .center)
-                                .frame(width: 40)
-                        }
+                        let progress = Double(uploadService.uploadProgress.current) / Double(uploadService.uploadProgress.total)
+                        ProgressView(value: progress)
+                            .progressViewStyle(LinearProgressViewStyle(tint: getStatusColor()))
+                            .frame(width: 50)
                     }
-                    .foregroundColor(.blue)
                 }
             }
-            .padding()
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(uploadService.isUploading ? Color.blue.opacity(0.1) : Color(.systemGray6))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(uploadService.isUploading ? Color.blue.opacity(0.3) : Color.clear, lineWidth: 1)
-            )
+            
+            // Network Durumu (Android tarzı)
+            HStack(spacing: 8) {
+                Image(systemName: getNetworkIcon())
+                    .font(.caption)
+                    .foregroundColor(getNetworkColor())
+                
+                Text(getNetworkStatus())
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                Spacer()
+                
+                // WiFi-only ayarı göstergesi
+                if UserDefaults.standard.bool(forKey: Constants.UserDefaults.wifiOnly) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "wifi")
+                            .font(.caption2)
+                        Text("Sadece WiFi")
+                            .font(.caption2)
+                    }
+                    .foregroundColor(.blue)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
+                    .background(Color.blue.opacity(0.1))
+                    .cornerRadius(4)
+                }
+            }
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(getCardBackgroundColor())
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(getCardBorderColor(), lineWidth: 1)
+        )
+    }
+    
+    // MARK: - Upload Status Helper Methods
+    private func getStatusIcon() -> String {
+        if uploadService.isUploading {
+            return "icloud.and.arrow.up"
+        } else if uploadService.uploadStatus.contains("WiFi") || uploadService.uploadStatus.contains("İnternet") {
+            return "wifi.exclamationmark"
+        } else if uploadService.uploadStatus.contains("Yüklendi") || uploadService.uploadStatus.contains("✅") {
+            return "checkmark.icloud"
+        } else if uploadService.uploadStatus.contains("yetkili değil") {
+            return "exclamationmark.shield"
+        } else {
+            return "icloud"
+        }
+    }
+    
+    private func getStatusColor() -> Color {
+        if uploadService.isUploading {
+            return .blue
+        } else if uploadService.uploadStatus.contains("WiFi") || uploadService.uploadStatus.contains("İnternet") {
+            return .orange
+        } else if uploadService.uploadStatus.contains("Yüklendi") || uploadService.uploadStatus.contains("✅") {
+            return .green
+        } else if uploadService.uploadStatus.contains("yetkili değil") {
+            return .red
+        } else {
+            return .secondary
+        }
+    }
+    
+    private func getCardBackgroundColor() -> Color {
+        if uploadService.isUploading {
+            return Color.blue.opacity(0.1)
+        } else if uploadService.uploadStatus.contains("WiFi") || uploadService.uploadStatus.contains("İnternet") {
+            return Color.orange.opacity(0.1)
+        } else if uploadService.uploadStatus.contains("Yüklendi") || uploadService.uploadStatus.contains("✅") {
+            return Color.green.opacity(0.1)
+        } else if uploadService.uploadStatus.contains("yetkili değil") {
+            return Color.red.opacity(0.1)
+        } else {
+            return Color(.systemGray6)
+        }
+    }
+    
+    private func getCardBorderColor() -> Color {
+        if uploadService.isUploading {
+            return Color.blue.opacity(0.3)
+        } else if uploadService.uploadStatus.contains("WiFi") || uploadService.uploadStatus.contains("İnternet") {
+            return Color.orange.opacity(0.3)
+        } else if uploadService.uploadStatus.contains("Yüklendi") || uploadService.uploadStatus.contains("✅") {
+            return Color.green.opacity(0.3)
+        } else if uploadService.uploadStatus.contains("yetkili değil") {
+            return Color.red.opacity(0.3)
+        } else {
+            return Color.clear
+        }
+    }
+    
+    private func getNetworkIcon() -> String {
+        let networkUtils = NetworkUtils.shared
+        if !networkUtils.isConnected {
+            return "wifi.slash"
+        } else if networkUtils.isWiFiConnected {
+            return "wifi"
+        } else {
+            return "cellularbars"
+        }
+    }
+    
+    private func getNetworkColor() -> Color {
+        let networkUtils = NetworkUtils.shared
+        if !networkUtils.isConnected {
+            return .red
+        } else if networkUtils.isWiFiConnected {
+            return .green
+        } else {
+            return .orange
+        }
+    }
+    
+    private func getNetworkStatus() -> String {
+        let networkUtils = NetworkUtils.shared
+        if !networkUtils.isConnected {
+            return "İnternet bağlantısı yok"
+        } else if networkUtils.isWiFiConnected {
+            return "WiFi bağlı"
+        } else {
+            return "Mobil veri bağlı"
         }
     }
 }
@@ -966,23 +1084,37 @@ struct AndroidImageRow: View {
                     .foregroundColor(.primary)
                     .lineLimit(1)
                 
-                // Upload durumu placeholder (şimdilik boş)
-                HStack(spacing: 4) {
-                    // Boş alan - gelecekte "SUNUCUYA YÜKLENDİ" badge'i buraya gelecek
+                // Upload durumu (Android tarzı)
+                HStack(spacing: 6) {
+                    Image(systemName: getUploadStatusIcon())
+                        .font(.system(size: 12))
+                        .foregroundColor(getUploadStatusColor())
+                    
+                    Text(getUploadStatusText())
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(getUploadStatusColor())
+                    
                     Spacer()
                 }
-                .frame(height: 16)
                 
-                // Müşteri ve tarih bilgisi
+                // Müşteri bilgisi
                 Text("Müşteri: \(image.customerName)")
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .lineLimit(1)
                 
-                Text("Tarih: \(formattedDate(image.uploadDate)) | Yükleyen: Samet BİÇEN Android")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
+                // Tarih ve yükleyen - 2 satır
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Tarih: \(formattedDate(image.uploadDate))")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                    
+                    Text("Yükleyen: \(getUploaderName())")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
             }
             
             Spacer()
@@ -1006,8 +1138,29 @@ struct AndroidImageRow: View {
     
     private func formattedDate(_ date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        formatter.dateFormat = "dd.MM.yyyy HH:mm"
         return formatter.string(from: date)
+    }
+    
+    private func getUploaderName() -> String {
+        // Device sahibi bilgisini al
+        let deviceOwner = UserDefaults.standard.string(forKey: "device_owner") ?? "Bilinmeyen Kullanıcı"
+        let deviceInfo = DeviceIdentifier.getReadableDeviceInfo()
+        return "\(deviceOwner) - \(deviceInfo)"
+    }
+    
+    private func getUploadStatusIcon() -> String {
+        // Bu bilgiyi database'den alacağız
+        // Şimdilik placeholder - gelecekte isUploaded kontrolü
+        return image.isUploaded ? "checkmark.circle.fill" : "clock.circle"
+    }
+    
+    private func getUploadStatusColor() -> Color {
+        return image.isUploaded ? .green : .orange
+    }
+    
+    private func getUploadStatusText() -> String {
+        return image.isUploaded ? "SUNUCUYA YÜKLENDİ" : "YÜKLEME BEKLİYOR"
     }
 }
 

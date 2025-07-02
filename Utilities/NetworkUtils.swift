@@ -26,8 +26,14 @@ class NetworkUtils: ObservableObject {
     private func startMonitoring() {
         monitor.pathUpdateHandler = { [weak self] path in
             DispatchQueue.main.async {
+                let wasConnected = self?.isConnected ?? false
+                let wasWiFiConnected = self?.isWiFiConnected ?? false
+                
                 self?.isConnected = path.status == .satisfied
                 self?.updateConnectionType(path: path)
+                
+                // Network durumu değişti - Upload servisini tetikle
+                self?.handleNetworkChange(wasConnected: wasConnected, wasWiFiConnected: wasWiFiConnected)
             }
         }
         monitor.start(queue: queue)
@@ -46,6 +52,40 @@ class NetworkUtils: ObservableObject {
         } else {
             connectionType = .none
             isWiFiConnected = false
+        }
+    }
+    
+    // MARK: - Network Change Handler
+    private func handleNetworkChange(wasConnected: Bool, wasWiFiConnected: Bool) {
+        let nowConnected = isConnected
+        let nowWiFiConnected = isWiFiConnected
+        
+        // Bağlantı durumu değişti mi?
+        if wasConnected != nowConnected || wasWiFiConnected != nowWiFiConnected {
+            print("🌐 NetworkUtils: Bağlantı durumu değişti")
+            print("   - Was connected: \(wasConnected) -> Now connected: \(nowConnected)")
+            print("   - Was WiFi: \(wasWiFiConnected) -> Now WiFi: \(nowWiFiConnected)")
+            
+            // Bağlantı geldi ve WiFi ayarları varsa upload'ı tetikle
+            if nowConnected && (!wasConnected || (!wasWiFiConnected && nowWiFiConnected)) {
+                triggerUploadOnNetworkChange()
+            }
+        }
+    }
+    
+    private func triggerUploadOnNetworkChange() {
+        // Upload tetikleme koşulları:
+        // 1. İnternet bağlantısı geldi VEYA
+        // 2. WiFi bağlantısı geldi ve WiFi-only ayarı açık
+        
+        let wifiOnly = UserDefaults.standard.bool(forKey: "wifi_only")
+        
+        if wifiOnly && isWiFiConnected {
+            print("🚀 NetworkUtils: WiFi bağlandı - Upload servisi tetikleniyor")
+            UploadService.shared.startUploadService(wifiOnly: true)
+        } else if !wifiOnly && isConnected {
+            print("🚀 NetworkUtils: İnternet bağlandı - Upload servisi tetikleniyor")
+            UploadService.shared.startUploadService(wifiOnly: false)
         }
     }
     

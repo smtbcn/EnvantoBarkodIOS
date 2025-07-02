@@ -109,21 +109,25 @@ class UploadService: ObservableObject {
     // MARK: - Upload Logic (Android UploadRetryService benzeri)
     @MainActor
     private func checkAndUploadPendingImages(wifiOnly: Bool) async {
+        print("🔍 \(UploadService.TAG): Upload kontrolü başlatılıyor - WiFi only: \(wifiOnly)")
+        
         // Database'den yüklenmemiş resimleri al
         let dbManager = DatabaseManager.getInstance()
-        let pendingImages = dbManager.getCustomerImages(musteriAdi: "") // Tüm müşteriler
-            .filter { !$0.isUploaded }
+        let pendingImages = dbManager.getAllPendingImages()
         
         let totalCount = pendingImages.count
+        print("📊 \(UploadService.TAG): Bekleyen resim sayısı: \(totalCount)")
         
         if totalCount == 0 {
             uploadStatus = "Yüklenecek resim yok"
             uploadProgress = (0, 0)
+            print("ℹ️ \(UploadService.TAG): Yüklenecek resim bulunamadı")
             return
         }
         
         // Network kontrolü
         let uploadCheck = NetworkUtils.canUploadWithSettings(wifiOnly: wifiOnly)
+        print("🌐 \(UploadService.TAG): Network kontrolü - Can upload: \(uploadCheck.canUpload), Reason: \(uploadCheck.reason)")
         
         if !uploadCheck.canUpload {
             uploadStatus = uploadCheck.reason
@@ -133,7 +137,10 @@ class UploadService: ObservableObject {
         
         // Cihaz yetki kontrolü
         let deviceId = DeviceIdentifier.getUniqueDeviceId()
-        if !dbManager.isCihazYetkili(cihazBilgisi: deviceId) {
+        let isAuthorized = dbManager.isCihazYetkili(cihazBilgisi: deviceId)
+        print("🔐 \(UploadService.TAG): Cihaz yetki kontrolü - Device ID: \(deviceId), Authorized: \(isAuthorized)")
+        
+        if !isAuthorized {
             uploadStatus = "Cihaz yetkili değil"
             uploadProgress = (0, totalCount)
             return
@@ -142,16 +149,19 @@ class UploadService: ObservableObject {
         // Upload işlemini başlat
         isUploading = true
         uploadStatus = "Yükleniyor..."
+        print("🚀 \(UploadService.TAG): Upload işlemi başlatılıyor - \(totalCount) resim")
         
         var uploadedCount = 0
         
         for (index, imageRecord) in pendingImages.enumerated() {
             uploadProgress = (index, totalCount)
+            print("📤 \(UploadService.TAG): Resim yükleniyor (\(index + 1)/\(totalCount)): \(imageRecord.musteriAdi)")
             
             // Her resim için network kontrolü (WiFi kesilirse dursun)
             let currentCheck = NetworkUtils.canUploadWithSettings(wifiOnly: wifiOnly)
             if !currentCheck.canUpload {
                 uploadStatus = currentCheck.reason
+                print("⚠️ \(UploadService.TAG): Network bağlantısı kesildi: \(currentCheck.reason)")
                 break
             }
             
@@ -166,9 +176,9 @@ class UploadService: ObservableObject {
                 uploadProgress = (uploadedCount, totalCount)
                 uploadStatus = "Yüklendi: \(uploadedCount)/\(totalCount)"
                 
-                print("✅ \(UploadService.TAG): Resim yüklendi: \(imageRecord.resimYolu)")
+                print("✅ \(UploadService.TAG): Resim başarıyla yüklendi: \(imageRecord.musteriAdi) - \(imageRecord.resimYolu)")
             } else {
-                print("❌ \(UploadService.TAG): Resim yüklenemedi: \(imageRecord.resimYolu)")
+                print("❌ \(UploadService.TAG): Resim yüklenemedi: \(imageRecord.musteriAdi) - \(imageRecord.resimYolu)")
                 
                 // Hata durumunda kısa bekle
                 try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 saniye

@@ -246,6 +246,49 @@ class DatabaseManager {
         return results
     }
     
+    // MARK: - Get All Pending Images (yüklenmemiş tüm resimler)
+    func getAllPendingImages() -> [BarkodResim] {
+        guard db != nil else { return [] }
+        
+        let selectSQL = """
+            SELECT \(DatabaseManager.COLUMN_ID), \(DatabaseManager.COLUMN_MUSTERI_ADI), 
+                   \(DatabaseManager.COLUMN_RESIM_YOLU), \(DatabaseManager.COLUMN_TARIH), 
+                   \(DatabaseManager.COLUMN_YUKLEYEN), \(DatabaseManager.COLUMN_YUKLENDI)
+            FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) 
+            WHERE \(DatabaseManager.COLUMN_YUKLENDI) = 0 
+            ORDER BY \(DatabaseManager.COLUMN_TARIH) ASC
+        """
+        
+        var statement: OpaquePointer?
+        var results: [BarkodResim] = []
+        
+        if sqlite3_prepare_v2(db, selectSQL, -1, &statement, nil) == SQLITE_OK {
+            while sqlite3_step(statement) == SQLITE_ROW {
+                let id = Int(sqlite3_column_int(statement, 0))
+                let musteriAdi = String(cString: sqlite3_column_text(statement, 1))
+                let resimYolu = String(cString: sqlite3_column_text(statement, 2))
+                let tarih = String(cString: sqlite3_column_text(statement, 3))
+                let yukleyen = String(cString: sqlite3_column_text(statement, 4))
+                let yuklendi = Int(sqlite3_column_int(statement, 5))
+                
+                let barkodResim = BarkodResim(
+                    id: id,
+                    musteriAdi: musteriAdi,
+                    resimYolu: resimYolu,
+                    tarih: tarih,
+                    yukleyen: yukleyen,
+                    yuklendi: yuklendi
+                )
+                
+                results.append(barkodResim)
+            }
+        }
+        
+        sqlite3_finalize(statement)
+        print("📊 \(DatabaseManager.TAG): \(results.count) adet yüklenmemiş resim bulundu")
+        return results
+    }
+    
     // MARK: - Delete Image Record
     func deleteBarkodResim(id: Int) -> Bool {
         guard db != nil else { return false }
