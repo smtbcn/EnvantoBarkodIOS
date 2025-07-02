@@ -314,19 +314,39 @@ class DatabaseManager {
         var results: [BarkodResim] = []
         
         if sqlite3_prepare_v2(db, selectSQL, -1, &statement, nil) == SQLITE_OK {
-            sqlite3_bind_text(statement, 1, musteriAdi, -1, nil)
+            sqlite3_bind_text(statement, 1, musteriAdi, -1, SQLITE_TRANSIENT)
+            
+            print("🔍 getCustomerImages: Aranan müşteri: '\(musteriAdi)'")
             
             while sqlite3_step(statement) == SQLITE_ROW {
                 let id = Int(sqlite3_column_int(statement, 0))
-                let musteriAdi = String(cString: sqlite3_column_text(statement, 1))
-                let resimYolu = String(cString: sqlite3_column_text(statement, 2))
-                let tarih = String(cString: sqlite3_column_text(statement, 3))
-                let yukleyen = String(cString: sqlite3_column_text(statement, 4))
+                
+                // Güvenli string okuma (NULL kontrol)
+                let musteriAdiPtr = sqlite3_column_text(statement, 1)
+                let musteriAdiResult = musteriAdiPtr != nil ? String(cString: musteriAdiPtr!) : ""
+                
+                let resimYoluPtr = sqlite3_column_text(statement, 2)
+                let resimYolu = resimYoluPtr != nil ? String(cString: resimYoluPtr!) : ""
+                
+                let tarihPtr = sqlite3_column_text(statement, 3)
+                let tarih = tarihPtr != nil ? String(cString: tarihPtr!) : ""
+                
+                let yukleyenPtr = sqlite3_column_text(statement, 4)
+                let yukleyen = yukleyenPtr != nil ? String(cString: yukleyenPtr!) : ""
+                
                 let yuklendi = Int(sqlite3_column_int(statement, 5))
+                
+                print("🔍 getCustomerImages DEBUG: ID=\(id), Customer='\(musteriAdiResult)', Path='\(resimYolu)', Uploaded=\(yuklendi)")
+                
+                // Boş kayıtları atla
+                if musteriAdiResult.isEmpty || resimYolu.isEmpty {
+                    print("   ⚠️ Boş kayıt atlanıyor: Customer='\(musteriAdiResult)', Path='\(resimYolu)'")
+                    continue
+                }
                 
                 let barkodResim = BarkodResim(
                     id: id,
-                    musteriAdi: musteriAdi,
+                    musteriAdi: musteriAdiResult,
                     resimYolu: resimYolu,
                     tarih: tarih,
                     yukleyen: yukleyen,
@@ -335,9 +355,12 @@ class DatabaseManager {
                 
                 results.append(barkodResim)
             }
+        } else {
+            print("❌ getCustomerImages: SQL prepare hatası")
         }
         
         sqlite3_finalize(statement)
+        print("📊 getCustomerImages: '\(musteriAdi)' için \(results.count) kayıt bulundu")
         return results
     }
     
