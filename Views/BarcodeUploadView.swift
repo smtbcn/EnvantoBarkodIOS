@@ -33,17 +33,25 @@ struct CameraView: View {
                 
                 HStack {
                     // Sol Grid - Flash Button (48dp equivalent)
-                    Button(action: {
-                        cameraModel.toggleFlash()
-                    }) {
-                        Image(systemName: cameraModel.isFlashOn ? "bolt.fill" : "bolt.slash.fill")
-                            .font(.system(size: 20, weight: .medium))
-                            .foregroundColor(.white)
-                            .frame(width: 48, height: 48)
-                            .background(
-                                Circle()
-                                    .fill(Color.black.opacity(0.5))
-                            )
+                    Group {
+                        if cameraModel.captureDevice?.hasFlash == true {
+                            Button(action: {
+                                cameraModel.toggleFlash()
+                            }) {
+                                Image(systemName: cameraModel.isFlashOn ? "bolt.fill" : "bolt.slash.fill")
+                                    .font(.system(size: 20, weight: .medium))
+                                    .foregroundColor(cameraModel.isFlashOn ? .yellow : .white)
+                                    .frame(width: 48, height: 48)
+                                    .background(
+                                        Circle()
+                                            .fill(Color.black.opacity(0.5))
+                                    )
+                            }
+                        } else {
+                            // Flash yoksa boş alan (layout dengesini koru)
+                            Spacer()
+                                .frame(width: 48, height: 48)
+                        }
                     }
                     .frame(maxWidth: .infinity) // Equal grid weight
                     
@@ -139,7 +147,7 @@ class CameraModel: NSObject, ObservableObject {
     @Published var isFlashOn = false
     
     private var photoOutput = AVCapturePhotoOutput()
-    private var captureDevice: AVCaptureDevice?
+    var captureDevice: AVCaptureDevice?
     private var photoCompletion: ((UIImage?) -> Void)?
     
     override init() {
@@ -157,6 +165,9 @@ class CameraModel: NSObject, ObservableObject {
         }
         
         captureDevice = device
+        
+        // Flash durumunu kontrol et ve logla
+        print("📱 Cihaz flash durumu: \(device.hasFlash ? "VAR" : "YOK")")
         
         do {
             // Kamera input
@@ -219,7 +230,21 @@ class CameraModel: NSObject, ObservableObject {
     }
     
     func toggleFlash() {
+        print("🔦 Flash toggle çağrıldı. Mevcut durum: \(isFlashOn)")
+        
+        // Flash varlığını kontrol et
+        guard let device = captureDevice else {
+            print("❌ Capture device bulunamadı")
+            return
+        }
+        
+        if !device.hasFlash {
+            print("❌ Bu cihazda flash bulunmuyor")
+            return
+        }
+        
         isFlashOn.toggle()
+        print("✅ Flash durumu değiştirildi: \(isFlashOn)")
     }
     
     func focusAt(point: CGPoint) {
