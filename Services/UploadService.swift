@@ -114,7 +114,11 @@ class UploadService: ObservableObject {
         // Database'den yüklenmemiş resimleri al
         let dbManager = DatabaseManager.getInstance()
         
-        // Önce geçersiz kayıtları temizle (dosyası olmayan)
+        // iOS dosya sistemi gecikmesi için cleanup'ı geciktir (yeni kaydedilen resimler için)
+        print("⏱️ \(UploadService.TAG): Cleanup 2 saniye geciktirildi (iOS file system delay)")
+        try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 saniye bekle
+        
+        // Geçersiz kayıtları temizle (dosyası olmayan)
         let cleanedCount = dbManager.clearInvalidImageRecords()
         if cleanedCount > 0 {
             print("🧹 \(UploadService.TAG): \(cleanedCount) adet geçersiz kayıt temizlendi")

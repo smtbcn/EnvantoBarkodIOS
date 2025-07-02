@@ -420,9 +420,26 @@ class DatabaseManager {
                 let id = Int(sqlite3_column_int(statement, 0))
                 let resimYolu = String(cString: sqlite3_column_text(statement, 1))
                 
-                // Dosya mevcut mu kontrol et
-                if !FileManager.default.fileExists(atPath: resimYolu) {
+                // Dosya mevcut mu kontrol et (iOS file system delay için birkaç deneme)
+                var fileExists = false
+                for attempt in 1...3 {
+                    fileExists = FileManager.default.fileExists(atPath: resimYolu)
+                    if fileExists {
+                        break
+                    }
+                    
+                    if attempt < 3 {
+                        // Kısa bekle (dosya sistemi flush için)
+                        Thread.sleep(forTimeInterval: 0.1)
+                        print("🔍 \(DatabaseManager.TAG): Dosya kontrol denemesi \(attempt)/3: \(resimYolu)")
+                    }
+                }
+                
+                if !fileExists {
+                    print("🗑️ \(DatabaseManager.TAG): Geçersiz dosya tespit edildi (3 denemede bulunamadı): \(resimYolu)")
                     invalidIds.append(id)
+                } else {
+                    print("✅ \(DatabaseManager.TAG): Dosya geçerli: \(resimYolu)")
                 }
             }
         }
