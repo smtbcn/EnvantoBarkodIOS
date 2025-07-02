@@ -352,6 +352,9 @@ struct BarcodeUploadView: View {
                 VStack(spacing: 0) {
                     if viewModel.isLoading {
                         LoadingOverlay()
+                    } else if !viewModel.isDeviceAuthorized {
+                        // Cihaz yetkili değilse uyarı mesajı göster (Android mantığı)
+                        unauthorizedDeviceView
                     } else {
                         mainContent
                     }
@@ -412,6 +415,71 @@ struct BarcodeUploadView: View {
                 viewModel.loadCustomerImageGroups()
             }
         }
+    }
+    
+    // MARK: - Yetkisiz Cihaz Görünümü (Android mantığı)
+    private var unauthorizedDeviceView: some View {
+        VStack(spacing: 20) {
+            Spacer()
+            
+            Image(systemName: "exclamationmark.shield")
+                .font(.system(size: 80))
+                .foregroundColor(.orange)
+            
+            Text("Yetkilendirme Gerekli")
+                .font(.title)
+                .fontWeight(.bold)
+                .multilineTextAlignment(.center)
+            
+            Text("Bu cihaz barkod yükleme işlemi için yetkilendirilmemiş. Lütfen sistem yöneticisine başvurun.")
+                .font(.body)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+            
+            // Cihaz ID göster
+            VStack(spacing: 10) {
+                Text("Cihaz Kimliği:")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                HStack {
+                    Text(DeviceIdentifier.getUniqueDeviceId())
+                        .font(.system(.body, design: .monospaced))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(8)
+                    
+                    Button(action: {
+                        UIPasteboard.general.string = DeviceIdentifier.getUniqueDeviceId()
+                        
+                        // Toast göster
+                        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                        impactFeedback.impactOccurred()
+                    }) {
+                        Image(systemName: "doc.on.doc")
+                            .font(.title2)
+                    }
+                }
+            }
+            
+            Button(action: {
+                viewModel.checkDeviceAuthorization()
+            }) {
+                HStack {
+                    Image(systemName: "arrow.clockwise")
+                    Text("Yeniden Kontrol Et")
+                }
+                .padding()
+                .background(Color.blue)
+                .foregroundColor(.white)
+                .cornerRadius(10)
+            }
+            
+            Spacer()
+        }
+        .padding()
     }
     
     private var mainContent: some View {

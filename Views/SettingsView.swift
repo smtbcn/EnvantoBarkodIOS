@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 struct SettingsView: View {
     @ObservedObject var viewModel: MainViewModel
@@ -116,6 +117,12 @@ struct SettingsView: View {
         }
         .onAppear {
             loadSettings()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)) { _ in
+            // UserDefaults değiştiğinde ayarları yeniden yükle
+            DispatchQueue.main.async {
+                loadSettings()
+            }
         }
     }
     

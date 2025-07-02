@@ -17,6 +17,14 @@ class DatabaseManager {
     public static let COLUMN_YUKLEYEN = "yukleyen"
     public static let COLUMN_YUKLENDI = "yuklendi"
     
+    // Cihaz yetkilendirme tablosu (Android ile aynı)
+    public static let TABLE_CIHAZ_YETKI = "cihaz_yetki"
+    public static let COLUMN_CIHAZ_ID = "id"
+    public static let COLUMN_CIHAZ_BILGISI = "cihaz_bilgisi"
+    public static let COLUMN_CIHAZ_SAHIBI = "cihaz_sahibi"
+    public static let COLUMN_CIHAZ_ONAY = "cihaz_onay"
+    public static let COLUMN_CIHAZ_SON_KONTROL = "son_kontrol"
+    
     // MARK: - Database Properties
     private var db: OpaquePointer?
     private static var shared: DatabaseManager?
@@ -77,6 +85,7 @@ class DatabaseManager {
     // MARK: - Create Tables (Android ile aynı yapı)
     private func createTables() {
         createBarkodResimlerTable()
+        createCihazYetkiTable()
     }
     
     private func createBarkodResimlerTable() {
@@ -95,6 +104,24 @@ class DatabaseManager {
             print("✅ \(DatabaseManager.TAG): barkod_resimler tablosu oluşturuldu")
         } else {
             print("❌ \(DatabaseManager.TAG): barkod_resimler tablosu oluşturulamadı")
+        }
+    }
+    
+    private func createCihazYetkiTable() {
+        let createTableSQL = """
+            CREATE TABLE IF NOT EXISTS \(DatabaseManager.TABLE_CIHAZ_YETKI) (
+                \(DatabaseManager.COLUMN_CIHAZ_ID) INTEGER PRIMARY KEY AUTOINCREMENT,
+                \(DatabaseManager.COLUMN_CIHAZ_BILGISI) TEXT NOT NULL UNIQUE,
+                \(DatabaseManager.COLUMN_CIHAZ_SAHIBI) TEXT NOT NULL,
+                \(DatabaseManager.COLUMN_CIHAZ_ONAY) INTEGER DEFAULT 0,
+                \(DatabaseManager.COLUMN_CIHAZ_SON_KONTROL) TEXT NOT NULL
+            )
+        """
+        
+        if sqlite3_exec(db, createTableSQL, nil, nil, nil) == SQLITE_OK {
+            print("✅ \(DatabaseManager.TAG): cihaz_yetki tablosu oluşturuldu")
+        } else {
+            print("❌ \(DatabaseManager.TAG): cihaz_yetki tablosu oluşturulamadı")
         }
     }
     
@@ -329,6 +356,120 @@ class DatabaseManager {
         return results
     }
     
+    // MARK: - Cihaz Yetki Yönetimi (Android ile aynı)
+    func saveCihazYetki(cihazBilgisi: String, cihazSahibi: String, cihazOnay: Int) -> Bool {
+        guard db != nil else { return false }
+        
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        let sonKontrol = dateFormatter.string(from: Date())
+        
+        // Önce mevcut kaydı kontrol et
+        if var existingRecord = getCihazYetki(cihazBilgisi: cihazBilgisi) {
+            // Güncelle
+            let updateSQL = """
+                UPDATE \(DatabaseManager.TABLE_CIHAZ_YETKI) 
+                SET \(DatabaseManager.COLUMN_CIHAZ_SAHIBI) = ?, 
+                    \(DatabaseManager.COLUMN_CIHAZ_ONAY) = ?, 
+                    \(DatabaseManager.COLUMN_CIHAZ_SON_KONTROL) = ?
+                WHERE \(DatabaseManager.COLUMN_CIHAZ_BILGISI) = ?
+            """
+            
+            var statement: OpaquePointer?
+            if sqlite3_prepare_v2(db, updateSQL, -1, &statement, nil) == SQLITE_OK {
+                sqlite3_bind_text(statement, 1, cihazSahibi, -1, nil)
+                sqlite3_bind_int(statement, 2, Int32(cihazOnay))
+                sqlite3_bind_text(statement, 3, sonKontrol, -1, nil)
+                sqlite3_bind_text(statement, 4, cihazBilgisi, -1, nil)
+                
+                if sqlite3_step(statement) == SQLITE_DONE {
+                    print("✅ \(DatabaseManager.TAG): Cihaz yetki güncellendi - \(cihazBilgisi)")
+                    sqlite3_finalize(statement)
+                    return true
+                }
+            }
+            sqlite3_finalize(statement)
+        } else {
+            // Yeni kayıt ekle
+            let insertSQL = """
+                INSERT INTO \(DatabaseManager.TABLE_CIHAZ_YETKI) 
+                (\(DatabaseManager.COLUMN_CIHAZ_BILGISI), \(DatabaseManager.COLUMN_CIHAZ_SAHIBI), 
+                 \(DatabaseManager.COLUMN_CIHAZ_ONAY), \(DatabaseManager.COLUMN_CIHAZ_SON_KONTROL)) 
+                VALUES (?, ?, ?, ?)
+            """
+            
+            var statement: OpaquePointer?
+            if sqlite3_prepare_v2(db, insertSQL, -1, &statement, nil) == SQLITE_OK {
+                sqlite3_bind_text(statement, 1, cihazBilgisi, -1, nil)
+                sqlite3_bind_text(statement, 2, cihazSahibi, -1, nil)
+                sqlite3_bind_int(statement, 3, Int32(cihazOnay))
+                sqlite3_bind_text(statement, 4, sonKontrol, -1, nil)
+                
+                if sqlite3_step(statement) == SQLITE_DONE {
+                    print("✅ \(DatabaseManager.TAG): Yeni cihaz yetki kaydı eklendi - \(cihazBilgisi)")
+                    sqlite3_finalize(statement)
+                    return true
+                }
+            }
+            sqlite3_finalize(statement)
+        }
+        
+        return false
+    }
+    
+    func getCihazYetki(cihazBilgisi: String) -> CihazYetki? {
+        guard db != nil else { return nil }
+        
+        let selectSQL = """
+            SELECT \(DatabaseManager.COLUMN_CIHAZ_ID), \(DatabaseManager.COLUMN_CIHAZ_BILGISI), 
+                   \(DatabaseManager.COLUMN_CIHAZ_SAHIBI), \(DatabaseManager.COLUMN_CIHAZ_ONAY), 
+                   \(DatabaseManager.COLUMN_CIHAZ_SON_KONTROL)
+            FROM \(DatabaseManager.TABLE_CIHAZ_YETKI) 
+            WHERE \(DatabaseManager.COLUMN_CIHAZ_BILGISI) = ? 
+            LIMIT 1
+        """
+        
+        var statement: OpaquePointer?
+        var result: CihazYetki?
+        
+        if sqlite3_prepare_v2(db, selectSQL, -1, &statement, nil) == SQLITE_OK {
+            sqlite3_bind_text(statement, 1, cihazBilgisi, -1, nil)
+            
+            if sqlite3_step(statement) == SQLITE_ROW {
+                let id = Int(sqlite3_column_int(statement, 0))
+                let cihazBilgisi = String(cString: sqlite3_column_text(statement, 1))
+                let cihazSahibi = String(cString: sqlite3_column_text(statement, 2))
+                let cihazOnay = Int(sqlite3_column_int(statement, 3))
+                let sonKontrol = String(cString: sqlite3_column_text(statement, 4))
+                
+                result = CihazYetki(
+                    id: id,
+                    cihazBilgisi: cihazBilgisi,
+                    cihazSahibi: cihazSahibi,
+                    cihazOnay: cihazOnay,
+                    sonKontrol: sonKontrol
+                )
+            }
+        }
+        
+        sqlite3_finalize(statement)
+        return result
+    }
+    
+    func getCihazSahibi(cihazBilgisi: String) -> String {
+        if let cihazYetki = getCihazYetki(cihazBilgisi: cihazBilgisi) {
+            return cihazYetki.cihazSahibi
+        }
+        return ""
+    }
+    
+    func isCihazYetkili(cihazBilgisi: String) -> Bool {
+        if let cihazYetki = getCihazYetki(cihazBilgisi: cihazBilgisi) {
+            return cihazYetki.cihazOnay == 1
+        }
+        return false
+    }
+    
     // MARK: - Debug Methods
     func printDatabaseInfo() {
         let totalCount = getUploadedImagesCount()
@@ -341,6 +482,14 @@ class DatabaseManager {
         // Cihaz sahibi bilgisini de göster
         let currentDeviceOwner = UserDefaults.standard.string(forKey: "device_owner") ?? "Belirtilmemiş"
         print("👤 \(DatabaseManager.TAG): Aktif cihaz sahibi: \(currentDeviceOwner)")
+        
+        // Cihaz yetki durumunu da göster
+        let deviceId = DeviceIdentifier.getUniqueDeviceId()
+        if let cihazYetki = getCihazYetki(cihazBilgisi: deviceId) {
+            print("🔐 \(DatabaseManager.TAG): Cihaz onay durumu: \(cihazYetki.cihazOnay == 1 ? "Yetkili" : "Yetkisiz")")
+        } else {
+            print("🔐 \(DatabaseManager.TAG): Cihaz yetki kaydı bulunamadı")
+        }
         
         if let dbPath = getDatabasePath() {
             print("📁 \(DatabaseManager.TAG): Database dosyası: \(dbPath)")
@@ -363,5 +512,22 @@ struct BarkodResim: Identifiable, Equatable {
     
     var uploadStatusText: String {
         return isUploaded ? "Yüklendi" : "Bekliyor"
+    }
+}
+
+// MARK: - CihazYetki Model (Android'deki model ile aynı)
+struct CihazYetki: Identifiable {
+    let id: Int
+    let cihazBilgisi: String
+    let cihazSahibi: String
+    let cihazOnay: Int
+    let sonKontrol: String
+    
+    var isAuthorized: Bool {
+        return cihazOnay == 1
+    }
+    
+    var statusText: String {
+        return isAuthorized ? "Yetkili" : "Yetkisiz"
     }
 } 

@@ -68,13 +68,24 @@ class DeviceAuthManager {
                     // Cihaz yetkili
                     UserDefaults.standard.set(true, forKey: "device_auth_checked")
                     
-                    // Cihaz sahibini kaydet
-                    if let deviceOwner = authResponse.deviceOwner {
+                    // Cihaz sahibini kaydet (hem UserDefaults hem MainViewModel için)
+                    if let deviceOwner = authResponse.deviceOwner, !deviceOwner.isEmpty {
                         UserDefaults.standard.set(deviceOwner, forKey: "device_owner")
+                        UserDefaults.standard.set(deviceOwner, forKey: Constants.UserDefaults.deviceOwner)
+                        print("👤 Cihaz sahibi kaydedildi: \(deviceOwner)")
                     }
                     
-                    // Yerel veritabanına kaydet (başarılı)
-                    saveLocalDeviceAuth(deviceId: deviceId, deviceOwner: authResponse.deviceOwner ?? "", isAuthorized: true)
+                    // SQLite cihaz yetki tablosuna kaydet (Android mantığı)
+                    let dbManager = DatabaseManager.getInstance()
+                    let saved = dbManager.saveCihazYetki(
+                        cihazBilgisi: deviceId, 
+                        cihazSahibi: authResponse.deviceOwner ?? "", 
+                        cihazOnay: 1
+                    )
+                    
+                    if saved {
+                        print("✅ Cihaz yetkisi SQLite'a kaydedildi")
+                    }
                     
                     print("✅ Cihaz yetkili: \(authResponse.message)")
                     callback.onAuthSuccess()
@@ -82,8 +93,13 @@ class DeviceAuthManager {
                     // Cihaz yetkili değil
                     UserDefaults.standard.set(false, forKey: "device_auth_checked")
                     
-                    // Yerel veritabanına kaydet (başarısız)
-                    saveLocalDeviceAuth(deviceId: deviceId, deviceOwner: "", isAuthorized: false)
+                    // SQLite cihaz yetki tablosuna kaydet (yetkisiz)
+                    let dbManager = DatabaseManager.getInstance()
+                    let saved = dbManager.saveCihazYetki(
+                        cihazBilgisi: deviceId, 
+                        cihazSahibi: authResponse.deviceOwner ?? "", 
+                        cihazOnay: 0
+                    )
                     
                     print("❌ Cihaz yetkili değil: \(authResponse.message)")
                     
@@ -93,14 +109,24 @@ class DeviceAuthManager {
                 }
                 
             case .failure(let error):
-                // Sunucu hatası - yerel veritabanından kontrol et
-                let isLocallyAuthorized = checkLocalAuthorization(deviceId: deviceId)
+                // Sunucu hatası - SQLite'dan kontrol et (Android mantığı)
+                let dbManager = DatabaseManager.getInstance()
+                let isLocallyAuthorized = dbManager.isCihazYetkili(cihazBilgisi: deviceId)
                 
                 if isLocallyAuthorized {
-                    print("🔄 Sunucu hatası, yerel veritabanında onaylı")
+                    print("🔄 Sunucu hatası, SQLite'da yetkili cihaz")
+                    
+                    // Cihaz sahibi bilgisini SQLite'dan al
+                    let deviceOwner = dbManager.getCihazSahibi(cihazBilgisi: deviceId)
+                    if !deviceOwner.isEmpty {
+                        UserDefaults.standard.set(deviceOwner, forKey: "device_owner")
+                        UserDefaults.standard.set(deviceOwner, forKey: Constants.UserDefaults.deviceOwner)
+                        print("👤 Cihaz sahibi SQLite'dan yüklendi: \(deviceOwner)")
+                    }
+                    
                     callback.onAuthSuccess()
                 } else {
-                    print("💥 Sunucu hatası ve yerel yetki yok: \(error.localizedDescription)")
+                    print("💥 Sunucu hatası ve SQLite'da yetki yok: \(error.localizedDescription)")
                     
                     let errorMessage = "Sunucu ile iletişim kurulamadı. Lütfen internet bağlantınızı kontrol edin ve cihazınızın yetkilendirildiğinden emin olun."
                     showAuthorizationErrorAlert(message: errorMessage, deviceId: deviceId)
@@ -165,26 +191,7 @@ class DeviceAuthManager {
     }
     
 
-    
-    // MARK: - Yerel yetkilendirme kontrolü
-    private static func checkLocalAuthorization(deviceId: String) -> Bool {
-        // UserDefaults'tan yerel yetki durumunu kontrol et
-        // TODO: Gerçek uygulamada Core Data veya SQLite kullanılabilir
-        let key = "local_device_auth_\(deviceId)"
-        return UserDefaults.standard.bool(forKey: key)
-    }
-    
-    // MARK: - Yerel yetkilendirme kaydet
-    private static func saveLocalDeviceAuth(deviceId: String, deviceOwner: String, isAuthorized: Bool) {
-        // UserDefaults'a yerel yetki durumunu kaydet
-        // TODO: Gerçek uygulamada Core Data veya SQLite kullanılabilir
-        let key = "local_device_auth_\(deviceId)"
-        UserDefaults.standard.set(isAuthorized, forKey: key)
-        
-        if !deviceOwner.isEmpty {
-            UserDefaults.standard.set(deviceOwner, forKey: "device_owner")
-        }
-    }
+
     
     // MARK: - Yetkilendirme hatası uyarısı
     @MainActor

@@ -9,6 +9,21 @@ class MainViewModel: ObservableObject {
     
     init() {
         loadDeviceOwner()
+        setupUserDefaultsObserver()
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+    
+    private func setupUserDefaultsObserver() {
+        NotificationCenter.default.addObserver(
+            forName: UserDefaults.didChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.refreshDeviceOwner()
+        }
     }
     
     // MARK: - Kamera izinleri kontrolü
@@ -45,10 +60,16 @@ class MainViewModel: ObservableObject {
         // DeviceAuthManager'dan gelen cihaz sahibini al
         if let authOwner = userDefaults.string(forKey: "device_owner"), !authOwner.isEmpty {
             deviceOwner = authOwner
+            print("👤 MainViewModel: DeviceAuthManager'dan cihaz sahibi: \(authOwner)")
         } else {
             // Fallback: Constants'tan al
             deviceOwner = userDefaults.string(forKey: Constants.UserDefaults.deviceOwner) ?? ""
+            print("👤 MainViewModel: Constants'tan cihaz sahibi: \(deviceOwner)")
         }
+    }
+    
+    func refreshDeviceOwner() {
+        loadDeviceOwner()
     }
     
     func updateDeviceOwner(_ owner: String) {
