@@ -578,49 +578,57 @@ class DatabaseManager {
     func deleteCustomerImages(musteriAdi: String) -> Bool {
         guard db != nil else { return false }
         
-        // Önce kaç kayıt silineceğini kontrol et
-        let countSQL = "SELECT COUNT(*) FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) WHERE \(DatabaseManager.COLUMN_MUSTERI_ADI) = ?"
-        var countStatement: OpaquePointer?
-        var recordCount = 0
+        // Hem boşluklu hem underscore'lu formatı dene
+        let formatlar = [
+            musteriAdi,                                    // SAMET BICEN
+            musteriAdi.replacingOccurrences(of: " ", with: "_")  // SAMET_BICEN
+        ]
         
-        if sqlite3_prepare_v2(db, countSQL, -1, &countStatement, nil) == SQLITE_OK {
-            sqlite3_bind_text(countStatement, 1, musteriAdi, -1, nil)
-            if sqlite3_step(countStatement) == SQLITE_ROW {
-                recordCount = Int(sqlite3_column_int(countStatement, 0))
-            }
-        }
-        sqlite3_finalize(countStatement)
-        
-        // Hiç kayıt yoksa başarılı say
-        if recordCount == 0 {
-            print("ℹ️ \(DatabaseManager.TAG): '\(musteriAdi)' için silinecek kayıt bulunamadı")
-            return true
-        }
-        
-        // Müşterinin tüm kayıtlarını sil
-        let deleteSQL = "DELETE FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) WHERE \(DatabaseManager.COLUMN_MUSTERI_ADI) = ?"
-        var statement: OpaquePointer?
-        
-        if sqlite3_prepare_v2(db, deleteSQL, -1, &statement, nil) == SQLITE_OK {
-            sqlite3_bind_text(statement, 1, musteriAdi, -1, nil)
+        for format in formatlar {
+            print("🔍 \(DatabaseManager.TAG): '\(format)' formatıyla silme deneniyor...")
             
-            if sqlite3_step(statement) == SQLITE_DONE {
-                let deletedCount = sqlite3_changes(db)
-                print("✅ \(DatabaseManager.TAG): '\(musteriAdi)' müşterisinin \(deletedCount) resim kaydı silindi")
-                sqlite3_finalize(statement)
-                
-                // Gerçekten kayıt silindiyse true döndür
-                if deletedCount > 0 {
-                    return true
-                } else {
-                    print("⚠️ \(DatabaseManager.TAG): '\(musteriAdi)' için silinecek kayıt bulunamadı (eşleşen kayıt yok)")
-                    return false
+            // Önce kaç kayıt silineceğini kontrol et
+            let countSQL = "SELECT COUNT(*) FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) WHERE \(DatabaseManager.COLUMN_MUSTERI_ADI) = ?"
+            var countStatement: OpaquePointer?
+            var recordCount = 0
+            
+            if sqlite3_prepare_v2(db, countSQL, -1, &countStatement, nil) == SQLITE_OK {
+                sqlite3_bind_text(countStatement, 1, format, -1, nil)
+                if sqlite3_step(countStatement) == SQLITE_ROW {
+                    recordCount = Int(sqlite3_column_int(countStatement, 0))
                 }
             }
+            sqlite3_finalize(countStatement)
+            
+            if recordCount == 0 {
+                print("ℹ️ \(DatabaseManager.TAG): '\(format)' için silinecek kayıt bulunamadı")
+                continue  // Bir sonraki formatı dene
+            }
+            
+            print("🎯 \(DatabaseManager.TAG): '\(format)' formatında \(recordCount) kayıt bulundu")
+            
+            // Müşterinin tüm kayıtlarını sil
+            let deleteSQL = "DELETE FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) WHERE \(DatabaseManager.COLUMN_MUSTERI_ADI) = ?"
+            var statement: OpaquePointer?
+            
+            if sqlite3_prepare_v2(db, deleteSQL, -1, &statement, nil) == SQLITE_OK {
+                sqlite3_bind_text(statement, 1, format, -1, nil)
+                
+                if sqlite3_step(statement) == SQLITE_DONE {
+                    let deletedCount = sqlite3_changes(db)
+                    print("✅ \(DatabaseManager.TAG): '\(format)' müşterisinin \(deletedCount) resim kaydı silindi")
+                    sqlite3_finalize(statement)
+                    
+                    // Gerçekten kayıt silindiyse başarılı
+                    if deletedCount > 0 {
+                        return true
+                    }
+                }
+            }
+            sqlite3_finalize(statement)
         }
         
-        sqlite3_finalize(statement)
-        print("❌ \(DatabaseManager.TAG): '\(musteriAdi)' müşteri kayıtları silinemedi")
+        print("❌ \(DatabaseManager.TAG): '\(musteriAdi)' müşteri kayıtları hiçbir formatla silinemedi")
         return false
     }
     
