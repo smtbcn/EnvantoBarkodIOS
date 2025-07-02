@@ -922,32 +922,61 @@ class DatabaseManager {
             return
         }
         
+        print("🔍 \(DatabaseManager.TAG): === TABLO KONTROL BAŞLIYOR ===")
+        
+        // Önce tüm tabloları listele
+        print("📋 \(DatabaseManager.TAG): Mevcut tüm tablolar:")
+        let listTablesSQL = "SELECT name FROM sqlite_master WHERE type='table'"
+        var listStatement: OpaquePointer?
+        
+        if sqlite3_prepare_v2(db, listTablesSQL, -1, &listStatement, nil) == SQLITE_OK {
+            while sqlite3_step(listStatement) == SQLITE_ROW {
+                let tableName = String(cString: sqlite3_column_text(listStatement, 0))
+                print("   📄 \(DatabaseManager.TAG): Tablo: '\(tableName)'")
+            }
+        } else {
+            print("❌ \(DatabaseManager.TAG): Tablo listesi alınamadı")
+        }
+        sqlite3_finalize(listStatement)
+        
         let tableCheckSQL = "SELECT name FROM sqlite_master WHERE type='table' AND name=?"
         var statement: OpaquePointer?
         
         // barkod_resimler tablosu kontrolü
+        print("🔍 \(DatabaseManager.TAG): '\(DatabaseManager.TABLE_BARKOD_RESIMLER)' tablosu aranıyor...")
         if sqlite3_prepare_v2(db, tableCheckSQL, -1, &statement, nil) == SQLITE_OK {
             sqlite3_bind_text(statement, 1, DatabaseManager.TABLE_BARKOD_RESIMLER, -1, nil)
             
-            if sqlite3_step(statement) == SQLITE_ROW {
-                print("✅ \(DatabaseManager.TAG): barkod_resimler tablosu mevcut")
+            let stepResult = sqlite3_step(statement)
+            if stepResult == SQLITE_ROW {
+                let foundName = String(cString: sqlite3_column_text(statement, 0))
+                print("✅ \(DatabaseManager.TAG): barkod_resimler tablosu BULUNDU: '\(foundName)'")
             } else {
-                print("❌ \(DatabaseManager.TAG): barkod_resimler tablosu bulunamadı!")
+                print("❌ \(DatabaseManager.TAG): barkod_resimler tablosu bulunamadı! Step result: \(stepResult)")
             }
+        } else {
+            print("❌ \(DatabaseManager.TAG): barkod_resimler kontrol sorgusu hazırlanamadı")
         }
         sqlite3_finalize(statement)
         
         // cihaz_yetki tablosu kontrolü
+        print("🔍 \(DatabaseManager.TAG): '\(DatabaseManager.TABLE_CIHAZ_YETKI)' tablosu aranıyor...")
         if sqlite3_prepare_v2(db, tableCheckSQL, -1, &statement, nil) == SQLITE_OK {
             sqlite3_bind_text(statement, 1, DatabaseManager.TABLE_CIHAZ_YETKI, -1, nil)
             
-            if sqlite3_step(statement) == SQLITE_ROW {
-                print("✅ \(DatabaseManager.TAG): cihaz_yetki tablosu mevcut")
+            let stepResult = sqlite3_step(statement)
+            if stepResult == SQLITE_ROW {
+                let foundName = String(cString: sqlite3_column_text(statement, 0))
+                print("✅ \(DatabaseManager.TAG): cihaz_yetki tablosu BULUNDU: '\(foundName)'")
             } else {
-                print("❌ \(DatabaseManager.TAG): cihaz_yetki tablosu bulunamadı!")
+                print("❌ \(DatabaseManager.TAG): cihaz_yetki tablosu bulunamadı! Step result: \(stepResult)")
             }
+        } else {
+            print("❌ \(DatabaseManager.TAG): cihaz_yetki kontrol sorgusu hazırlanamadı")
         }
         sqlite3_finalize(statement)
+        
+        print("🔍 \(DatabaseManager.TAG): === TABLO KONTROL BİTTİ ===")
     }
     
     // Son kayıtları getir
