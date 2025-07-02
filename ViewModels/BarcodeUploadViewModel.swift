@@ -536,6 +536,8 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         // Cihaz sahibi bilgisini al
         let yukleyen = getDeviceOwnerInfo()
         
+        print("🔄 directSaveImage başlatılıyor: Müşteri: \(customer.name), Yükleyen: \(yukleyen), Gallery: \(isGallery)")
+        
         // ImageStorageManager ile resmi Documents klasörüne kaydet ve veritabanına ekle
         if let savedPath = await ImageStorageManager.saveImage(
             image: image, 
@@ -550,6 +552,7 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
             // Android'deki gibi: server upload ve yuklendi durumu güncelleme
             
         } else {
+            print("❌ directSaveImage: Resim kaydetme başarısız")
             showError("❌ Resim kaydetme hatası")
         }
     }
