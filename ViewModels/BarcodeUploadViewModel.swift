@@ -388,17 +388,16 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
             print("📂 Müşteri: '\(customerName)' - \(imageRecords.count) resim")
             
             let savedImages = imageRecords.compactMap { record -> SavedImage? in
-                // Dosya var mı kontrol et
+                // Dosya var mı kontrol et ama dosya yoksa da kayıt göster
                 let fileExists = FileManager.default.fileExists(atPath: record.resimYolu)
                 if !fileExists {
-                    print("   ⚠️ Dosya bulunamadı: \(record.resimYolu)")
-                    return nil
+                    print("   ⚠️ Dosya bulunamadı ama database kaydı mevcut: \(record.resimYolu)")
                 }
                 
-                // 🎯 CUSTOMER NAME FIX: Underscore'ları boşlukla değiştir
-                let displayCustomerName = customerName.replacingOccurrences(of: "_", with: " ")
+                // 🎯 Display format customer name
+                let displayCustomerName = record.musteriAdi.replacingOccurrences(of: "_", with: " ")
                 
-                // Database verilerinden SavedImage oluştur
+                // 🗄️ Database verilerinden SavedImage oluştur (dosya var/yok farketmez)
                 return SavedImage(
                     customerName: displayCustomerName,  // 📝 SAMET_BICEN → SAMET BICEN
                     imagePath: record.resimYolu,
@@ -406,7 +405,8 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
                     uploadDate: parseDatabaseDate(record.tarih),  // 📅 Database'den tarih
                     isUploaded: record.isUploaded,  // ✅ Database'den upload durumu
                     yukleyen: record.yukleyen,  // 👤 Database'den yükleyen bilgisi
-                    databaseId: record.id  // 🆔 Database ID referansı
+                    databaseId: record.id,  // 🆔 Database ID referansı
+                    fileExists: fileExists  // 📁 Dosya varlık durumu
                 )
             }
             
@@ -503,11 +503,10 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
             
             await MainActor.run {
                 savedImages = customerImages.compactMap { record in
-                    // Dosya var mı kontrol et
+                    // Dosya var mı kontrol et ama dosya yoksa da kayıt göster
                     let fileExists = FileManager.default.fileExists(atPath: record.resimYolu)
                     if !fileExists {
-                        print("   ⚠️ Dosya bulunamadı: \(record.resimYolu)")
-                        return nil
+                        print("   ⚠️ Dosya bulunamadı ama database kaydı mevcut: \(record.resimYolu)")
                     }
                     
                     // 🎯 Display format customer name
@@ -520,7 +519,8 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
                         uploadDate: parseDatabaseDate(record.tarih),  // 📅 Database'den tarih
                         isUploaded: record.isUploaded,  // ✅ Database'den upload durumu
                         yukleyen: record.yukleyen,  // 👤 Database'den yükleyen bilgisi
-                        databaseId: record.id  // 🆔 Database ID referansı
+                        databaseId: record.id,  // 🆔 Database ID referansı
+                        fileExists: fileExists  // 📁 Dosya varlık durumu
                     )
                 }
                 
@@ -762,6 +762,7 @@ struct SavedImage: Identifiable {
     let isUploaded: Bool
     let yukleyen: String
     let databaseId: Int  // Database record ID'si
+    let fileExists: Bool  // 📁 Dosya varlık durumu
 } 
 
 // MARK: - Customer Image Group Model (Müşteri bazlı resim gruplandırması)

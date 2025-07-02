@@ -11,7 +11,7 @@ struct CameraView: View {
     @State private var showFlash = false
     
     var body: some View {
-        ZStack {
+            ZStack {
             // Kamera preview (Full screen)
             CameraPreview(session: cameraModel.session)
                 .ignoresSafeArea()
@@ -692,7 +692,7 @@ struct BarcodeUploadView: View {
             }
         }
         .background(Color(.systemBackground))
-        .cornerRadius(8)
+                    .cornerRadius(8)
         .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
         .transition(.opacity.combined(with: .move(edge: .top)))
     }
@@ -1119,32 +1119,52 @@ struct AndroidImageRow: View {
     var body: some View {
         HStack(spacing: 12) {
             // Sol: Resim preview (Android like)
-            AsyncImage(url: URL(fileURLWithPath: image.localPath)) { phase in
-                switch phase {
-                case .success(let image):
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(width: 50, height: 50)
-                        .clipped()
-                        .cornerRadius(6)
-                        
-                case .failure(_):
-                    Image(systemName: "photo")
+            Group {
+                if image.fileExists {
+                    // Dosya mevcut - normal AsyncImage
+                    AsyncImage(url: URL(fileURLWithPath: image.localPath)) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: 50, height: 50)
+                                .clipped()
+                                .cornerRadius(6)
+                                
+                        case .failure(_):
+                            Image(systemName: "photo")
+                                .font(.system(size: 20))
+                                .foregroundColor(.secondary)
+                                .frame(width: 50, height: 50)
+                                .background(Color(.systemGray6))
+                                .cornerRadius(6)
+                                
+                        case .empty:
+                            ProgressView()
+                                .frame(width: 50, height: 50)
+                                .background(Color(.systemGray6))
+                                .cornerRadius(6)
+                                
+                        @unknown default:
+                            EmptyView()
+                        }
+                    }
+                } else {
+                    // Dosya yok - database kaydı mevcut ama dosya silinmiş
+                    Image(systemName: "doc.questionmark")
                         .font(.system(size: 20))
-                        .foregroundColor(.secondary)
+                        .foregroundColor(.orange)
                         .frame(width: 50, height: 50)
                         .background(Color(.systemGray6))
                         .cornerRadius(6)
-                        
-                case .empty:
-                    ProgressView()
-                        .frame(width: 50, height: 50)
-                        .background(Color(.systemGray6))
-                        .cornerRadius(6)
-                        
-                @unknown default:
-                    EmptyView()
+                        .overlay(
+                            // Dosya bulunamadı işareti
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.system(size: 12))
+                                .foregroundColor(.orange)
+                                .offset(x: 15, y: -15)
+                        )
                 }
             }
             
@@ -1220,16 +1240,27 @@ struct AndroidImageRow: View {
     }
     
     private func getUploadStatusIcon() -> String {
-        // Bu bilgiyi database'den alacağız
-        // Şimdilik placeholder - gelecekte isUploaded kontrolü
+        // Dosya yoksa farklı ikon göster
+        if !image.fileExists {
+            return "doc.questionmark"
+        }
+        // Database'den upload durumu
         return image.isUploaded ? "checkmark.circle.fill" : "clock.circle"
     }
     
     private func getUploadStatusColor() -> Color {
+        // Dosya yoksa turuncu
+        if !image.fileExists {
+            return .orange
+        }
         return image.isUploaded ? .green : .orange
     }
     
     private func getUploadStatusText() -> String {
+        // Dosya yoksa farklı mesaj
+        if !image.fileExists {
+            return "DOSYA BULUNAMADI"
+        }
         return image.isUploaded ? "SUNUCUYA YÜKLENDİ" : "YÜKLEME BEKLİYOR"
     }
 }
