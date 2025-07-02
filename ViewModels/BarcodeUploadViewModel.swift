@@ -425,13 +425,30 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         // Database'den bu resim yoluna göre upload durumunu kontrol et
         let allImages = dbManager.getCustomerImages(musteriAdi: customerName)
         
+        print("🔍 checkDatabaseUploadStatus: Path: '\(path)'")
+        print("🔍 checkDatabaseUploadStatus: Customer: '\(customerName)'")
+        print("🔍 checkDatabaseUploadStatus: DB'den gelen kayıt sayısı: \(allImages.count)")
+        
         // Dosya yoluna göre eşleştir
-        for imageRecord in allImages {
+        for (index, imageRecord) in allImages.enumerated() {
+            print("   🔍 DB Kayıt \(index + 1): Path='\(imageRecord.resimYolu)', Uploaded=\(imageRecord.isUploaded)")
+            
             if imageRecord.resimYolu == path {
+                print("   ✅ PATH EŞLEŞTİ! Upload durumu: \(imageRecord.isUploaded)")
+                return imageRecord.isUploaded
+            }
+            
+            // Dosya adı bazlı eşleştirme de dene (path formatı farklı olabilir)
+            let dbFileName = URL(fileURLWithPath: imageRecord.resimYolu).lastPathComponent
+            let fileSystemFileName = URL(fileURLWithPath: path).lastPathComponent
+            
+            if dbFileName == fileSystemFileName {
+                print("   ✅ DOSYA ADI EŞLEŞTİ! Upload durumu: \(imageRecord.isUploaded)")
                 return imageRecord.isUploaded
             }
         }
         
+        print("   ❌ DB'de eşleşen kayıt BULUNAMADI - Yüklenmemiş kabul ediliyor")
         // Database'de bulunamadıysa yüklenmemiş kabul et
         return false
     }
