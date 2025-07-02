@@ -156,6 +156,8 @@ class UploadService: ObservableObject {
         for (index, imageRecord) in pendingImages.enumerated() {
             uploadProgress = (index, totalCount)
             print("📤 \(UploadService.TAG): Resim yükleniyor (\(index + 1)/\(totalCount)): \(imageRecord.musteriAdi)")
+            print("📂 \(UploadService.TAG): Resim yolu: \(imageRecord.resimYolu)")
+            print("👤 \(UploadService.TAG): Yükleyen: \(imageRecord.yukleyen)")
             
             // Her resim için network kontrolü (WiFi kesilirse dursun)
             let currentCheck = NetworkUtils.canUploadWithSettings(wifiOnly: wifiOnly)
@@ -199,9 +201,34 @@ class UploadService: ObservableObject {
     // MARK: - Server Upload (Android uploadImageToServer benzeri)
     private func uploadImageToServer(imageRecord: BarkodResim) async -> Bool {
         do {
-            // Dosya kontrolü
+            // Dosya kontrolü - Detaylı debug
             let fileManager = FileManager.default
-            guard fileManager.fileExists(atPath: imageRecord.resimYolu) else {
+            print("🔍 \(UploadService.TAG): Dosya kontrol ediliyor: \(imageRecord.resimYolu)")
+            
+            // Dosya var mı kontrol et
+            let fileExists = fileManager.fileExists(atPath: imageRecord.resimYolu)
+            print("📁 \(UploadService.TAG): Dosya mevcut: \(fileExists)")
+            
+            if !fileExists {
+                // Dosya yoksa alternatif path'leri kontrol et
+                print("🔍 \(UploadService.TAG): Alternatif path'ler kontrol ediliyor...")
+                
+                // Documents dizinini kontrol et
+                if let documentsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+                    print("📱 \(UploadService.TAG): Documents Directory: \(documentsDir.path)")
+                    
+                    // Resim yolunu Documents'a göre düzelt
+                    let fileName = URL(fileURLWithPath: imageRecord.resimYolu).lastPathComponent
+                    let envantoPath = documentsDir.appendingPathComponent("Envanto/\(imageRecord.musteriAdi)/\(fileName)")
+                    
+                    print("🔍 \(UploadService.TAG): Alternatif path: \(envantoPath.path)")
+                    
+                    if fileManager.fileExists(atPath: envantoPath.path) {
+                        print("✅ \(UploadService.TAG): Alternatif path'te dosya bulundu!")
+                        // TODO: Database'deki path'i güncelle veya doğru path ile devam et
+                    }
+                }
+                
                 print("❌ \(UploadService.TAG): Dosya bulunamadı: \(imageRecord.resimYolu)")
                 return false
             }
