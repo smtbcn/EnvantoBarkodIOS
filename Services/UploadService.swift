@@ -114,15 +114,7 @@ class UploadService: ObservableObject {
         // Database'den yüklenmemiş resimleri al
         let dbManager = DatabaseManager.getInstance()
         
-        // iOS dosya sistemi gecikmesi için cleanup'ı geciktir (yeni kaydedilen resimler için)
-        print("⏱️ \(UploadService.TAG): Cleanup 2 saniye geciktirildi (iOS file system delay)")
-        try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 saniye bekle
-        
-        // Geçersiz kayıtları temizle (dosyası olmayan)
-        let cleanedCount = dbManager.clearInvalidImageRecords()
-        if cleanedCount > 0 {
-            print("🧹 \(UploadService.TAG): \(cleanedCount) adet geçersiz kayıt temizlendi")
-        }
+        // Gereksiz cleanup mantığı kaldırıldı - sadece upload işlemi
         
         let pendingImages = dbManager.getAllPendingImages()
         let totalCount = pendingImages.count
@@ -217,17 +209,16 @@ class UploadService: ObservableObject {
     // MARK: - Server Upload (Android uploadImageToServer benzeri)
     private func uploadImageToServer(imageRecord: BarkodResim) async -> Bool {
         do {
-            // Path Mapping: Database'deki eski path'i gerçek path ile eşleştir
-            let actualPath = findActualImagePath(for: imageRecord)
+            // Basit dosya kontrolü - database'deki path direkt kullan
+            let imagePath = imageRecord.resimYolu
             
-            if actualPath.isEmpty {
-                print("❌ \(UploadService.TAG): Resim dosyası bulunamadı: \(imageRecord.resimYolu)")
+            if !FileManager.default.fileExists(atPath: imagePath) {
+                print("❌ \(UploadService.TAG): Resim dosyası bulunamadı: \(imagePath)")
                 print("   Müşteri: \(imageRecord.musteriAdi)")
-                print("   Beklenen dosya adı: \(URL(fileURLWithPath: imageRecord.resimYolu).lastPathComponent)")
                 return false
             }
             
-            print("📂 \(UploadService.TAG): Gerçek dosya yolu: \(actualPath)")
+            print("📂 \(UploadService.TAG): Resim yolu: \(imagePath)")
             
             // Base URL (Android ile aynı)
             let baseURL = "https://envanto.app/barkod_yukle_android"
@@ -261,9 +252,9 @@ class UploadService: ObservableObject {
             body.append("Content-Disposition: form-data; name=\"yukleyen\"\r\n\r\n".data(using: .utf8)!)
             body.append("\(imageRecord.yukleyen)\r\n".data(using: .utf8)!)
             
-            // Resim dosyası - Gerçek path'i kullan
-            let imageData = try Data(contentsOf: URL(fileURLWithPath: actualPath))
-            let fileName = URL(fileURLWithPath: actualPath).lastPathComponent
+            // Resim dosyası - Database'deki path'i kullan
+            let imageData = try Data(contentsOf: URL(fileURLWithPath: imagePath))
+            let fileName = URL(fileURLWithPath: imagePath).lastPathComponent
             
             body.append("--\(boundary)\r\n".data(using: .utf8)!)
             body.append("Content-Disposition: form-data; name=\"resim\"; filename=\"\(fileName)\"\r\n".data(using: .utf8)!)
@@ -310,66 +301,7 @@ class UploadService: ObservableObject {
         }
     }
     
-    // MARK: - Path Mapping Helper
-    private func findActualImagePath(for imageRecord: BarkodResim) -> String {
-        let fileManager = FileManager.default
-        
-        // 1. Önce database'deki path'i dene
-        if fileManager.fileExists(atPath: imageRecord.resimYolu) {
-            return imageRecord.resimYolu
-        }
-        
-        // 2. Documents/Envanto yapısında ara
-        guard let documentsDir = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else {
-            return ""
-        }
-        
-        let fileName = URL(fileURLWithPath: imageRecord.resimYolu).lastPathComponent
-        
-        // Müşteri klasörü adını güvenli formata çevir (ImageStorageManager ile aynı mantık)
-        let safeCustomerName = imageRecord.musteriAdi.replacingOccurrences(of: "[^a-zA-Z0-9.-]", 
-                                                                           with: "_", 
-                                                                           options: .regularExpression)
-        
-        // 3. Doğru path'i oluştur: Documents/Envanto/MÜŞTERI/DOSYA.jpg
-        let correctPath = documentsDir
-            .appendingPathComponent("Envanto")
-            .appendingPathComponent(safeCustomerName)
-            .appendingPathComponent(fileName)
-        
-        if fileManager.fileExists(atPath: correctPath.path) {
-            print("✅ \(UploadService.TAG): Gerçek path bulundu: \(correctPath.path)")
-            
-            // Database'deki path'i güncelle
-            let dbManager = DatabaseManager.getInstance()
-            _ = dbManager.updateImagePath(id: imageRecord.id, newPath: correctPath.path)
-            
-            return correctPath.path
-        }
-        
-        // 4. Son çare: Tüm müşteri klasörlerinde ara
-        let envantoDir = documentsDir.appendingPathComponent("Envanto")
-        do {
-            let customerDirs = try fileManager.contentsOfDirectory(at: envantoDir, includingPropertiesForKeys: nil)
-            
-            for customerDir in customerDirs where customerDir.hasDirectoryPath {
-                let possiblePath = customerDir.appendingPathComponent(fileName)
-                if fileManager.fileExists(atPath: possiblePath.path) {
-                    print("✅ \(UploadService.TAG): Alternatif klasörde bulundu: \(possiblePath.path)")
-                    
-                    // Database'deki path'i güncelle
-                    let dbManager = DatabaseManager.getInstance()
-                    _ = dbManager.updateImagePath(id: imageRecord.id, newPath: possiblePath.path)
-                    
-                    return possiblePath.path
-                }
-            }
-        } catch {
-            print("❌ \(UploadService.TAG): Klasör arama hatası: \(error)")
-        }
-        
-        return ""
-    }
+    // Karmaşık path mapping kaldırıldı - database'deki path direkt kullanılıyor
     
     deinit {
         stopUploadService()
