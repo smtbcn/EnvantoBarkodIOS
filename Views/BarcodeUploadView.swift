@@ -347,6 +347,7 @@ struct BarcodeUploadView: View {
     @State private var expandedCustomerId: String? = nil // Accordion state
     @State private var showingDeleteCustomerAlert = false
     @State private var customerToDelete: String = ""
+    @FocusState private var isSearchFocused: Bool // TextField focus state
     
     var body: some View {
         ZStack {
@@ -578,12 +579,14 @@ struct BarcodeUploadView: View {
     // Müşteri arama input'u
     private var customerSearchInput: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
+            HStack(spacing: 12) {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(.secondary)
+                    .font(.system(size: 16))
                 
                 TextField("Müşteri ara...", text: $viewModel.searchText)
-                    .textFieldStyle(PlainTextFieldStyle())
+                    .font(.system(size: 16))
+                    .focused($isSearchFocused)  // Focus state binding
                     .onChange(of: viewModel.searchText) { newValue in
                         if newValue.count >= 2 {
                             viewModel.searchCustomers()
@@ -598,19 +601,24 @@ struct BarcodeUploadView: View {
                         .scaleEffect(0.8)
                 }
             }
-                    .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 16)  // Yüksekliği artırdık: 10 → 16
             .background(
-                        RoundedRectangle(cornerRadius: 8)
+                RoundedRectangle(cornerRadius: 12)  // Köşe radius artırdık: 8 → 12
+                    .fill(Color(.systemBackground))
                     .stroke(Color(.systemGray4), lineWidth: 1)
-                    )
+            )
+            .contentShape(Rectangle())  // Tüm alanı dokunulabilir yap
+            .onTapGesture {
+                isSearchFocused = true  // Tıklandığında klavyeyi aç
+            }
             
             // Dropdown müşteri listesi
             if viewModel.showDropdown && !viewModel.customers.isEmpty {
                 customerDropdown
-                }
             }
         }
+    }
     
     // Müşteri dropdown listesi
     private var customerDropdown: some View {
@@ -622,6 +630,7 @@ struct BarcodeUploadView: View {
                         viewModel.showDropdown = false
                         viewModel.searchText = ""
                         viewModel.customers = []
+                        isSearchFocused = false  // Klavyeyi kapat
                     }
                 }
             }
