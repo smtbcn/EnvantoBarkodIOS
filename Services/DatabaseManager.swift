@@ -352,6 +352,28 @@ class DatabaseManager {
         return invalidIds.count
     }
     
+    // MARK: - Update Image Path (Path güncelleme)
+    func updateImagePath(id: Int, newPath: String) -> Bool {
+        guard db != nil else { return false }
+        
+        let updateSQL = "UPDATE \(DatabaseManager.TABLE_BARKOD_RESIMLER) SET \(DatabaseManager.COLUMN_RESIM_YOLU) = ? WHERE \(DatabaseManager.COLUMN_ID) = ?"
+        var statement: OpaquePointer?
+        
+        if sqlite3_prepare_v2(db, updateSQL, -1, &statement, nil) == SQLITE_OK {
+            sqlite3_bind_text(statement, 1, newPath, -1, nil)
+            sqlite3_bind_int(statement, 2, Int32(id))
+            
+            if sqlite3_step(statement) == SQLITE_DONE {
+                print("🔄 \(DatabaseManager.TAG): Resim yolu güncellendi - ID: \(id)")
+                sqlite3_finalize(statement)
+                return true
+            }
+        }
+        
+        sqlite3_finalize(statement)
+        return false
+    }
+    
     // MARK: - Delete Image Record
     func deleteBarkodResim(id: Int) -> Bool {
         guard db != nil else { return false }

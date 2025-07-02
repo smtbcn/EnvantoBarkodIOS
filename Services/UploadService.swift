@@ -213,37 +213,17 @@ class UploadService: ObservableObject {
     // MARK: - Server Upload (Android uploadImageToServer benzeri)
     private func uploadImageToServer(imageRecord: BarkodResim) async -> Bool {
         do {
-            // Dosya kontrolü - Detaylı debug
-            let fileManager = FileManager.default
-            print("🔍 \(UploadService.TAG): Dosya kontrol ediliyor: \(imageRecord.resimYolu)")
+            // Path Mapping: Database'deki eski path'i gerçek path ile eşleştir
+            let actualPath = findActualImagePath(for: imageRecord)
             
-            // Dosya var mı kontrol et
-            let fileExists = fileManager.fileExists(atPath: imageRecord.resimYolu)
-            print("📁 \(UploadService.TAG): Dosya mevcut: \(fileExists)")
-            
-            if !fileExists {
-                // Dosya yoksa alternatif path'leri kontrol et
-                print("🔍 \(UploadService.TAG): Alternatif path'ler kontrol ediliyor...")
-                
-                // Documents dizinini kontrol et
-                if let documentsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
-                    print("📱 \(UploadService.TAG): Documents Directory: \(documentsDir.path)")
-                    
-                    // Resim yolunu Documents'a göre düzelt
-                    let fileName = URL(fileURLWithPath: imageRecord.resimYolu).lastPathComponent
-                    let envantoPath = documentsDir.appendingPathComponent("Envanto/\(imageRecord.musteriAdi)/\(fileName)")
-                    
-                    print("🔍 \(UploadService.TAG): Alternatif path: \(envantoPath.path)")
-                    
-                    if fileManager.fileExists(atPath: envantoPath.path) {
-                        print("✅ \(UploadService.TAG): Alternatif path'te dosya bulundu!")
-                        // TODO: Database'deki path'i güncelle veya doğru path ile devam et
-                    }
-                }
-                
-                print("❌ \(UploadService.TAG): Dosya bulunamadı: \(imageRecord.resimYolu)")
+            if actualPath.isEmpty {
+                print("❌ \(UploadService.TAG): Resim dosyası bulunamadı: \(imageRecord.resimYolu)")
+                print("   Müşteri: \(imageRecord.musteriAdi)")
+                print("   Beklenen dosya adı: \(URL(fileURLWithPath: imageRecord.resimYolu).lastPathComponent)")
                 return false
             }
+            
+            print("📂 \(UploadService.TAG): Gerçek dosya yolu: \(actualPath)")
             
             // Base URL (Android ile aynı)
             let baseURL = "https://envanto.app/barkod_yukle_android"
@@ -277,9 +257,9 @@ class UploadService: ObservableObject {
             body.append("Content-Disposition: form-data; name=\"yukleyen\"\r\n\r\n".data(using: .utf8)!)
             body.append("\(imageRecord.yukleyen)\r\n".data(using: .utf8)!)
             
-            // Resim dosyası
-            let imageData = try Data(contentsOf: URL(fileURLWithPath: imageRecord.resimYolu))
-            let fileName = URL(fileURLWithPath: imageRecord.resimYolu).lastPathComponent
+            // Resim dosyası - Gerçek path'i kullan
+            let imageData = try Data(contentsOf: URL(fileURLWithPath: actualPath))
+            let fileName = URL(fileURLWithPath: actualPath).lastPathComponent
             
             body.append("--\(boundary)\r\n".data(using: .utf8)!)
             body.append("Content-Disposition: form-data; name=\"resim\"; filename=\"\(fileName)\"\r\n".data(using: .utf8)!)
@@ -324,6 +304,67 @@ class UploadService: ObservableObject {
             print("💥 \(UploadService.TAG): Upload hatası: \(error.localizedDescription)")
             return false
         }
+    }
+    
+    // MARK: - Path Mapping Helper
+    private func findActualImagePath(for imageRecord: BarkodResim) -> String {
+        let fileManager = FileManager.default
+        
+        // 1. Önce database'deki path'i dene
+        if fileManager.fileExists(atPath: imageRecord.resimYolu) {
+            return imageRecord.resimYolu
+        }
+        
+        // 2. Documents/Envanto yapısında ara
+        guard let documentsDir = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            return ""
+        }
+        
+        let fileName = URL(fileURLWithPath: imageRecord.resimYolu).lastPathComponent
+        
+        // Müşteri klasörü adını güvenli formata çevir (ImageStorageManager ile aynı mantık)
+        let safeCustomerName = imageRecord.musteriAdi.replacingOccurrences(of: "[^a-zA-Z0-9.-]", 
+                                                                           with: "_", 
+                                                                           options: .regularExpression)
+        
+        // 3. Doğru path'i oluştur: Documents/Envanto/MÜŞTERI/DOSYA.jpg
+        let correctPath = documentsDir
+            .appendingPathComponent("Envanto")
+            .appendingPathComponent(safeCustomerName)
+            .appendingPathComponent(fileName)
+        
+        if fileManager.fileExists(atPath: correctPath.path) {
+            print("✅ \(UploadService.TAG): Gerçek path bulundu: \(correctPath.path)")
+            
+            // Database'deki path'i güncelle
+            let dbManager = DatabaseManager.getInstance()
+            _ = dbManager.updateImagePath(id: imageRecord.id, newPath: correctPath.path)
+            
+            return correctPath.path
+        }
+        
+        // 4. Son çare: Tüm müşteri klasörlerinde ara
+        let envantoDir = documentsDir.appendingPathComponent("Envanto")
+        do {
+            let customerDirs = try fileManager.contentsOfDirectory(at: envantoDir, includingPropertiesForKeys: nil)
+            
+            for customerDir in customerDirs where customerDir.hasDirectoryPath {
+                let possiblePath = customerDir.appendingPathComponent(fileName)
+                if fileManager.fileExists(atPath: possiblePath.path) {
+                    print("✅ \(UploadService.TAG): Alternatif klasörde bulundu: \(possiblePath.path)")
+                    
+                    // Database'deki path'i güncelle
+                    let dbManager = DatabaseManager.getInstance()
+                    _ = dbManager.updateImagePath(id: imageRecord.id, newPath: possiblePath.path)
+                    
+                    return possiblePath.path
+                }
+            }
+        } catch {
+            print("❌ \(UploadService.TAG): Klasör arama hatası: \(error)")
+        }
+        
+        return ""
     }
     
     deinit {
