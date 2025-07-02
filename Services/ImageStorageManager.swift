@@ -293,22 +293,35 @@ class ImageStorageManager {
                                                                 options: .regularExpression)
         print("🗑️ Güvenli klasör adı: '\(safeCustomerName)'")
         
-        // App Documents müşteri klasörünü sil
+        var fileSuccess = false
+        var dbSuccess = false
+        
+        // 1️⃣ Database kayıtlarını sil
+        print("🗄️ Database kayıtları siliniyor...")
+        dbSuccess = DatabaseManager.getInstance().deleteCustomerImages(musteriAdi: customerName)
+        
+        // 2️⃣ App Documents müşteri klasörünü sil
         if let customerDir = getAppDocumentsCustomerDir(for: customerName) {
             print("🗑️ Silinecek klasör: \(customerDir.path)")
             do {
                 try FileManager.default.removeItem(at: customerDir)
                 print("✅ App Documents müşteri klasörü silindi: \(customerDir.path)")
                 cleanupEmptyDirectories(customerDir.deletingLastPathComponent())
-                return true
+                fileSuccess = true
             } catch {
                 print("❌ App Documents müşteri klasörü silme hatası: \(error.localizedDescription)")
-                return false
+                fileSuccess = false
             }
         } else {
             print("❌ Müşteri klasörü bulunamadı: '\(customerName)' → '\(safeCustomerName)'")
-            return false
+            fileSuccess = false
         }
+        
+        // 3️⃣ Sonuç değerlendirmesi
+        print("📊 Silme sonucu - Database: \(dbSuccess ? "✅" : "❌"), Dosyalar: \(fileSuccess ? "✅" : "❌")")
+        
+        // En az birisi başarılıysa UI'ı güncelle
+        return dbSuccess || fileSuccess
     }
     
     // MARK: - Get Storage Info
