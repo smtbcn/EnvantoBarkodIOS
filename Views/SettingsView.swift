@@ -120,13 +120,26 @@ struct SettingsView: View {
     private func loadSettings() {
         deviceOwner = viewModel.deviceOwner
         baseURL = UserDefaults.standard.string(forKey: Constants.UserDefaults.baseURL) ?? Constants.Network.defaultBaseURL
-        wifiOnlyUpload = UserDefaults.standard.bool(forKey: Constants.UserDefaults.wifiOnlyUpload)
+        
+        // WiFi only ayarını yükle (Android uyumlu key kullan)
+        wifiOnlyUpload = UserDefaults.standard.bool(forKey: Constants.UserDefaults.wifiOnly)
     }
     
     private func saveSettings() {
         viewModel.updateDeviceOwner(deviceOwner)
         UserDefaults.standard.set(baseURL, forKey: Constants.UserDefaults.baseURL)
-        UserDefaults.standard.set(wifiOnlyUpload, forKey: Constants.UserDefaults.wifiOnlyUpload)
+        
+        // WiFi only ayarını kaydet (Android uyumlu key kullan)
+        UserDefaults.standard.set(wifiOnlyUpload, forKey: Constants.UserDefaults.wifiOnly)
+        
+        // Upload servisini güncelle
+        updateUploadService()
+    }
+    
+    private func updateUploadService() {
+        // Upload servisini yeni ayarlarla yeniden başlat
+        UploadService.shared.startUploadService(wifiOnly: wifiOnlyUpload)
+        print("🔄 Upload servisi güncellendi - WiFi only: \(wifiOnlyUpload)")
     }
     
     private func resetAllSettings() {

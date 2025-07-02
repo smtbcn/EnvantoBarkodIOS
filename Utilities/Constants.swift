@@ -12,6 +12,7 @@ struct Constants {
         static let baseURL = "base_url"
         static let deviceOwner = "device_owner"
         static let isFirstLaunch = "is_first_launch"
+        static let wifiOnly = "wifi_only" // Android uyumlu key
         static let wifiOnlyUpload = "wifi_only_upload"
         static let batteryOptimizationInfoShown = "battery_optimization_info_shown"
         static let lastUpdateCheck = "last_update_check"

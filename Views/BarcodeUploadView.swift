@@ -339,6 +339,7 @@ struct CameraPreview: UIViewRepresentable {
 
 struct BarcodeUploadView: View {
     @StateObject private var viewModel = BarcodeUploadViewModel()
+    @StateObject private var uploadService = UploadService.shared
     @State private var selectedPhotos: [PhotosPickerItem] = []
     @State private var showingAlert = false
     @State private var alertMessage = ""
@@ -697,6 +698,9 @@ struct BarcodeUploadView: View {
                 }
             }
             
+            // Upload Status Card (Android mantığı)
+            uploadStatusCard
+            
             if viewModel.customerImageGroups.isEmpty {
                 VStack {
                     Image(systemName: "person.2.square.stack")
@@ -1028,6 +1032,56 @@ struct LoadingOverlay: View {
             .background(
                 RoundedRectangle(cornerRadius: 15)
                     .fill(Color.black.opacity(0.8))
+            )
+        }
+    }
+}
+
+    // MARK: - Upload Status Card (Android benzeri yükleme durumu)
+    private var uploadStatusCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: uploadService.isUploading ? "icloud.and.arrow.up" : "icloud")
+                    .font(.title2)
+                    .foregroundColor(uploadService.isUploading ? .blue : .secondary)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Sunucu Yükleme Durumu")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.primary)
+                    
+                    Text(uploadService.uploadStatus)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+                
+                // Progress badge
+                if uploadService.uploadProgress.total > 0 {
+                    VStack(spacing: 2) {
+                        Text("\(uploadService.uploadProgress.current)/\(uploadService.uploadProgress.total)")
+                            .font(.caption2)
+                            .fontWeight(.medium)
+                        
+                        if uploadService.uploadProgress.total > 0 {
+                            let progress = Double(uploadService.uploadProgress.current) / Double(uploadService.uploadProgress.total)
+                            ProgressView(value: progress)
+                                .scaleEffect(x: 1, y: 0.5, anchor: .center)
+                                .frame(width: 40)
+                        }
+                    }
+                    .foregroundColor(.blue)
+                }
+            }
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(uploadService.isUploading ? Color.blue.opacity(0.1) : Color(.systemGray6))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(uploadService.isUploading ? Color.blue.opacity(0.3) : Color.clear, lineWidth: 1)
             )
         }
     }

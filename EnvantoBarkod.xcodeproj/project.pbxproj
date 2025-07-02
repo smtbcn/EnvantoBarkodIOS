@@ -25,6 +25,9 @@
 		AB123456789012340000001D /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB123456789012340000001E /* Extensions.swift */; };
 		AB1234567890123400000052 /* DatabaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000053 /* DatabaseManager.swift */; };
 		AB1234567890123400000054 /* libsqlite3.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000055 /* libsqlite3.tbd */; };
+		AB1234567890123400000057 /* NetworkUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000058 /* NetworkUtils.swift */; };
+		AB1234567890123400000059 /* UploadService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB123456789012340000005A /* UploadService.swift */; };
+		AB123456789012340000005B /* DeviceIdentifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB123456789012340000005C /* DeviceIdentifier.swift */; };
 		AB12345678901234ASSETS002 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AB12345678901234ASSETS001 /* Assets.xcassets */; };
 
 /* End PBXBuildFile section */
@@ -49,6 +52,9 @@
 		AB123456789012340000001E /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
 		AB1234567890123400000053 /* DatabaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseManager.swift; sourceTree = "<group>"; };
 		AB1234567890123400000055 /* libsqlite3.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libsqlite3.tbd; path = usr/lib/libsqlite3.tbd; sourceTree = SDKROOT; };
+		AB1234567890123400000058 /* NetworkUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkUtils.swift; sourceTree = "<group>"; };
+		AB123456789012340000005A /* UploadService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadService.swift; sourceTree = "<group>"; };
+		AB123456789012340000005C /* DeviceIdentifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceIdentifier.swift; sourceTree = "<group>"; };
 		AB12345678901234ASSETS001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 
 /* End PBXFileReference section */
@@ -127,6 +133,7 @@
 				AB123456789012340000001A /* DeviceAuthManager.swift */,
 				AB1234567890123400000051 /* ImageStorageManager.swift */,
 				AB1234567890123400000053 /* DatabaseManager.swift */,
+				AB123456789012340000005A /* UploadService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -136,6 +143,8 @@
 			children = (
 				AB123456789012340000001C /* Constants.swift */,
 				AB123456789012340000001E /* Extensions.swift */,
+				AB1234567890123400000058 /* NetworkUtils.swift */,
+				AB123456789012340000005C /* DeviceIdentifier.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -245,6 +254,9 @@
 				AB1234567890123400000019 /* DeviceAuthManager.swift in Sources */,
 				AB1234567890123400000050 /* ImageStorageManager.swift in Sources */,
 				AB1234567890123400000052 /* DatabaseManager.swift in Sources */,
+				AB1234567890123400000057 /* NetworkUtils.swift in Sources */,
+				AB1234567890123400000059 /* UploadService.swift in Sources */,
+				AB123456789012340000005B /* DeviceIdentifier.swift in Sources */,
 				AB123456789012340000001B /* Constants.swift in Sources */,
 				AB123456789012340000001D /* Extensions.swift in Sources */,
 			);

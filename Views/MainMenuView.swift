@@ -140,7 +140,21 @@ struct MainMenuView: View {
         .onAppear {
             // Kamera izinlerini kontrol et
             viewModel.checkPermissions()
+            
+            // Upload servisini başlat (WiFi ayarı ile)
+            startUploadService()
         }
+    }
+    
+    // MARK: - Upload Service Management
+    private func startUploadService() {
+        // WiFi ayarını UserDefaults'tan oku
+        let wifiOnly = UserDefaults.standard.bool(forKey: Constants.UserDefaults.wifiOnly)
+        
+        // Upload servisini başlat
+        UploadService.shared.startUploadService(wifiOnly: wifiOnly)
+        
+        print("🚀 MainMenuView: Upload servisi başlatıldı - WiFi only: \(wifiOnly)")
     }
 }
 

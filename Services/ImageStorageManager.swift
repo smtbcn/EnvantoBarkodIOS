@@ -44,6 +44,9 @@ class ImageStorageManager {
                     print("🗄️ Veritabanına kaydedildi: \(customerName) - \(documentsPath)")
                     // Database istatistiklerini göster
                     dbManager.printDatabaseInfo()
+                    
+                    // Upload işlemini tetikle (WiFi ayarını kontrol et)
+                    triggerUploadAfterSave()
                 } else {
                     print("❌ Veritabanına kaydedilemedi")
                 }
@@ -57,6 +60,17 @@ class ImageStorageManager {
         
         print("❌ Resim kaydedilemedi")
         return nil
+    }
+    
+    // MARK: - Upload Trigger (Android mantığı)
+    private static func triggerUploadAfterSave() {
+        // UserDefaults'tan WiFi ayarını oku
+        let wifiOnly = UserDefaults.standard.bool(forKey: Constants.UserDefaults.wifiOnly)
+        
+        print("🚀 Upload tetikleniyor - WiFi only: \(wifiOnly)")
+        
+        // Upload servisini başlat
+        UploadService.shared.startUploadService(wifiOnly: wifiOnly)
     }
     
     // MARK: - Debug: Print actual Documents path
