@@ -65,6 +65,20 @@ struct SettingsView: View {
                     }
                 }
                 
+                // Database İşlemleri
+                Section(header: Text("Database İşlemleri")) {
+                    Button(action: {
+                        importExistingImages()
+                    }) {
+                        HStack {
+                            Image(systemName: "square.and.arrow.down")
+                                .foregroundColor(.blue)
+                            Text("Mevcut Resimleri Database'e Aktar")
+                                .foregroundColor(.blue)
+                        }
+                    }
+                }
+                
                 // Tehlikeli İşlemler
                 Section(header: Text("Tehlikeli İşlemler")) {
                     Button(action: {
@@ -172,6 +186,15 @@ struct SettingsView: View {
         baseURL = Constants.Network.defaultBaseURL
         wifiOnlyUpload = false
         viewModel.updateDeviceOwner("")
+    }
+    
+    private func importExistingImages() {
+        print("🔄 Manuel import başlatıldı")
+        let dbManager = DatabaseManager.getInstance()
+        dbManager.importExistingImages()
+        
+        // Upload servisini yeniden başlat
+        updateUploadService()
     }
     
     private func clearDatabase() {

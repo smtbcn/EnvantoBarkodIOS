@@ -62,6 +62,10 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
     private func initializeDatabase() {
         let dbManager = DatabaseManager.getInstance()
         dbManager.printDatabaseInfo()
+        
+        // Mevcut resimleri database'e import et (ilk çalıştırmada)
+        print("🔄 Mevcut resimler database'e import ediliyor...")
+        dbManager.importExistingImages()
     }
     
     // MARK: - Database Debug Functions

@@ -634,6 +634,92 @@ class DatabaseManager {
         return false
     }
     
+    // MARK: - Import Existing Images (Mevcut dosyaları database'e aktar)
+    func importExistingImages() {
+        print("🔄 \(DatabaseManager.TAG): Mevcut resimler database'e aktarılıyor...")
+        
+        // App Documents'tan müşteri klasörlerini bul
+        guard let documentsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            print("❌ \(DatabaseManager.TAG): Documents directory bulunamadı")
+            return
+        }
+        
+        let envantoDir = documentsDir.appendingPathComponent("Envanto")
+        
+        do {
+            let customerFolders = try FileManager.default.contentsOfDirectory(at: envantoDir, includingPropertiesForKeys: nil)
+            var importedCount = 0
+            
+            for customerFolder in customerFolders {
+                if customerFolder.hasDirectoryPath {
+                    let customerName = customerFolder.lastPathComponent.replacingOccurrences(of: "_", with: " ")
+                    
+                    // Müşteri klasöründeki resimleri bul
+                    let imageFiles = try FileManager.default.contentsOfDirectory(at: customerFolder, includingPropertiesForKeys: nil)
+                    
+                    for imageFile in imageFiles {
+                        let fileName = imageFile.lastPathComponent
+                        if fileName.hasSuffix(".jpg") || fileName.hasSuffix(".jpeg") || fileName.hasSuffix(".png") {
+                            
+                            // Bu dosya database'de var mı kontrol et
+                            if !isImageInDatabase(imagePath: imageFile.path) {
+                                
+                                // Dosya adından yukleyen bilgisini çıkar (varsayılan cihaz sahibi)
+                                let currentDeviceOwner = UserDefaults.standard.string(forKey: "device_owner") ?? 
+                                                       UserDefaults.standard.string(forKey: Constants.UserDefaults.deviceOwner) ?? 
+                                                       "Bilinmeyen Cihaz"
+                                
+                                // Database'e ekle
+                                let success = insertBarkodResim(
+                                    musteriAdi: customerName,
+                                    resimYolu: imageFile.path,
+                                    yukleyen: currentDeviceOwner
+                                )
+                                
+                                if success {
+                                    importedCount += 1
+                                    print("📥 \(DatabaseManager.TAG): Import edildi - \(customerName): \(fileName)")
+                                } else {
+                                    print("❌ \(DatabaseManager.TAG): Import başarısız - \(customerName): \(fileName)")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            print("✅ \(DatabaseManager.TAG): Import tamamlandı - \(importedCount) resim eklendi")
+            
+            if importedCount > 0 {
+                printDatabaseInfo()
+            }
+            
+        } catch {
+            print("❌ \(DatabaseManager.TAG): Import hatası: \(error.localizedDescription)")
+        }
+    }
+    
+    // Resmin database'de olup olmadığını kontrol et
+    private func isImageInDatabase(imagePath: String) -> Bool {
+        guard db != nil else { return false }
+        
+        let selectSQL = "SELECT COUNT(*) FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) WHERE \(DatabaseManager.COLUMN_RESIM_YOLU) = ?"
+        var statement: OpaquePointer?
+        var exists = false
+        
+        if sqlite3_prepare_v2(db, selectSQL, -1, &statement, nil) == SQLITE_OK {
+            sqlite3_bind_text(statement, 1, imagePath, -1, nil)
+            
+            if sqlite3_step(statement) == SQLITE_ROW {
+                let count = Int(sqlite3_column_int(statement, 0))
+                exists = count > 0
+            }
+        }
+        
+        sqlite3_finalize(statement)
+        return exists
+    }
+
     // MARK: - Debug Methods
     func printDatabaseInfo() {
         print("🔍 \(DatabaseManager.TAG): === DATABASE INFO START ===")
