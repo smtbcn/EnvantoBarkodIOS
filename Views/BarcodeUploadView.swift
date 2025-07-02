@@ -341,13 +341,14 @@ struct CameraPreview: UIViewRepresentable {
 struct BarcodeUploadView: View {
     @StateObject private var viewModel = BarcodeUploadViewModel()
     @StateObject private var uploadService = UploadService.shared
+    @State private var showingCamera = false
     @State private var selectedPhotos: [PhotosPickerItem] = []
+    @State private var expandedCustomerId: String?
+    @State private var showingDeleteCustomerAlert = false
+    @State private var customerToDelete: String?
+    @FocusState private var isSearchFieldFocused: Bool  // Focus state eklendi
     @State private var showingAlert = false
     @State private var alertMessage = ""
-    @State private var expandedCustomerId: String? = nil // Accordion state
-    @State private var showingDeleteCustomerAlert = false
-    @State private var customerToDelete: String = ""
-    @FocusState private var isSearchFocused: Bool  // 🎯 TextField focus control
     
     var body: some View {
         ZStack {
@@ -385,10 +386,10 @@ struct BarcodeUploadView: View {
                     if expandedCustomerId == customerToDelete {
                         expandedCustomerId = nil
                     }
-                    customerToDelete = ""
+                    customerToDelete = nil
                 }
             } message: {
-                Text("'\(customerToDelete)' müşterisine ait tüm resimler silinecek. Bu işlem geri alınamaz.")
+                Text("'\(customerToDelete ?? "")' müşterisine ait tüm resimler silinecek. Bu işlem geri alınamaz.")
         }
             .onChange(of: selectedPhotos) { photos in
                 Task {
@@ -579,22 +580,17 @@ struct BarcodeUploadView: View {
     // Müşteri arama input'u
     private var customerSearchInput: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 12) {
+            HStack {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(.secondary)
-                    .font(.system(size: 16))
                 
                 TextField("Müşteri ara...", text: $viewModel.searchText)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())  // 🎯 Daha responsive style
-                    .autocapitalization(.none)
-                    .disableAutocorrection(true)
-                    .submitLabel(.search)
-                    .focused($isSearchFocused)  // 🎯 Focus state binding
-                    .onTapGesture {
-                        // 🎯 Anında klavye açılması için focus trigger
-                        isSearchFocused = true
-                        print("🔍 TextField tapped - focus activated")
-                    }
+                    .textFieldStyle(PlainTextFieldStyle())
+                    .font(.system(size: 16))  // Font boyutu ayarla
+                    .autocapitalization(.none)  // Otomatik büyük harf kapatma
+                    .disableAutocorrection(true)  // Otomatik düzeltme kapatma
+                    .textContentType(.name)  // İçerik tipi belirleme
+                    .focused($isSearchFieldFocused)  // Focus state bağla
                     .onChange(of: viewModel.searchText) { newValue in
                         if newValue.count >= 2 {
                             viewModel.searchCustomers()
@@ -607,26 +603,19 @@ struct BarcodeUploadView: View {
                 if viewModel.isSearching {
                     ProgressView()
                         .scaleEffect(0.8)
-                        .frame(width: 20, height: 20)
                 }
             }
-            .padding(.horizontal, 16)   // 🎯 Daha geniş padding
-            .padding(.vertical, 16)     // 🎯 Yükseklik arttırıldı (10 → 16)
+            .padding(.horizontal, 16)  // Yatay padding artırıldı
+            .padding(.vertical, 14)     // Dikey padding artırıldı (yükseklik için)
             .background(
-                RoundedRectangle(cornerRadius: 12)  // 🎯 Daha yumuşak köşeler
-                    .fill(Color(.systemGray6))      // 🎯 Background rengi eklendi
-                    .stroke(isSearchFocused || !viewModel.searchText.isEmpty ? Color.blue : Color.clear, lineWidth: 2)  // 🎯 Focus state border
+                RoundedRectangle(cornerRadius: 10)  // Corner radius artırıldı
+                    .fill(Color(.systemBackground))
+                    .stroke(viewModel.searchText.isEmpty ? Color(.systemGray4) : Color.blue, lineWidth: 1)
             )
-            .overlay(
-                // 🎯 Focus/active efekti için overlay
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.blue.opacity(0.05))
-                    .opacity(isSearchFocused ? 1 : 0)
-            )
+            .contentShape(Rectangle())  // Tüm alan tıklanabilir
             .onTapGesture {
-                // 🎯 Container'a tıklayınca da TextField focus olsun
-                isSearchFocused = true
-                print("🔍 Search container tapped - focus activated")
+                // Modern focus yönetimi - Anında klavye açılması için
+                isSearchFieldFocused = true
             }
             
             // Dropdown müşteri listesi
@@ -646,7 +635,7 @@ struct BarcodeUploadView: View {
                         viewModel.showDropdown = false
                         viewModel.searchText = ""
                         viewModel.customers = []
-                        isSearchFocused = false  // 🎯 Klavyeyi kapat
+                        isSearchFieldFocused = false  // Klavye kapat
                     }
                 }
             }
@@ -1191,56 +1180,6 @@ struct AndroidImageRow: View {
     
     private func getUploadStatusText() -> String {
         return image.isUploaded ? "SUNUCUYA YÜKLENDİ" : "YÜKLEME BEKLİYOR"
-    }
-}
-
-// MARK: - Saved Image Card (Legacy - artık kullanılmıyor)
-struct SavedImageCard: View {
-    let image: SavedImage
-    let onDelete: () -> Void
-    
-    var body: some View {
-        VStack(spacing: 8) {
-            AsyncImage(url: URL(fileURLWithPath: image.localPath)) { phase in
-                switch phase {
-                case .success(let image):
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .frame(width: 60, height: 60)
-                        .clipped()
-                        .cornerRadius(6)
-                        
-                case .failure(_):
-                    Image(systemName: "photo")
-                        .font(.system(size: 20))
-                        .foregroundColor(.secondary)
-                        .frame(width: 60, height: 60)
-                        .background(Color(.systemGray6))
-                        .cornerRadius(6)
-                        
-                case .empty:
-                    ProgressView()
-                        .frame(width: 60, height: 60)
-                        .background(Color(.systemGray6))
-                        .cornerRadius(6)
-                        
-                @unknown default:
-                    EmptyView()
-                }
-            }
-            
-            Text(image.customerName)
-                .font(.caption2)
-                .lineLimit(1)
-                .truncationMode(.tail)
-            
-            Button("Sil") {
-                onDelete()
-            }
-            .font(.caption)
-            .foregroundColor(.red)
-        }
     }
 }
 
