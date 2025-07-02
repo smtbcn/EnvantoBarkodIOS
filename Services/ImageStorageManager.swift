@@ -48,14 +48,24 @@ class ImageStorageManager {
                 }
                 
                 print("🗄️ Database kayıt işlemi başlıyor...")
+                print("📋 Kaydedilecek bilgiler:")
+                print("   👤 Müşteri: '\(customerName)'")
+                print("   📁 Yol: '\(documentsPath)'")
+                print("   🔑 Yukleyen: '\(yukleyen)'")
+                
+                // DatabaseManager instance kontrol
+                print("🔄 DatabaseManager instance alınıyor...")
+                let dbManager = DatabaseManager.getInstance()
+                print("✅ DatabaseManager instance alındı")
                 
                 // 🗄️ Veritabanına kaydet (Android'deki gibi)
-                let dbManager = DatabaseManager.getInstance()
+                print("💾 insertBarkodResim çağrılıyor...")
                 let dbSaved = dbManager.insertBarkodResim(
                     musteriAdi: customerName,
                     resimYolu: documentsPath,
                     yukleyen: yukleyen
                 )
+                print("💾 insertBarkodResim sonucu: \(dbSaved)")
                 
                 if dbSaved {
                     print("🗄️ Veritabanına kaydedildi: \(customerName) - \(documentsPath)")
@@ -74,12 +84,22 @@ class ImageStorageManager {
                 
                 // Database'e yine de kaydet (dosya vardır ama geç erişilebilir)
                 print("🔄 Yine de database'e kaydediliyor...")
+                print("📋 Kaydedilecek bilgiler (gecikmeli):")
+                print("   👤 Müşteri: '\(customerName)'")
+                print("   📁 Yol: '\(documentsPath)'")
+                print("   🔑 Yukleyen: '\(yukleyen)'")
+                
+                print("🔄 DatabaseManager instance alınıyor (gecikmeli)...")
                 let dbManager = DatabaseManager.getInstance()
+                print("✅ DatabaseManager instance alındı (gecikmeli)")
+                
+                print("💾 insertBarkodResim çağrılıyor (gecikmeli)...")
                 let dbSaved = dbManager.insertBarkodResim(
                     musteriAdi: customerName,
                     resimYolu: documentsPath,
                     yukleyen: yukleyen
                 )
+                print("💾 insertBarkodResim sonucu (gecikmeli): \(dbSaved)")
                 
                 if dbSaved {
                     print("🗄️ Veritabanına kaydedildi (dosya gecikmeli): \(customerName) - \(documentsPath)")

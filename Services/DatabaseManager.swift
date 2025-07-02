@@ -928,10 +928,12 @@ class DatabaseManager {
         print("📋 \(DatabaseManager.TAG): Mevcut tüm tablolar:")
         let listTablesSQL = "SELECT name FROM sqlite_master WHERE type='table'"
         var listStatement: OpaquePointer?
+        var foundTables: [String] = []
         
         if sqlite3_prepare_v2(db, listTablesSQL, -1, &listStatement, nil) == SQLITE_OK {
             while sqlite3_step(listStatement) == SQLITE_ROW {
                 let tableName = String(cString: sqlite3_column_text(listStatement, 0))
+                foundTables.append(tableName)
                 print("   📄 \(DatabaseManager.TAG): Tablo: '\(tableName)'")
             }
         } else {
@@ -939,64 +941,21 @@ class DatabaseManager {
         }
         sqlite3_finalize(listStatement)
         
-        let tableCheckSQL = "SELECT name FROM sqlite_master WHERE type='table' AND name=?"
-        var statement: OpaquePointer?
+        // Basit string karşılaştırması ile kontrol et
+        let hasBarkodResimler = foundTables.contains(DatabaseManager.TABLE_BARKOD_RESIMLER)
+        let hasCihazYetki = foundTables.contains(DatabaseManager.TABLE_CIHAZ_YETKI)
         
-        // barkod_resimler tablosu kontrolü
-        print("🔍 \(DatabaseManager.TAG): '\(DatabaseManager.TABLE_BARKOD_RESIMLER)' tablosu aranıyor...")
-        print("📝 \(DatabaseManager.TAG): Aranan string: '\(DatabaseManager.TABLE_BARKOD_RESIMLER)'")
-        print("📝 \(DatabaseManager.TAG): String length: \(DatabaseManager.TABLE_BARKOD_RESIMLER.count)")
-        
-        // Case insensitive arama deneyelim
-        let caseInsensitiveSQL = "SELECT name FROM sqlite_master WHERE type='table' AND LOWER(name) = LOWER(?)"
-        
-        if sqlite3_prepare_v2(db, caseInsensitiveSQL, -1, &statement, nil) == SQLITE_OK {
-            sqlite3_bind_text(statement, 1, DatabaseManager.TABLE_BARKOD_RESIMLER, -1, nil)
-            
-            let stepResult = sqlite3_step(statement)
-            if stepResult == SQLITE_ROW {
-                let foundName = String(cString: sqlite3_column_text(statement, 0))
-                print("✅ \(DatabaseManager.TAG): barkod_resimler tablosu BULUNDU (case insensitive): '\(foundName)'")
-            } else {
-                print("❌ \(DatabaseManager.TAG): barkod_resimler tablosu bulunamadı (case insensitive)! Step result: \(stepResult)")
-                
-                // Exact match da deneyelim
-                sqlite3_reset(statement)
-                sqlite3_finalize(statement)
-                
-                if sqlite3_prepare_v2(db, tableCheckSQL, -1, &statement, nil) == SQLITE_OK {
-                    sqlite3_bind_text(statement, 1, DatabaseManager.TABLE_BARKOD_RESIMLER, -1, nil)
-                    
-                    let exactResult = sqlite3_step(statement)
-                    print("🔍 \(DatabaseManager.TAG): Exact match result: \(exactResult)")
-                    
-                    if exactResult == SQLITE_ROW {
-                        let foundName = String(cString: sqlite3_column_text(statement, 0))
-                        print("✅ \(DatabaseManager.TAG): barkod_resimler EXACT BULUNDU: '\(foundName)'")
-                    }
-                }
-            }
+        if hasBarkodResimler {
+            print("✅ \(DatabaseManager.TAG): barkod_resimler tablosu MEVCUT")
         } else {
-            print("❌ \(DatabaseManager.TAG): barkod_resimler kontrol sorgusu hazırlanamadı")
+            print("❌ \(DatabaseManager.TAG): barkod_resimler tablosu BULUNAMADI")
         }
-        sqlite3_finalize(statement)
         
-        // cihaz_yetki tablosu kontrolü
-        print("🔍 \(DatabaseManager.TAG): '\(DatabaseManager.TABLE_CIHAZ_YETKI)' tablosu aranıyor...")
-        if sqlite3_prepare_v2(db, tableCheckSQL, -1, &statement, nil) == SQLITE_OK {
-            sqlite3_bind_text(statement, 1, DatabaseManager.TABLE_CIHAZ_YETKI, -1, nil)
-            
-            let stepResult = sqlite3_step(statement)
-            if stepResult == SQLITE_ROW {
-                let foundName = String(cString: sqlite3_column_text(statement, 0))
-                print("✅ \(DatabaseManager.TAG): cihaz_yetki tablosu BULUNDU: '\(foundName)'")
-            } else {
-                print("❌ \(DatabaseManager.TAG): cihaz_yetki tablosu bulunamadı! Step result: \(stepResult)")
-            }
+        if hasCihazYetki {
+            print("✅ \(DatabaseManager.TAG): cihaz_yetki tablosu MEVCUT")
         } else {
-            print("❌ \(DatabaseManager.TAG): cihaz_yetki kontrol sorgusu hazırlanamadı")
+            print("❌ \(DatabaseManager.TAG): cihaz_yetki tablosu BULUNAMADI")
         }
-        sqlite3_finalize(statement)
         
         print("🔍 \(DatabaseManager.TAG): === TABLO KONTROL BİTTİ ===")
     }
