@@ -7,7 +7,7 @@ class ImageStorageManager {
     private static let TAG = "ImageStorageManager"
     
     // MARK: - Save Image (App Documents Only)
-    static func saveImage(image: UIImage, customerName: String, isGallery: Bool) async -> String? {
+    static func saveImage(image: UIImage, customerName: String, isGallery: Bool, yukleyen: String) async -> String? {
         // Debug: Documents path'i göster
         printActualDocumentsPath()
         
@@ -31,6 +31,23 @@ class ImageStorageManager {
                     let fileSizeMB = Double(fileSize) / (1024 * 1024)
                     print("📏 Dosya boyutu: \(String(format: "%.2f", fileSizeMB)) MB")
                 }
+                
+                // 🗄️ Veritabanına kaydet (Android'deki gibi)
+                let dbManager = DatabaseManager.getInstance()
+                let dbSaved = dbManager.insertBarkodResim(
+                    musteriAdi: customerName,
+                    resimYolu: documentsPath,
+                    yukleyen: yukleyen
+                )
+                
+                if dbSaved {
+                    print("🗄️ Veritabanına kaydedildi: \(customerName) - \(documentsPath)")
+                    // Database istatistiklerini göster
+                    dbManager.printDatabaseInfo()
+                } else {
+                    print("❌ Veritabanına kaydedilemedi")
+                }
+                
             } else {
                 print("❌ Dosya bulunamadı: \(documentsPath)")
             }
@@ -118,14 +135,14 @@ class ImageStorageManager {
     }
     
     // MARK: - PhotosPicker için URL'den kaydetme
-    static func saveImageFromURL(sourceURL: URL, customerName: String) async -> String? {
+    static func saveImageFromURL(sourceURL: URL, customerName: String, yukleyen: String) async -> String? {
         guard let imageData = try? Data(contentsOf: sourceURL),
               let image = UIImage(data: imageData) else {
             print("❌ URL'den resim yüklenemedi: \(sourceURL)")
             return nil
         }
         
-        return await saveImage(image: image, customerName: customerName, isGallery: true)
+        return await saveImage(image: image, customerName: customerName, isGallery: true, yukleyen: yukleyen)
     }
     
     // MARK: - Generate File Name (Android Pattern + Customer)

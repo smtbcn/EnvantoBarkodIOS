@@ -54,6 +54,53 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         checkDeviceAuthorization()
         // Başlangıçta müşteri gruplarını yükle
         loadCustomerImageGroups()
+        // Database'i başlat
+        initializeDatabase()
+    }
+    
+    // MARK: - Database Initialization
+    private func initializeDatabase() {
+        let dbManager = DatabaseManager.getInstance()
+        dbManager.printDatabaseInfo()
+    }
+    
+    // MARK: - Database Debug Functions
+    func getDatabaseStats() -> String {
+        let dbManager = DatabaseManager.getInstance()
+        let totalCount = dbManager.getUploadedImagesCount()
+        let pendingCount = dbManager.getPendingUploadCount()
+        let uploadedCount = totalCount - pendingCount
+        
+        return """
+        📊 Veritabanı İstatistikleri:
+        • Toplam resim: \(totalCount)
+        • Yüklenen: \(uploadedCount)
+        • Bekleyen: \(pendingCount)
+        """
+    }
+    
+    func getCustomerDatabaseImages(customerName: String) -> [BarkodResim] {
+        let dbManager = DatabaseManager.getInstance()
+        return dbManager.getCustomerImages(musteriAdi: customerName)
+    }
+    
+    // MARK: - Device Info (Yukleyen bilgisi için)
+    private func getDeviceOwnerInfo() -> String {
+        // Sunucudan alınan cihaz sahibi bilgisini kullan (Android ile aynı mantık)
+        let deviceOwner = UserDefaults.standard.string(forKey: "device_owner") ?? 
+                         UserDefaults.standard.string(forKey: Constants.UserDefaults.deviceOwner) ?? ""
+        
+        if !deviceOwner.isEmpty {
+            print("👤 Yukleyen (Sunucudan): \(deviceOwner)")
+            return deviceOwner
+        } else {
+            // Fallback: Cihaz bilgisi (sadece cihaz sahibi bilgisi yoksa)
+            let deviceName = UIDevice.current.name
+            let deviceModel = UIDevice.current.model
+            let fallbackInfo = "\(deviceName) (\(deviceModel))"
+            print("👤 Yukleyen (Fallback): \(fallbackInfo)")
+            return fallbackInfo
+        }
     }
     
     // MARK: - Cihaz yetkilendirme kontrolü (Android template ile aynı)
@@ -458,16 +505,21 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
     // MARK: - Direct Save Image (Android Pattern)
     @MainActor
     private func directSaveImage(image: UIImage, customer: Customer, isGallery: Bool) async {
-        // ImageStorageManager ile resmi Photos Library'ye kaydet
+        // Cihaz sahibi bilgisini al
+        let yukleyen = getDeviceOwnerInfo()
+        
+        // ImageStorageManager ile resmi Documents klasörüne kaydet ve veritabanına ekle
         if let savedPath = await ImageStorageManager.saveImage(
             image: image, 
             customerName: customer.name, 
-            isGallery: isGallery
+            isGallery: isGallery,
+            yukleyen: yukleyen
         ) {
             print("✅ Resim başarıyla kaydedildi: \(savedPath)")
+            print("👤 Yukleyen: \(yukleyen)")
             
-            // TODO: Veritabanına kayıt ve sunucuya upload işlemleri burada yapılacak
-            // Android'deki gibi: dbHelper.addBarkodResim() ve server upload
+            // TODO: Sunucuya upload işlemi burada yapılacak
+            // Android'deki gibi: server upload ve yuklendi durumu güncelleme
             
         } else {
             showError("❌ Resim kaydetme hatası")

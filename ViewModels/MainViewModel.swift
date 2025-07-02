@@ -52,7 +52,17 @@ class MainViewModel: ObservableObject {
     }
     
     func updateDeviceOwner(_ owner: String) {
+        let oldOwner = deviceOwner
         deviceOwner = owner
         userDefaults.set(owner, forKey: Constants.UserDefaults.deviceOwner)
+        
+        // Veritabanındaki mevcut kayıtları güncelle (eski cihaz bilgisinden yeni cihaz sahibine)
+        if !oldOwner.isEmpty && !owner.isEmpty && oldOwner != owner {
+            let dbManager = DatabaseManager.getInstance()
+            let updated = dbManager.updateYukleyenInfo(oldYukleyen: oldOwner, newYukleyen: owner)
+            if updated {
+                print("🔄 Veritabanında cihaz sahibi bilgisi güncellendi: \(oldOwner) → \(owner)")
+            }
+        }
     }
 } 
