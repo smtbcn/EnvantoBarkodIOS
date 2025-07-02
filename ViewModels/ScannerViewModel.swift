@@ -127,7 +127,7 @@ class ScannerViewModel: NSObject, ObservableObject {
         let baseURL = UserDefaults.standard.string(forKey: Constants.UserDefaults.baseURL) ?? Constants.Network.defaultBaseURL
         let fullURL = "\(baseURL)\(barcodeContent)"
         
-        DispatchQueue.main.async {
+            DispatchQueue.main.async {
             self.currentURL = fullURL
             self.showWebBrowser = true
         }

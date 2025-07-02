@@ -609,7 +609,7 @@ struct SavedImage: Identifiable {
     let localPath: String
     let uploadDate: Date
     let isUploaded: Bool
-}
+} 
 
 // MARK: - Customer Image Group Model (Müşteri bazlı resim gruplandırması)
 struct CustomerImageGroup: Identifiable {

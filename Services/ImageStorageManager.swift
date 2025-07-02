@@ -8,38 +8,31 @@ class ImageStorageManager {
     
     // MARK: - Save Image (App Documents Only)
     static func saveImage(image: UIImage, customerName: String, isGallery: Bool) async -> String? {
-        // Önce Documents dizinini kontrol et
-        guard let documentsDir = getAppDocumentsDirectory() else {
-            print("❌ Documents dizini alınamadı")
-            return nil
-        }
+        // Debug: Documents path'i göster
+        printActualDocumentsPath()
         
-        print("📁 Documents dizini: \(documentsDir.path)")
-        
-        // Müşteri klasörünün tam yolunu al
-        guard let customerDir = getAppDocumentsCustomerDir(for: customerName) else {
-            print("❌ Müşteri klasörü oluşturulamadı")
-            return nil
-        }
-        
-        print("📂 Müşteri klasörü: \(customerDir.path)")
-        
-        // App Documents'a kaydet
+        // App Documents'a kaydet (Files uygulamasından erişilebilir)
         if let documentsPath = saveToAppDocuments(image: image, customerName: customerName, isGallery: isGallery) {
-            print("✅ Resim başarıyla kaydedildi: \(documentsPath)")
+            print("✅ App Documents'a kaydedildi: \(documentsPath)")
             
-            // Dosyanın gerçekten oluştuğunu kontrol et
+            // Relative path'i de göster
+            if let documentsDir = getAppDocumentsDirectory() {
+                let relativePath = documentsPath.replacingOccurrences(of: documentsDir.path, with: "Documents")
+                print("📱 Files App'te görünecek yol: \(relativePath)")
+            }
+            
+            // Debug: Dosya gerçekten var mı kontrol et
             if FileManager.default.fileExists(atPath: documentsPath) {
                 print("✅ Dosya doğrulandı: \(documentsPath)")
-                print("📂 Tam dosya yolu: \(URL(fileURLWithPath: documentsPath).path)")
                 
-                // Dosya boyutunu kontrol et
+                // Dosya boyutunu da göster
                 if let attributes = try? FileManager.default.attributesOfItem(atPath: documentsPath),
                    let fileSize = attributes[.size] as? Int64 {
-                    print("📏 Dosya boyutu: \(fileSize) bytes")
+                    let fileSizeMB = Double(fileSize) / (1024 * 1024)
+                    print("📏 Dosya boyutu: \(String(format: "%.2f", fileSizeMB)) MB")
                 }
             } else {
-                print("❌ Dosya oluşturulamadı: \(documentsPath)")
+                print("❌ Dosya bulunamadı: \(documentsPath)")
             }
             
             return documentsPath
@@ -50,49 +43,56 @@ class ImageStorageManager {
     }
     
     // MARK: - Debug: Print actual Documents path
-    static func printDocumentsPath() {
+    private static func printActualDocumentsPath() {
         if let documentsDir = getAppDocumentsDirectory() {
             print("📱 ACTUAL Documents Path: \(documentsDir.path)")
-            let envantoDir = documentsDir.appendingPathComponent("Envanto")
-            print("📱 ACTUAL Envanto Path: \(envantoDir.path)")
+            print("📁 Envanto klasör yolu: \(documentsDir.appendingPathComponent("Envanto").path)")
+            print("💡 Files App'te 'Bu iPhone/iPad' > 'Envanto Barkod' altında görünür")
             
             // Envanto klasörü var mı kontrol et
+            let envantoDir = documentsDir.appendingPathComponent("Envanto")
             if FileManager.default.fileExists(atPath: envantoDir.path) {
                 print("✅ Envanto klasörü mevcut")
                 
                 do {
                     let contents = try FileManager.default.contentsOfDirectory(atPath: envantoDir.path)
-                    print("📁 Envanto içindeki klasörler: \(contents)")
+                    print("📁 Envanto içindeki müşteri klasörleri: \(contents)")
+                    
+                    // Her müşteri klasöründe kaç resim var
+                    for customerFolder in contents.prefix(3) {
+                        let customerPath = envantoDir.appendingPathComponent(customerFolder)
+                        if let customerContents = try? FileManager.default.contentsOfDirectory(atPath: customerPath.path) {
+                            let imageCount = customerContents.filter { $0.hasSuffix(".jpg") || $0.hasSuffix(".jpeg") || $0.hasSuffix(".png") }.count
+                            print("   👤 \(customerFolder): \(imageCount) resim")
+                        }
+                    }
                 } catch {
                     print("❌ Envanto klasörü içeriği okunamadı: \(error)")
                 }
             } else {
-                print("❌ Envanto klasörü mevcut değil")
+                print("❌ Envanto klasörü henüz oluşturulmamış")
             }
         } else {
             print("❌ Documents directory alınamadı")
         }
     }
+
     
     // MARK: - Save to App Documents (Files App Access)
     private static func saveToAppDocuments(image: UIImage, customerName: String, isGallery: Bool) -> String? {
-        // Müşteri klasörünü al veya oluştur
         guard let customerDir = getAppDocumentsCustomerDir(for: customerName) else {
-            print("❌ Müşteri klasörü oluşturulamadı: \(customerName)")
+            print("❌ App Documents müşteri klasörü alınamadı")
             return nil
         }
         
-        print("💾 Kayıt hedefi: \(customerDir.path)")
-        
-        // Dosya adını oluştur
+        // Android'deki gibi dosya adı oluştur
         let fileName = generateFileName(customerName: customerName, isGallery: isGallery)
         let filePath = customerDir.appendingPathComponent(fileName)
         
-        print("📄 Oluşturulan dosya adı: \(fileName)")
-        
-        // Benzersiz dosya adı oluştur
+        // Aynı isimde dosya varsa sayı ekle (Android mantığı)
         let finalPath = getUniqueFilePath(basePath: filePath)
-        print("� Nihai kayıt yolu: \(finalPath.path)")
+        
+        print("💾 Kaydetme yolu: \(finalPath.path)")
         
         // Resmi JPEG olarak kaydet
         guard let imageData = image.jpegData(compressionQuality: 0.8) else {
@@ -101,24 +101,18 @@ class ImageStorageManager {
         }
         
         do {
-            // Klasörün var olduğundan emin ol
-            try FileManager.default.createDirectory(at: customerDir, 
-                                                  withIntermediateDirectories: true, 
-                                                  attributes: nil)
-            
-            // Dosyayı kaydet
             try imageData.write(to: finalPath)
-            print("✅ Resim başarıyla kaydedildi: \(finalPath.path)")
+            print("✅ App Documents'a kaydedildi: \(finalPath.path)")
             
-            // Dosya özelliklerini kontrol et
-            if let attributes = try? FileManager.default.attributesOfItem(atPath: finalPath.path) {
-                print("� Dosya özellikleri: \(attributes)")
+            // Dosya boyutunu da kontrol et
+            if let attributes = try? FileManager.default.attributesOfItem(atPath: finalPath.path),
+               let fileSize = attributes[.size] as? Int64 {
+                print("📏 Dosya boyutu: \(fileSize) bytes")
             }
             
             return finalPath.path
         } catch {
-            print("❌ Dosya kaydedilirken hata oluştu: \(error.localizedDescription)")
-            print("📂 Hata detayı: \(error)")
+            print("❌ App Documents kaydetme hatası: \(error.localizedDescription)")
             return nil
         }
     }
@@ -151,45 +145,24 @@ class ImageStorageManager {
     
     // MARK: - App Documents Directory Functions (Files App Access)
     private static func getAppDocumentsDirectory() -> URL? {
-        // Uygulamanın Documents dizinini al
-        guard let documentsDir = FileManager.default.urls(for: .documentDirectory, 
-                                                       in: .userDomainMask).first else {
-            print("❌ Documents dizini alınamadı")
-            return nil
-        }
-        
-        // Documents dizinini dışa aktar
-        do {
-            // Bu satır, dosyanın iCloud ve Dosyalar uygulamasında görünmesini sağlar
-            var resourceValues = URLResourceValues()
-            resourceValues.isExcludedFromBackup = false
-            try documentsDir.setResourceValues(resourceValues)
-            
-            print("📱 Documents Dizini: \(documentsDir.path)")
-            return documentsDir
-        } catch {
-            print("❌ Documents dizini dışa aktarılamadı: \(error.localizedDescription)")
-            return documentsDir
-        }
+        return FileManager.default.urls(for: .documentDirectory, 
+                                       in: .userDomainMask).first
     }
     
     private static func getAppDocumentsCustomerDir(for customerName: String) -> URL? {
         guard let documentsDir = getAppDocumentsDirectory() else {
-            print("❌ Documents dizini alınamadı")
+            print("❌ App Documents directory alınamadı")
             return nil
         }
         
-        // Envanto klasörünü oluştur
         let envantoDir = documentsDir.appendingPathComponent("Envanto")
         
-        // Müşteri adından güvenli klasör adı oluştur
+        // Android'deki gibi güvenli klasör adı oluştur
         let safeCustomerName = customerName.replacingOccurrences(of: "[^a-zA-Z0-9.-]", 
-                                                              with: "_", 
-                                                              options: .regularExpression)
+                                                                with: "_", 
+                                                                options: .regularExpression)
         
         let customerDir = envantoDir.appendingPathComponent(safeCustomerName)
-        
-        print("📂 Müşteri klasör yolu: \(customerDir.path)")
         
         // Klasör yoksa oluştur
         if !FileManager.default.fileExists(atPath: customerDir.path) {
@@ -197,9 +170,9 @@ class ImageStorageManager {
                 try FileManager.default.createDirectory(at: customerDir, 
                                                       withIntermediateDirectories: true, 
                                                       attributes: nil)
-                print("✅ Müşteri klasörü oluşturuldu: \(customerDir.path)")
+                print("📁 App Documents müşteri klasörü oluşturuldu: \(customerDir.path)")
             } catch {
-                print("❌ Müşteri klasörü oluşturulamadı: \(error.localizedDescription)")
+                print("❌ App Documents müşteri klasörü oluşturulamadı: \(error.localizedDescription)")
                 return nil
             }
         }

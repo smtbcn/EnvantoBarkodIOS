@@ -42,7 +42,7 @@ struct MainMenuView: View {
                 Spacer()
                 
                 // Ana menü butonları - Main ve Barkod Tara için cihaz yetkilendirme muafiyeti
-                VStack(spacing: 16) {
+                    VStack(spacing: 16) {
                         HStack(spacing: 16) {
                             // Barkod Tara - Sadece kamera izni gerekli
                             GridButton(
@@ -63,7 +63,7 @@ struct MainMenuView: View {
                                 icon: "square.and.arrow.up",
                                 color: .orange
                             ) {
-                                showingBarcodeUpload = true
+                                    showingBarcodeUpload = true
                             }
                         }
                         

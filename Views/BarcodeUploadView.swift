@@ -384,7 +384,7 @@ struct BarcodeUploadView: View {
                 }
             } message: {
                 Text("'\(customerToDelete)' müşterisine ait tüm resimler silinecek. Bu işlem geri alınamaz.")
-            }
+        }
             .onChange(of: selectedPhotos) { photos in
                 Task {
                     await viewModel.handleSelectedPhotos(photos)
@@ -406,8 +406,8 @@ struct BarcodeUploadView: View {
                         }
                     }
                 }
-            }
-            .onAppear {
+        }
+        .onAppear {
                 // Sayfa açıldığında müşteri gruplarını yükle
                 viewModel.loadCustomerImageGroups()
             }
@@ -435,10 +435,10 @@ struct BarcodeUploadView: View {
     // MARK: - Müşteri Seçimi (Android style)
     private var customerSelectionSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Müşteri Seçimi")
-                .font(.headline)
-                .fontWeight(.semibold)
-            
+                Text("Müşteri Seçimi")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                
             if let selectedCustomer = viewModel.selectedCustomer {
                 // Seçilen müşteri card'ı (Android like)
                 selectedCustomerCard(customer: selectedCustomer)
@@ -447,24 +447,24 @@ struct BarcodeUploadView: View {
                 customerSearchInput
             }
         }
-    }
-    
+                }
+                
     // Seçilen müşteri card'ı (Material Design like)
     private func selectedCustomerCard(customer: Customer) -> some View {
-        HStack {
+                    HStack {
             VStack(alignment: .leading, spacing: 4) {
                 Text(customer.name)
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.primary)
-                
+                            
                 if let code = customer.code, !code.isEmpty {
-                    Text("Kod: \(code)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            }
-            
-            Spacer()
+                                Text("Kod: \(code)")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        
+                        Spacer()
             
             Button(action: {
                 withAnimation(.easeInOut(duration: 0.3)) {
@@ -479,11 +479,11 @@ struct BarcodeUploadView: View {
                     .foregroundColor(.secondary)
             }
             .buttonStyle(PlainButtonStyle())
-            
-            Button("Değiştir") {
+                        
+                        Button("Değiştir") {
                 withAnimation(.easeInOut(duration: 0.3)) {
-                    viewModel.selectedCustomer = nil
-                    viewModel.searchText = ""
+                            viewModel.selectedCustomer = nil
+                            viewModel.searchText = ""
                     viewModel.customers = []
                     viewModel.showDropdown = false
                 }
@@ -523,19 +523,19 @@ struct BarcodeUploadView: View {
                         .scaleEffect(0.8)
                 }
             }
-            .padding(.horizontal, 12)
+                    .padding(.horizontal, 12)
             .padding(.vertical, 10)
             .background(
-                RoundedRectangle(cornerRadius: 8)
+                        RoundedRectangle(cornerRadius: 8)
                     .stroke(Color(.systemGray4), lineWidth: 1)
-            )
+                    )
             
             // Dropdown müşteri listesi
             if viewModel.showDropdown && !viewModel.customers.isEmpty {
                 customerDropdown
+                }
             }
         }
-    }
     
     // Müşteri dropdown listesi
     private var customerDropdown: some View {
@@ -561,9 +561,9 @@ struct BarcodeUploadView: View {
     private var imageUploadSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Barkod Resmi Yükleme")
-                .font(.headline)
-                .fontWeight(.semibold)
-            
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                
 
             
             // Android like button layout
@@ -621,11 +621,11 @@ struct BarcodeUploadView: View {
                 // Toplam müşteri sayısı badge
                 if !viewModel.customerImageGroups.isEmpty {
                     Text("\(viewModel.customerImageGroups.count) müşteri")
-                        .font(.caption)
-                        .fontWeight(.medium)
+                    .font(.caption)
+                    .fontWeight(.medium)
                         .foregroundColor(.white)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
                         .background(Color.blue)
                         .cornerRadius(10)
                 }
@@ -666,7 +666,7 @@ struct BarcodeUploadView: View {
                             },
                             onDeleteImage: { image in
                                 viewModel.deleteImage(image)
-                            }
+                        }
                         )
                     }
                 }
@@ -794,7 +794,7 @@ struct CustomerImageCard: View {
                 .fill(Color(.systemBackground))
                 .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
         )
-        .overlay(
+                .overlay(
             RoundedRectangle(cornerRadius: 12)
                 .stroke(Color(.systemGray4), lineWidth: 0.5)
         )
