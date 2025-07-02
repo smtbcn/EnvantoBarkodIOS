@@ -221,12 +221,33 @@ class UploadService: ObservableObject {
             
             print("📂 \(UploadService.TAG): Gerçek dosya yolu: \(actualPath)")
             
-            // Base URL (Android ile aynı)
+            // Base URL (Android ile aynı) + Debug test
             let baseURL = "https://envanto.app/barkod_yukle_android"
+            
+            // Önce debug endpoint test et
+            if let debugURL = URL(string: "\(baseURL)/upload.asp?debug=1") {
+                print("🔧 \(UploadService.TAG): Debug endpoint test ediliyor: \(debugURL)")
+                
+                do {
+                    let (debugData, debugResponse) = try await URLSession.shared.data(from: debugURL)
+                    if let debugString = String(data: debugData, encoding: .utf8) {
+                        print("🔧 \(UploadService.TAG): Debug response: \(debugString)")
+                    }
+                } catch {
+                    print("🔧 \(UploadService.TAG): Debug test hatası: \(error)")
+                }
+            }
+            
             guard let url = URL(string: "\(baseURL)/upload.asp") else {
                 print("❌ \(UploadService.TAG): Geçersiz URL")
                 return false
             }
+            
+            print("🌐 \(UploadService.TAG): === UPLOAD REQUEST BAŞLIYOR ===")
+            print("🔗 \(UploadService.TAG): URL: \(url)")
+            print("👤 \(UploadService.TAG): Müşteri Adı: '\(imageRecord.musteriAdi)'")
+            print("👨‍💼 \(UploadService.TAG): Yükleyen: '\(imageRecord.yukleyen)'")
+            print("📁 \(UploadService.TAG): Dosya Path: '\(actualPath)'")
             
             // Multipart form data oluştur (Android ile aynı)
             var request = URLRequest(url: url)
@@ -236,63 +257,103 @@ class UploadService: ObservableObject {
             let boundary = "Boundary-\(UUID().uuidString)"
             request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
             
+            print("🏷️ \(UploadService.TAG): Boundary: \(boundary)")
+            print("📝 \(UploadService.TAG): Content-Type: multipart/form-data; boundary=\(boundary)")
+            
             var body = Data()
             
-            // Action field (Android ile aynı)
-            body.append("--\(boundary)\r\n".data(using: .utf8)!)
-            body.append("Content-Disposition: form-data; name=\"action\"\r\n\r\n".data(using: .utf8)!)
-            body.append("upload_file\r\n".data(using: .utf8)!)
+            // Action field kaldırıldı - Sunucu kodu action field kontrol etmiyor
             
-            // Müşteri adı (Android ile aynı)
+            // Müşteri adı (Sunucunun beklediği field: musteri_adi)
             body.append("--\(boundary)\r\n".data(using: .utf8)!)
             body.append("Content-Disposition: form-data; name=\"musteri_adi\"\r\n\r\n".data(using: .utf8)!)
             body.append("\(imageRecord.musteriAdi)\r\n".data(using: .utf8)!)
+            print("✅ \(UploadService.TAG): Müşteri adı field eklendi: '\(imageRecord.musteriAdi)'")
             
-            // Yükleyen (Android ile aynı)
+            // Yükleyen (Sunucunun beklediği field: yukleyen)
             body.append("--\(boundary)\r\n".data(using: .utf8)!)
             body.append("Content-Disposition: form-data; name=\"yukleyen\"\r\n\r\n".data(using: .utf8)!)
             body.append("\(imageRecord.yukleyen)\r\n".data(using: .utf8)!)
+            print("✅ \(UploadService.TAG): Yükleyen field eklendi: '\(imageRecord.yukleyen)'")
             
             // Resim dosyası - Gerçek path'i kullan
             let imageData = try Data(contentsOf: URL(fileURLWithPath: actualPath))
             let fileName = URL(fileURLWithPath: actualPath).lastPathComponent
+            
+            print("📊 \(UploadService.TAG): Resim bilgileri:")
+            print("   📄 Dosya adı: '\(fileName)'")
+            print("   📏 Dosya boyutu: \(imageData.count) bytes (\(String(format: "%.2f", Double(imageData.count) / 1024 / 1024)) MB)")
             
             body.append("--\(boundary)\r\n".data(using: .utf8)!)
             body.append("Content-Disposition: form-data; name=\"resim\"; filename=\"\(fileName)\"\r\n".data(using: .utf8)!)
             body.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
             body.append(imageData)
             body.append("\r\n".data(using: .utf8)!)
+            print("✅ \(UploadService.TAG): Resim field eklendi (name: resim, filename: \(fileName))")
             
             // Boundary bitişi
             body.append("--\(boundary)--\r\n".data(using: .utf8)!)
             
             request.httpBody = body
             
-            print("🔗 \(UploadService.TAG): API çağrısı yapılıyor: \(url)")
-            print("📋 \(UploadService.TAG): Müşteri: \(imageRecord.musteriAdi), Yükleyen: \(imageRecord.yukleyen)")
+            print("📦 \(UploadService.TAG): Total request body size: \(body.count) bytes")
+            print("🚀 \(UploadService.TAG): HTTP Request başlatılıyor...")
             
             // API çağrısı
             let (data, response) = try await URLSession.shared.data(for: request)
             
+            print("📡 \(UploadService.TAG): === RESPONSE ALINDI ===")
+            
             // HTTP yanıt kontrolü
-            guard let httpResponse = response as? HTTPURLResponse,
-                  httpResponse.statusCode == 200 else {
-                print("❌ \(UploadService.TAG): HTTP Error: \((response as? HTTPURLResponse)?.statusCode ?? -1)")
+            guard let httpResponse = response as? HTTPURLResponse else {
+                print("❌ \(UploadService.TAG): HTTP Response alınamadı")
                 return false
             }
             
-            // JSON decode
-            if let jsonString = String(data: data, encoding: .utf8) {
-                print("📥 \(UploadService.TAG): Sunucu yanıtı: \(jsonString)")
+            print("📊 \(UploadService.TAG): HTTP Status Code: \(httpResponse.statusCode)")
+            print("📋 \(UploadService.TAG): HTTP Headers:")
+            for (key, value) in httpResponse.allHeaderFields {
+                print("   \(key): \(value)")
             }
             
-            let uploadResponse = try JSONDecoder().decode(UploadResponse.self, from: data)
+            // Response data'yı string olarak göster
+            let responseString = String(data: data, encoding: .utf8) ?? "Response decode edilemedi"
+            print("📥 \(UploadService.TAG): Raw Response Body:")
+            print("📄 \(UploadService.TAG): \(responseString)")
+            print("📏 \(UploadService.TAG): Response size: \(data.count) bytes")
             
-            if uploadResponse.isSuccess {
-                print("✅ \(UploadService.TAG): Upload başarılı: \(uploadResponse.message)")
-                return true
-            } else {
-                print("❌ \(UploadService.TAG): Upload başarısız: \(uploadResponse.error)")
+            if httpResponse.statusCode != 200 {
+                print("❌ \(UploadService.TAG): HTTP Error - Expected 200, Got: \(httpResponse.statusCode)")
+                return false
+            }
+            
+            // JSON decode attempt
+            do {
+                let uploadResponse = try JSONDecoder().decode(UploadResponse.self, from: data)
+                
+                print("✅ \(UploadService.TAG): JSON decode başarılı:")
+                print("   📊 Success: \(uploadResponse.isSuccess)")
+                print("   📝 Message: \(uploadResponse.message)")
+                print("   ⚠️ Error: \(uploadResponse.error)")
+                
+                if uploadResponse.isSuccess {
+                    print("🎉 \(UploadService.TAG): Upload BAŞARILI! Message: \(uploadResponse.message)")
+                    return true
+                } else {
+                    print("❌ \(UploadService.TAG): Upload BAŞARISIZ! Error: \(uploadResponse.error)")
+                    return false
+                }
+            } catch {
+                print("❌ \(UploadService.TAG): JSON decode hatası: \(error)")
+                print("💡 \(UploadService.TAG): Raw response başka format olabilir")
+                
+                // Eğer response HTML içeriyorsa
+                if responseString.contains("<html") || responseString.contains("<!DOCTYPE") {
+                    print("🌐 \(UploadService.TAG): Response HTML formatında - Server hatası olabilir")
+                } else if responseString.contains("basari") {
+                    print("💡 \(UploadService.TAG): Response Türkçe JSON formatında olabilir")
+                }
+                
                 return false
             }
             
