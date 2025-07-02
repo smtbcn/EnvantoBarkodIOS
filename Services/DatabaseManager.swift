@@ -599,6 +599,7 @@ class DatabaseManager {
         
         for format in formatlar {
             print("🔍 \(DatabaseManager.TAG): '\(format)' formatıyla silme deneniyor...")
+            print("🔍 \(DatabaseManager.TAG): Format uzunluğu: \(format.count), Hex: \(format.data(using: .utf8)?.map { String(format: "%02x", $0) }.joined(separator: " ") ?? "nil")")
             
             // Önce kaç kayıt silineceğini kontrol et
             let countSQL = "SELECT COUNT(*) FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) WHERE \(DatabaseManager.COLUMN_MUSTERI_ADI) = ?"
@@ -615,6 +616,21 @@ class DatabaseManager {
             
             if recordCount == 0 {
                 print("ℹ️ \(DatabaseManager.TAG): '\(format)' için silinecek kayıt bulunamadı")
+                
+                // 🔍 LIKE ile de deneyelim (fuzzy match)
+                let likeSQL = "SELECT COUNT(*) FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) WHERE \(DatabaseManager.COLUMN_MUSTERI_ADI) LIKE ?"
+                var likeStatement: OpaquePointer?
+                var likeCount = 0
+                
+                if sqlite3_prepare_v2(db, likeSQL, -1, &likeStatement, nil) == SQLITE_OK {
+                    sqlite3_bind_text(likeStatement, 1, "%\(format)%", -1, nil)
+                    if sqlite3_step(likeStatement) == SQLITE_ROW {
+                        likeCount = Int(sqlite3_column_int(likeStatement, 0))
+                    }
+                }
+                sqlite3_finalize(likeStatement)
+                
+                print("🔍 \(DatabaseManager.TAG): LIKE '%\(format)%' ile \(likeCount) kayıt bulundu")
                 continue  // Bir sonraki formatı dene
             }
             
