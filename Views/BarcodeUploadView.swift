@@ -3,140 +3,103 @@ import PhotosUI
 import AVFoundation
 import Combine
 
-// Gerçek kamera view implementasyonu (sürekli çekim)
+// Gerçek kamera view implementasyonu (Android design benzeri)
 struct CameraView: View {
     let onImageCaptured: (UIImage) -> Void
     @Environment(\.dismiss) private var dismiss
     @StateObject private var cameraModel = CameraModel()
-    @State private var captureCount = 0
     @State private var showFlash = false
-    @State private var showSuccessIndicator = false
     
     var body: some View {
-            ZStack {
-            // Kamera preview
+        ZStack {
+            // Kamera preview (Full screen)
             CameraPreview(session: cameraModel.session)
                 .ignoresSafeArea()
                 .onTapGesture(coordinateSpace: .local) { location in
                     cameraModel.focusAt(point: location)
                 }
             
-            // Flash overlay
+            // Flash overlay (Çekim animasyonu)
             if showFlash {
                 Color.white
                     .ignoresSafeArea()
-                    .opacity(0.8)
-                    .animation(.easeInOut(duration: 0.1), value: showFlash)
+                    .opacity(0.7)
+                    .animation(.easeInOut(duration: 0.15), value: showFlash)
             }
             
-            // Başarı göstergesi
-            if showSuccessIndicator {
-                VStack {
-                    Spacer()
-                    
-                    HStack {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.title2)
-                            .foregroundColor(.green)
-                        
-                        Text("Kaydedildi!")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 12)
-                    .background(Color.black.opacity(0.7))
-                    .cornerRadius(25)
-                    .scaleEffect(showSuccessIndicator ? 1.0 : 0.5)
-                    .opacity(showSuccessIndicator ? 1.0 : 0.0)
-                    .animation(.spring(response: 0.4, dampingFraction: 0.6), value: showSuccessIndicator)
-                    
-                    Spacer()
-                        .frame(height: 120)
-                }
-            }
-            
-            // Camera controls overlay
+            // Bottom Control Bar (Android style - 3 equal grids)
             VStack {
-                // Üst kontroller
+                Spacer()
+                
                 HStack {
-                    Button(action: {
-                        dismiss()
-                    }) {
-                        Image(systemName: "xmark")
-                            .font(.title2)
-                            .foregroundColor(.white)
-                            .padding()
-                            .background(Color.black.opacity(0.5))
-                            .clipShape(Circle())
-                    }
-                    
-                    Spacer()
-                    
-                    // Çekim sayacı
-                    Text("Çekilen: \(captureCount)")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.black.opacity(0.6))
-                        .cornerRadius(15)
-                    
-                    Spacer()
-                    
+                    // Sol Grid - Flash Button (48dp equivalent)
                     Button(action: {
                         cameraModel.toggleFlash()
                     }) {
-                        Image(systemName: cameraModel.isFlashOn ? "bolt.fill" : "bolt.slash")
-                            .font(.title2)
-                            .foregroundColor(cameraModel.isFlashOn ? .yellow : .white)
-                            .padding()
-                            .background(Color.black.opacity(0.5))
-                            .clipShape(Circle())
+                        Image(systemName: cameraModel.isFlashOn ? "bolt.fill" : "bolt.slash.fill")
+                            .font(.system(size: 20, weight: .medium))
+                            .foregroundColor(.white)
+                            .frame(width: 48, height: 48)
+                            .background(
+                                Circle()
+                                    .fill(Color.black.opacity(0.5))
+                            )
                     }
-                }
-                .padding()
-                
-                Spacer()
-                
-                // Alt kontroller
-                VStack(spacing: 20) {
-                    // Ana çekim butonu
+                    .frame(maxWidth: .infinity) // Equal grid weight
+                    
+                    // Orta Grid - Capture Button (100dp equivalent)
                     Button(action: {
                         capturePhoto()
                     }) {
                         ZStack {
+                            // Ana capture button (Material Design style)
                             Circle()
                                 .fill(Color.white)
-                                .frame(width: 80, height: 80)
+                                .frame(width: 100, height: 100)
+                                .opacity(0.9)
                             
-                            Circle()
-                                .stroke(Color.white, lineWidth: 4)
-                                .frame(width: 90, height: 90)
+                            // Kamera ikonu (Android'deki gibi)
+                            Image(systemName: "camera.fill")
+                                .font(.system(size: 35, weight: .medium))
+                                .foregroundColor(.black)
                             
                             // Loading indicator
                             if cameraModel.isCapturing {
+                                Circle()
+                                    .fill(Color.white.opacity(0.8))
+                                    .frame(width: 100, height: 100)
+                                
                                 ProgressView()
                                     .progressViewStyle(CircularProgressViewStyle(tint: .black))
-                                    .scaleEffect(1.5)
+                                    .scaleEffect(1.2)
                             }
                         }
                     }
-                    .scaleEffect(cameraModel.isCapturing ? 0.9 : 1.0)
+                    .scaleEffect(cameraModel.isCapturing ? 0.95 : 1.0)
                     .animation(.easeInOut(duration: 0.1), value: cameraModel.isCapturing)
                     .disabled(cameraModel.isCapturing)
+                    .frame(maxWidth: .infinity) // Equal grid weight
                     
-                    Text("Resim çekmek için butona basın")
-                        .font(.caption)
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(Color.black.opacity(0.5))
-                        .cornerRadius(10)
+                    // Sağ Grid - Close Button (48dp equivalent)
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(width: 48, height: 48)
+                            .background(
+                                Circle()
+                                    .fill(Color.red.opacity(0.8))
+                            )
+                    }
+                    .frame(maxWidth: .infinity) // Equal grid weight
                 }
-                .padding(.bottom, 50)
+                .padding(.horizontal, 12) // Android padding
+                .padding(.bottom, 120)    // Android bottom margin (120dp)
             }
         }
+        .background(Color.black) // Android siyah arkaplan
         .onAppear {
             cameraModel.startSession()
         }
@@ -146,12 +109,12 @@ struct CameraView: View {
     }
     
     private func capturePhoto() {
-        // Flash efekti
-        withAnimation(.easeInOut(duration: 0.1)) {
+        // Flash efekti (Android style)
+        withAnimation(.easeInOut(duration: 0.15)) {
             showFlash = true
         }
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
             showFlash = false
         }
         
@@ -159,21 +122,8 @@ struct CameraView: View {
             if let image = image {
                 DispatchQueue.main.async {
                     onImageCaptured(image)
-                    captureCount += 1
                     
-                    // Başarı göstergesi
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
-                        showSuccessIndicator = true
-                    }
-                    
-                    // Başarı göstergesini gizle
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                        withAnimation(.easeOut(duration: 0.3)) {
-                            showSuccessIndicator = false
-                        }
-                    }
-                    
-                    // Başarı haptik feedback
+                    // Haptic feedback (iOS native)
                     let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
                     impactFeedback.impactOccurred()
                 }
