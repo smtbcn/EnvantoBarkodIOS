@@ -8,8 +8,6 @@ class ImageStorageManager {
     
     // MARK: - Save Image (App Documents Only)
     static func saveImage(image: UIImage, customerName: String, isGallery: Bool, yukleyen: String) async -> String? {
-        // Debug: Documents path'i göster
-        printActualDocumentsPath()
         
         // App Documents'a kaydet (Files uygulamasından erişilebilir)
         if let documentsPath = saveToAppDocuments(image: image, customerName: customerName, isGallery: isGallery) {
@@ -21,93 +19,29 @@ class ImageStorageManager {
                 print("📱 Files App'te görünecek yol: \(relativePath)")
             }
             
-            // Debug: Dosya gerçekten var mı kontrol et (birkaç deneme yap)
-            var fileExists = false
-            var attempt = 1
-            let maxAttempts = 3
+            // Dosya kontrol et
+            let fileExists = FileManager.default.fileExists(atPath: documentsPath)
+            print("📁 Dosya kontrolü: \(fileExists ? "✅ MEVCUT" : "❌ YOK")")
             
-            while !fileExists && attempt <= maxAttempts {
-                fileExists = FileManager.default.fileExists(atPath: documentsPath)
-                print("🔍 Dosya varlık kontrolü (Deneme \(attempt)/\(maxAttempts)): \(fileExists ? "BULUNDU" : "BULUNAMADI")")
-                
-                if !fileExists && attempt < maxAttempts {
-                    // Kısa bekleme (dosya sistemi için)
-                    try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 saniye
-                }
-                attempt += 1
-            }
+            // 🗄️ Database'e kaydet 
+            print("🗄️ Database'e kaydediliyor: \(customerName)")
+            print("📁 Path: \(documentsPath)")
             
-            if fileExists {
-                print("✅ Dosya doğrulandı: \(documentsPath)")
+            let dbManager = DatabaseManager.getInstance()
+            let dbSaved = dbManager.insertBarkodResim(
+                musteriAdi: customerName,
+                resimYolu: documentsPath,
+                yukleyen: yukleyen
+            )
+            
+            if dbSaved {
+                print("✅ Database'e kaydedildi")
+                dbManager.printDatabaseInfo()
                 
-                // Dosya boyutunu da göster
-                if let attributes = try? FileManager.default.attributesOfItem(atPath: documentsPath),
-                   let fileSize = attributes[.size] as? Int64 {
-                    let fileSizeMB = Double(fileSize) / (1024 * 1024)
-                    print("📏 Dosya boyutu: \(String(format: "%.2f", fileSizeMB)) MB")
-                }
-                
-                print("🗄️ Database kayıt işlemi başlıyor...")
-                print("📋 Kaydedilecek bilgiler:")
-                print("   👤 Müşteri: '\(customerName)'")
-                print("   📁 Yol: '\(documentsPath)'")
-                print("   🔑 Yukleyen: '\(yukleyen)'")
-                
-                // DatabaseManager instance kontrol
-                print("🔄 DatabaseManager instance alınıyor...")
-                let dbManager = DatabaseManager.getInstance()
-                print("✅ DatabaseManager instance alındı")
-                
-                // 🗄️ Veritabanına kaydet (Android'deki gibi)
-                print("💾 insertBarkodResim çağrılıyor...")
-                let dbSaved = dbManager.insertBarkodResim(
-                    musteriAdi: customerName,
-                    resimYolu: documentsPath,
-                    yukleyen: yukleyen
-                )
-                print("💾 insertBarkodResim sonucu: \(dbSaved)")
-                
-                if dbSaved {
-                    print("🗄️ Veritabanına kaydedildi: \(customerName) - \(documentsPath)")
-                    // Database istatistiklerini göster
-                    dbManager.printDatabaseInfo()
-                    
-                    // Upload işlemini tetikle (WiFi ayarını kontrol et)
-                    triggerUploadAfterSave()
-                } else {
-                    print("❌ Veritabanına kaydedilemedi")
-                }
-                
+                // Upload tetikle
+                triggerUploadAfterSave()
             } else {
-                print("❌ Dosya \(maxAttempts) denemede bulunamadı: \(documentsPath)")
-                print("❌ KRITIK: Dosya kaydedildi ama erişilemiyor - iOS dosya sistemi gecikmesi olabilir")
-                
-                // Database'e yine de kaydet (dosya vardır ama geç erişilebilir)
-                print("🔄 Yine de database'e kaydediliyor...")
-                print("📋 Kaydedilecek bilgiler (gecikmeli):")
-                print("   👤 Müşteri: '\(customerName)'")
-                print("   📁 Yol: '\(documentsPath)'")
-                print("   🔑 Yukleyen: '\(yukleyen)'")
-                
-                print("🔄 DatabaseManager instance alınıyor (gecikmeli)...")
-                let dbManager = DatabaseManager.getInstance()
-                print("✅ DatabaseManager instance alındı (gecikmeli)")
-                
-                print("💾 insertBarkodResim çağrılıyor (gecikmeli)...")
-                let dbSaved = dbManager.insertBarkodResim(
-                    musteriAdi: customerName,
-                    resimYolu: documentsPath,
-                    yukleyen: yukleyen
-                )
-                print("💾 insertBarkodResim sonucu (gecikmeli): \(dbSaved)")
-                
-                if dbSaved {
-                    print("🗄️ Veritabanına kaydedildi (dosya gecikmeli): \(customerName) - \(documentsPath)")
-                    dbManager.printDatabaseInfo()
-                    triggerUploadAfterSave()
-                } else {
-                    print("❌ Veritabanına kaydedilemedi (dosya gecikmeli)")
-                }
+                print("❌ Database kayıt hatası")
             }
             
             return documentsPath

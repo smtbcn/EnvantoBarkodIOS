@@ -402,86 +402,11 @@ class DatabaseManager {
         return false
     }
     
-    // MARK: - Clear Invalid Image Records (Dosyası olmayan kayıtları temizle)
-    func clearInvalidImageRecords() -> Int {
-        guard db != nil else { return 0 }
-        
-        let selectSQL = """
-            SELECT \(DatabaseManager.COLUMN_ID), \(DatabaseManager.COLUMN_RESIM_YOLU)
-            FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER)
-        """
-        
-        var statement: OpaquePointer?
-        var invalidIds: [Int] = []
-        
-        // Önce geçersiz kayıtları bul
-        if sqlite3_prepare_v2(db, selectSQL, -1, &statement, nil) == SQLITE_OK {
-            while sqlite3_step(statement) == SQLITE_ROW {
-                let id = Int(sqlite3_column_int(statement, 0))
-                let resimYolu = String(cString: sqlite3_column_text(statement, 1))
-                
-                // Dosya mevcut mu kontrol et (iOS file system delay için birkaç deneme)
-                var fileExists = false
-                for attempt in 1...3 {
-                    fileExists = FileManager.default.fileExists(atPath: resimYolu)
-                    if fileExists {
-                        break
-                    }
-                    
-                    if attempt < 3 {
-                        // Kısa bekle (dosya sistemi flush için)
-                        Thread.sleep(forTimeInterval: 0.1)
-                        print("🔍 \(DatabaseManager.TAG): Dosya kontrol denemesi \(attempt)/3: \(resimYolu)")
-                    }
-                }
-                
-                if !fileExists {
-                    print("🗑️ \(DatabaseManager.TAG): Geçersiz dosya tespit edildi (3 denemede bulunamadı): \(resimYolu)")
-                    invalidIds.append(id)
-                } else {
-                    print("✅ \(DatabaseManager.TAG): Dosya geçerli: \(resimYolu)")
-                }
-            }
-        }
-        sqlite3_finalize(statement)
-        
-        // Geçersiz kayıtları sil
-        for id in invalidIds {
-            let deleteSQL = "DELETE FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) WHERE \(DatabaseManager.COLUMN_ID) = ?"
-            var deleteStatement: OpaquePointer?
-            
-            if sqlite3_prepare_v2(db, deleteSQL, -1, &deleteStatement, nil) == SQLITE_OK {
-                sqlite3_bind_int(deleteStatement, 1, Int32(id))
-                sqlite3_step(deleteStatement)
-            }
-            sqlite3_finalize(deleteStatement)
-        }
-        
-        print("🧹 \(DatabaseManager.TAG): \(invalidIds.count) adet geçersiz resim kaydı temizlendi")
-        return invalidIds.count
-    }
+    // MARK: - Clear Invalid Records (Kaldırıldı - Gereksiz karmaşıklık)
+    // clearInvalidImageRecords() kaldırıldı
     
-    // MARK: - Update Image Path (Path güncelleme)
-    func updateImagePath(id: Int, newPath: String) -> Bool {
-        guard db != nil else { return false }
-        
-        let updateSQL = "UPDATE \(DatabaseManager.TABLE_BARKOD_RESIMLER) SET \(DatabaseManager.COLUMN_RESIM_YOLU) = ? WHERE \(DatabaseManager.COLUMN_ID) = ?"
-        var statement: OpaquePointer?
-        
-        if sqlite3_prepare_v2(db, updateSQL, -1, &statement, nil) == SQLITE_OK {
-            sqlite3_bind_text(statement, 1, newPath, -1, nil)
-            sqlite3_bind_int(statement, 2, Int32(id))
-            
-            if sqlite3_step(statement) == SQLITE_DONE {
-                print("🔄 \(DatabaseManager.TAG): Resim yolu güncellendi - ID: \(id)")
-                sqlite3_finalize(statement)
-                return true
-            }
-        }
-        
-        sqlite3_finalize(statement)
-        return false
-    }
+    // MARK: - Update Image Path (Kaldırıldı - Gereksiz)
+    // updateImagePath() kaldırıldı
     
     // MARK: - Delete Image Record
     func deleteBarkodResim(id: Int) -> Bool {
