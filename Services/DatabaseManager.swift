@@ -122,10 +122,6 @@ class DatabaseManager {
         
         createBarkodResimlerTable()
         createCihazYetkiTable()
-        
-        
-        // Tabloların gerçekten oluşup oluşmadığını kontrol et
-        checkTableExists()
     }
     
     private func createBarkodResimlerTable() {
