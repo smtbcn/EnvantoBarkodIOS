@@ -32,9 +32,10 @@ class ScannerViewModel: NSObject, ObservableObject {
         cameraService.delegate = self
         barcodeService.cameraService = cameraService
         
-        // Barkod algılama dinleyicisi
+        // Barkod algılama dinleyicisi - main thread'de çalışacak
         barcodeService.$detectedBarcode
             .compactMap { $0 }
+            .receive(on: DispatchQueue.main)
             .sink { [weak self] barcodeResult in
                 self?.handleBarcodeDetection(barcodeResult.content)
             }
@@ -69,8 +70,10 @@ class ScannerViewModel: NSObject, ObservableObject {
     }
     
     func resetScanning() {
-        scannedBarcode = ""
-        lastScanTime = Date()
+        DispatchQueue.main.async {
+            self.scannedBarcode = ""
+            self.lastScanTime = Date()
+        }
         barcodeService.resetDetection()
     }
     

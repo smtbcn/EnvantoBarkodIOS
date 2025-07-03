@@ -18,7 +18,9 @@ class BarcodeService: ObservableObject {
             return
         }
         
-        isProcessing = true
+        DispatchQueue.main.async {
+            self.isProcessing = true
+        }
         
         let request = VNDetectBarcodesRequest { [weak self] request, error in
             guard let self = self else { return }
@@ -99,7 +101,9 @@ class BarcodeService: ObservableObject {
     }
     
     func resetDetection() {
-        detectedBarcode = nil
+        DispatchQueue.main.async {
+            self.detectedBarcode = nil
+        }
         lastDetectionTime = Date()
     }
 } 

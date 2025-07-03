@@ -12,7 +12,7 @@ class CameraService: NSObject, ObservableObject {
     private var videoOutput = AVCaptureVideoDataOutput()
     private let sessionQueue = DispatchQueue(label: "camera.session.queue")
     
-    // Gelişmiş odaklama sistemi
+    // Gelişmiş odaklama sistemi - background thread'de çalışacak
     private var autoFocusTimer: Timer?
     private var currentFocusZone = 0
     private let focusZones: [CGPoint] = [
@@ -156,8 +156,10 @@ class CameraService: NSObject, ObservableObject {
                 
                 DispatchQueue.main.async {
                     self.isRunning = true
-                    self.startAdvancedAutoFocus()
                 }
+                
+                // AutoFocus'u background thread'de başlat
+                self.startAdvancedAutoFocus()
             }
         }
     }
@@ -166,35 +168,45 @@ class CameraService: NSObject, ObservableObject {
         sessionQueue.async { [weak self] in
             guard let self = self else { return }
             
+            // Önce AutoFocus'u durdur
+            self.stopAdvancedAutoFocus()
+            
             if self.captureSession.isRunning {
                 self.captureSession.stopRunning()
                 
                 DispatchQueue.main.async {
                     self.isRunning = false
-                    self.stopAdvancedAutoFocus()
                 }
             }
         }
     }
     
     private func startAdvancedAutoFocus() {
+        // Bu metod sessionQueue'da çalışıyor (background thread)
         stopAdvancedAutoFocus() // Önceki timer'ı temizle
         
         // İlk odaklama merkez noktada
         focusAt(point: focusZones[0])
         
-        // 2 saniye sonra çoklu-bölge odaklamayı başlat
+        // Timer'ı background thread'de oluştur
         autoFocusTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
             self?.performMultiZoneFocus()
+        }
+        
+        // Timer'ı current run loop'a ekle
+        if let timer = autoFocusTimer {
+            RunLoop.current.add(timer, forMode: .common)
         }
     }
     
     private func stopAdvancedAutoFocus() {
+        // Bu metod sessionQueue'da çalışıyor
         autoFocusTimer?.invalidate()
         autoFocusTimer = nil
     }
     
     private func performMultiZoneFocus() {
+        // Bu metod timer callback'i olarak background thread'de çalışıyor
         guard let device = captureDevice else { return }
         
         currentFocusZone = (currentFocusZone + 1) % focusZones.count
@@ -242,25 +254,28 @@ class CameraService: NSObject, ObservableObject {
     }
     
     func focusAt(point: CGPoint) {
-        guard let device = captureDevice else { return }
-        
-        do {
-            try device.lockForConfiguration()
+        // Bu metod herhangi bir thread'den çağrılabilir
+        sessionQueue.async { [weak self] in
+            guard let self = self, let device = self.captureDevice else { return }
             
-            if device.isFocusModeSupported(.autoFocus) {
-                device.focusMode = .autoFocus
-                device.focusPointOfInterest = point
+            do {
+                try device.lockForConfiguration()
+                
+                if device.isFocusModeSupported(.autoFocus) {
+                    device.focusMode = .autoFocus
+                    device.focusPointOfInterest = point
+                }
+                
+                if device.isExposureModeSupported(.autoExpose) {
+                    device.exposureMode = .autoExpose
+                    device.exposurePointOfInterest = point
+                }
+                
+                device.unlockForConfiguration()
+                
+            } catch {
+                self.setError("Odaklama ayarlanamadı: \(error.localizedDescription)")
             }
-            
-            if device.isExposureModeSupported(.autoExpose) {
-                device.exposureMode = .autoExpose
-                device.exposurePointOfInterest = point
-            }
-            
-            device.unlockForConfiguration()
-            
-        } catch {
-            setError("Odaklama ayarlanamadı: \(error.localizedDescription)")
         }
     }
     
