@@ -455,7 +455,7 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
     }
     
     private func getStorageInfo() async -> String? {
-        return "Envanto klasörü otomatik olarak oluşturuldu"
+        return await ImageStorageManager.getStorageInfo()
     }
     
     private func loadSavedImagesForCustomer(_ customerName: String) {
@@ -672,7 +672,7 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
             let dbDeleteSuccess = dbManager.deleteBarkodResim(id: image.databaseId)
             
             // 2️⃣ Sonra dosyayı sil (ImageStorageManager)
-            let fileDeleteSuccess = ImageStorageManager.deleteImage(relativePath: image.localPath)
+            let fileDeleteSuccess = await ImageStorageManager.deleteImage(at: image.localPath)
             
             await MainActor.run {
                 if dbDeleteSuccess || fileDeleteSuccess {
@@ -735,7 +735,7 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
             }
             
             // 2️⃣ Sonra dosya klasörünü sil (ImageStorageManager)
-            let fileDeleteSuccess = ImageStorageManager.deleteCustomerFolder(customerName: customerName)
+            let fileDeleteSuccess = await ImageStorageManager.deleteCustomerImages(customerName: customerName)
             
             // Sonuç değerlendirmesi
             

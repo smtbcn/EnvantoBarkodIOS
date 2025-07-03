@@ -31,7 +31,6 @@ class DatabaseManager {
     // MARK: - Database Properties
     private var db: OpaquePointer?
     private static var shared: DatabaseManager?
-    private let databaseQueue = DispatchQueue(label: "database.queue", qos: .userInitiated)
     
     // MARK: - Singleton Instance
     static func getInstance() -> DatabaseManager {
@@ -164,63 +163,58 @@ class DatabaseManager {
         }
     }
     
-    // MARK: - Insert Barkod Resim (Thread-Safe)
+    // MARK: - Insert Barkod Resim (Android metoduna benzer)
     func insertBarkodResim(musteriAdi: String, resimYolu: String, yukleyen: String) -> Bool {
-        var result = false
         
-        databaseQueue.sync {
-            guard db != nil else {
-                result = false
-                return
-            }
-            
-            // 🚫 MÜKERRER KAYIT KONTROLÜ
-            if isImageAlreadyInDatabase(resimYolu: resimYolu, musteriAdi: musteriAdi) {
-                result = true  // Zaten var, başarılı kabul et
-                return
-            }
-            
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-            let tarih = dateFormatter.string(from: Date())
-            
-            let insertSQL = """
-                INSERT INTO \(DatabaseManager.TABLE_BARKOD_RESIMLER) 
-                (\(DatabaseManager.COLUMN_MUSTERI_ADI), \(DatabaseManager.COLUMN_RESIM_YOLU), 
-                 \(DatabaseManager.COLUMN_TARIH), \(DatabaseManager.COLUMN_YUKLEYEN), \(DatabaseManager.COLUMN_YUKLENDI)) 
-                VALUES (?, ?, ?, ?, 0)
-            """
-            
-            var statement: OpaquePointer?
-            
-            let prepareResult = sqlite3_prepare_v2(db, insertSQL, -1, &statement, nil)
-            if prepareResult == SQLITE_OK {
-                sqlite3_bind_text(statement, 1, musteriAdi, -1, SQLITE_TRANSIENT)
-                sqlite3_bind_text(statement, 2, resimYolu, -1, SQLITE_TRANSIENT)
-                sqlite3_bind_text(statement, 3, tarih, -1, SQLITE_TRANSIENT)
-                sqlite3_bind_text(statement, 4, yukleyen, -1, SQLITE_TRANSIENT)
-                
-                let stepResult = sqlite3_step(statement)
-                if stepResult == SQLITE_DONE {
-                    print("📊 Database'e kaydedildi: \(musteriAdi) - \(resimYolu)")
-                    result = true
-                } else {
-                    if let errorMessage = sqlite3_errmsg(db) {
-                        print("❌ Database insert hatası: \(String(cString: errorMessage))")
-                    }
-                    result = false
-                }
-            } else {
-                if let errorMessage = sqlite3_errmsg(db) {
-                    print("❌ Database prepare hatası: \(String(cString: errorMessage))")
-                }
-                result = false
-            }
-            
-            sqlite3_finalize(statement)
+        guard db != nil else {
+            return false
         }
         
-        return result
+        // 🚫 MÜKERRER KAYIT KONTROLÜ
+        if isImageAlreadyInDatabase(resimYolu: resimYolu, musteriAdi: musteriAdi) {
+            return true  // Zaten var, başarılı kabul et
+        }
+        
+        
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        let tarih = dateFormatter.string(from: Date())
+        
+        
+        let insertSQL = """
+            INSERT INTO \(DatabaseManager.TABLE_BARKOD_RESIMLER) 
+            (\(DatabaseManager.COLUMN_MUSTERI_ADI), \(DatabaseManager.COLUMN_RESIM_YOLU), 
+             \(DatabaseManager.COLUMN_TARIH), \(DatabaseManager.COLUMN_YUKLEYEN), \(DatabaseManager.COLUMN_YUKLENDI)) 
+            VALUES (?, ?, ?, ?, 0)
+        """
+        
+        
+        var statement: OpaquePointer?
+        
+        let prepareResult = sqlite3_prepare_v2(db, insertSQL, -1, &statement, nil)
+        if prepareResult == SQLITE_OK {
+            
+            sqlite3_bind_text(statement, 1, musteriAdi, -1, SQLITE_TRANSIENT)
+            sqlite3_bind_text(statement, 2, resimYolu, -1, SQLITE_TRANSIENT)
+            sqlite3_bind_text(statement, 3, tarih, -1, SQLITE_TRANSIENT)
+            sqlite3_bind_text(statement, 4, yukleyen, -1, SQLITE_TRANSIENT)
+            
+            
+            let stepResult = sqlite3_step(statement)
+            if stepResult == SQLITE_DONE {
+                sqlite3_finalize(statement)
+                return true
+            } else {
+                if let errorMessage = sqlite3_errmsg(db) {
+                }
+            }
+        } else {
+            if let errorMessage = sqlite3_errmsg(db) {
+            }
+        }
+        
+        sqlite3_finalize(statement)
+        return false
     }
     
     // MARK: - Mükerrer Kayıt Kontrolü
@@ -313,69 +307,67 @@ class DatabaseManager {
         return count
     }
     
-    // MARK: - Get Customer Images (Thread-Safe)
+    // MARK: - Get Customer Images (belirli müşterinin resimlerini getir)
     func getCustomerImages(musteriAdi: String) -> [BarkodResim] {
+        guard db != nil else { return [] }
+        
+        // Debug: Database'deki müşteri adı formatını kontrol et
+        
+        let selectSQL = """
+            SELECT \(DatabaseManager.COLUMN_ID), \(DatabaseManager.COLUMN_MUSTERI_ADI), 
+                   \(DatabaseManager.COLUMN_RESIM_YOLU), \(DatabaseManager.COLUMN_TARIH), 
+                   \(DatabaseManager.COLUMN_YUKLEYEN), \(DatabaseManager.COLUMN_YUKLENDI)
+            FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) 
+            WHERE \(DatabaseManager.COLUMN_MUSTERI_ADI) = ? 
+            ORDER BY \(DatabaseManager.COLUMN_TARIH) DESC
+        """
+        
+        var statement: OpaquePointer?
         var results: [BarkodResim] = []
         
-        databaseQueue.sync {
-            guard db != nil else { 
-                results = []
-                return 
-            }
+        if sqlite3_prepare_v2(db, selectSQL, -1, &statement, nil) == SQLITE_OK {
+            sqlite3_bind_text(statement, 1, musteriAdi, -1, SQLITE_TRANSIENT)
             
-            let selectSQL = """
-                SELECT \(DatabaseManager.COLUMN_ID), \(DatabaseManager.COLUMN_MUSTERI_ADI), 
-                       \(DatabaseManager.COLUMN_RESIM_YOLU), \(DatabaseManager.COLUMN_TARIH), 
-                       \(DatabaseManager.COLUMN_YUKLEYEN), \(DatabaseManager.COLUMN_YUKLENDI)
-                FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) 
-                WHERE \(DatabaseManager.COLUMN_MUSTERI_ADI) = ? 
-                ORDER BY \(DatabaseManager.COLUMN_TARIH) DESC
-            """
             
-            var statement: OpaquePointer?
-            
-            if sqlite3_prepare_v2(db, selectSQL, -1, &statement, nil) == SQLITE_OK {
-                sqlite3_bind_text(statement, 1, musteriAdi, -1, SQLITE_TRANSIENT)
+            while sqlite3_step(statement) == SQLITE_ROW {
+                let id = Int(sqlite3_column_int(statement, 0))
                 
-                while sqlite3_step(statement) == SQLITE_ROW {
-                    let id = Int(sqlite3_column_int(statement, 0))
-                    
-                    // Güvenli string okuma (NULL kontrol)
-                    let musteriAdiPtr = sqlite3_column_text(statement, 1)
-                    let musteriAdiResult = musteriAdiPtr != nil ? String(cString: musteriAdiPtr!) : ""
-                    
-                    let resimYoluPtr = sqlite3_column_text(statement, 2)
-                    let resimYolu = resimYoluPtr != nil ? String(cString: resimYoluPtr!) : ""
-                    
-                    let tarihPtr = sqlite3_column_text(statement, 3)
-                    let tarih = tarihPtr != nil ? String(cString: tarihPtr!) : ""
-                    
-                    let yukleyenPtr = sqlite3_column_text(statement, 4)
-                    let yukleyen = yukleyenPtr != nil ? String(cString: yukleyenPtr!) : ""
-                    
-                    let yuklendi = Int(sqlite3_column_int(statement, 5))
-                    
-                    // Boş kayıtları atla
-                    if musteriAdiResult.isEmpty || resimYolu.isEmpty {
-                        continue
-                    }
-                    
-                    let barkodResim = BarkodResim(
-                        id: id,
-                        musteriAdi: musteriAdiResult,
-                        resimYolu: resimYolu,
-                        tarih: tarih,
-                        yukleyen: yukleyen,
-                        yuklendi: yuklendi
-                    )
-                    
-                    results.append(barkodResim)
+                // Güvenli string okuma (NULL kontrol)
+                let musteriAdiPtr = sqlite3_column_text(statement, 1)
+                let musteriAdiResult = musteriAdiPtr != nil ? String(cString: musteriAdiPtr!) : ""
+                
+                let resimYoluPtr = sqlite3_column_text(statement, 2)
+                let resimYolu = resimYoluPtr != nil ? String(cString: resimYoluPtr!) : ""
+                
+                let tarihPtr = sqlite3_column_text(statement, 3)
+                let tarih = tarihPtr != nil ? String(cString: tarihPtr!) : ""
+                
+                let yukleyenPtr = sqlite3_column_text(statement, 4)
+                let yukleyen = yukleyenPtr != nil ? String(cString: yukleyenPtr!) : ""
+                
+                let yuklendi = Int(sqlite3_column_int(statement, 5))
+                
+                
+                // Boş kayıtları atla
+                if musteriAdiResult.isEmpty || resimYolu.isEmpty {
+                    continue
                 }
+                
+                let barkodResim = BarkodResim(
+                    id: id,
+                    musteriAdi: musteriAdiResult,
+                    resimYolu: resimYolu,
+                    tarih: tarih,
+                    yukleyen: yukleyen,
+                    yuklendi: yuklendi
+                )
+                
+                results.append(barkodResim)
             }
-            
-            sqlite3_finalize(statement)
+        } else {
         }
         
+        sqlite3_finalize(statement)
         return results
     }
     
@@ -476,71 +468,47 @@ class DatabaseManager {
     // MARK: - Update Image Path (Kaldırıldı - Gereksiz)
     // updateImagePath() kaldırıldı
     
-    // MARK: - Delete Image Record (Thread-Safe)
+    // MARK: - Delete Image Record
     func deleteBarkodResim(id: Int) -> Bool {
-        var result = false
+        guard db != nil else { return false }
         
-        databaseQueue.sync {
-            guard db != nil else { 
-                result = false
-                return 
+        let deleteSQL = "DELETE FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) WHERE \(DatabaseManager.COLUMN_ID) = ?"
+        var statement: OpaquePointer?
+        
+        if sqlite3_prepare_v2(db, deleteSQL, -1, &statement, nil) == SQLITE_OK {
+            sqlite3_bind_int(statement, 1, Int32(id))
+            
+            if sqlite3_step(statement) == SQLITE_DONE {
+                let deletedCount = sqlite3_changes(db)
+                sqlite3_finalize(statement)
+                return deletedCount > 0  // Gerçekten silinip silinmediğini kontrol et
             }
-            
-            let deleteSQL = "DELETE FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) WHERE \(DatabaseManager.COLUMN_ID) = ?"
-            var statement: OpaquePointer?
-            
-            if sqlite3_prepare_v2(db, deleteSQL, -1, &statement, nil) == SQLITE_OK {
-                sqlite3_bind_int(statement, 1, Int32(id))
-                
-                if sqlite3_step(statement) == SQLITE_DONE {
-                    let deletedCount = sqlite3_changes(db)
-                    print("🗑️ Database kaydı silindi: ID \(id)")
-                    result = deletedCount > 0  // Gerçekten silinip silinmediğini kontrol et
-                } else {
-                    result = false
-                }
-            } else {
-                result = false
-            }
-            
-            sqlite3_finalize(statement)
         }
         
-        return result
+        sqlite3_finalize(statement)
+        return false
     }
     
-    // MARK: - Delete Customer Images (Thread-Safe)
+    // MARK: - Delete Customer Images (Müşterinin tüm resim kayıtlarını sil)
     func deleteCustomerImages(musteriAdi: String) -> Bool {
-        var result = false
+        guard db != nil else { return false }
         
-        databaseQueue.sync {
-            guard db != nil else { 
-                result = false
-                return 
+        // Direkt SQL DELETE kullan (tekli silme yerine)
+        let deleteSQL = "DELETE FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) WHERE \(DatabaseManager.COLUMN_MUSTERI_ADI) = ?"
+        var statement: OpaquePointer?
+        
+        if sqlite3_prepare_v2(db, deleteSQL, -1, &statement, nil) == SQLITE_OK {
+            sqlite3_bind_text(statement, 1, musteriAdi, -1, nil)
+            
+            if sqlite3_step(statement) == SQLITE_DONE {
+                let deletedCount = sqlite3_changes(db)
+                sqlite3_finalize(statement)
+                return deletedCount > 0
             }
-            
-            // Direkt SQL DELETE kullan (tekli silme yerine)
-            let deleteSQL = "DELETE FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) WHERE \(DatabaseManager.COLUMN_MUSTERI_ADI) = ?"
-            var statement: OpaquePointer?
-            
-            if sqlite3_prepare_v2(db, deleteSQL, -1, &statement, nil) == SQLITE_OK {
-                sqlite3_bind_text(statement, 1, musteriAdi, -1, nil)
-                
-                if sqlite3_step(statement) == SQLITE_DONE {
-                    let deletedCount = sqlite3_changes(db)
-                    print("🗑️ Database'den silindi: \(musteriAdi) - \(deletedCount) kayıt")
-                    result = deletedCount > 0
-                } else {
-                    result = false
-                }
-            } else {
-                result = false
-            }
-            
-            sqlite3_finalize(statement)
         }
         
-        return result
+        sqlite3_finalize(statement)
+        return false
     }
     
     // MARK: - Update Upload Status
@@ -1005,66 +973,59 @@ class DatabaseManager {
         return results
     }
     
-    // MARK: - Get All Images (Thread-Safe)
+    // MARK: - Get All Images (pending + uploaded)
     func getAllImages() -> [BarkodResim] {
+        guard db != nil else { return [] }
+        
+        let selectSQL = """
+            SELECT \(DatabaseManager.COLUMN_ID), \(DatabaseManager.COLUMN_MUSTERI_ADI), 
+                   \(DatabaseManager.COLUMN_RESIM_YOLU), \(DatabaseManager.COLUMN_TARIH), 
+                   \(DatabaseManager.COLUMN_YUKLEYEN), \(DatabaseManager.COLUMN_YUKLENDI)
+            FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) 
+            ORDER BY \(DatabaseManager.COLUMN_TARIH) DESC
+        """
+        
+        var statement: OpaquePointer?
         var results: [BarkodResim] = []
         
-        databaseQueue.sync {
-            guard db != nil else { 
-                results = []
-                return 
-            }
-            
-            let selectSQL = """
-                SELECT \(DatabaseManager.COLUMN_ID), \(DatabaseManager.COLUMN_MUSTERI_ADI), 
-                       \(DatabaseManager.COLUMN_RESIM_YOLU), \(DatabaseManager.COLUMN_TARIH), 
-                       \(DatabaseManager.COLUMN_YUKLEYEN), \(DatabaseManager.COLUMN_YUKLENDI)
-                FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) 
-                ORDER BY \(DatabaseManager.COLUMN_TARIH) DESC
-            """
-            
-            var statement: OpaquePointer?
-            
-            if sqlite3_prepare_v2(db, selectSQL, -1, &statement, nil) == SQLITE_OK {
-                while sqlite3_step(statement) == SQLITE_ROW {
-                    let id = Int(sqlite3_column_int(statement, 0))
-                    
-                    // Güvenli string okuma (NULL kontrol)
-                    let musteriAdiPtr = sqlite3_column_text(statement, 1)
-                    let musteriAdi = musteriAdiPtr != nil ? String(cString: musteriAdiPtr!) : ""
-                    
-                    let resimYoluPtr = sqlite3_column_text(statement, 2)
-                    let resimYolu = resimYoluPtr != nil ? String(cString: resimYoluPtr!) : ""
-                    
-                    let tarihPtr = sqlite3_column_text(statement, 3)
-                    let tarih = tarihPtr != nil ? String(cString: tarihPtr!) : ""
-                    
-                    let yukleyenPtr = sqlite3_column_text(statement, 4)
-                    let yukleyen = yukleyenPtr != nil ? String(cString: yukleyenPtr!) : ""
-                    
-                    let yuklendi = Int(sqlite3_column_int(statement, 5))
-                    
-                    // Boş kayıtları atla
-                    if musteriAdi.isEmpty || resimYolu.isEmpty {
-                        continue
-                    }
-                    
-                    let barkodResim = BarkodResim(
-                        id: id,
-                        musteriAdi: musteriAdi,
-                        resimYolu: resimYolu,
-                        tarih: tarih,
-                        yukleyen: yukleyen,
-                        yuklendi: yuklendi
-                    )
-                    
-                    results.append(barkodResim)
+        if sqlite3_prepare_v2(db, selectSQL, -1, &statement, nil) == SQLITE_OK {
+            while sqlite3_step(statement) == SQLITE_ROW {
+                let id = Int(sqlite3_column_int(statement, 0))
+                
+                // Güvenli string okuma (NULL kontrol)
+                let musteriAdiPtr = sqlite3_column_text(statement, 1)
+                let musteriAdi = musteriAdiPtr != nil ? String(cString: musteriAdiPtr!) : ""
+                
+                let resimYoluPtr = sqlite3_column_text(statement, 2)
+                let resimYolu = resimYoluPtr != nil ? String(cString: resimYoluPtr!) : ""
+                
+                let tarihPtr = sqlite3_column_text(statement, 3)
+                let tarih = tarihPtr != nil ? String(cString: tarihPtr!) : ""
+                
+                let yukleyenPtr = sqlite3_column_text(statement, 4)
+                let yukleyen = yukleyenPtr != nil ? String(cString: yukleyenPtr!) : ""
+                
+                let yuklendi = Int(sqlite3_column_int(statement, 5))
+                
+                // Boş kayıtları atla
+                if musteriAdi.isEmpty || resimYolu.isEmpty {
+                    continue
                 }
+                
+                let barkodResim = BarkodResim(
+                    id: id,
+                    musteriAdi: musteriAdi,
+                    resimYolu: resimYolu,
+                    tarih: tarih,
+                    yukleyen: yukleyen,
+                    yuklendi: yuklendi
+                )
+                
+                results.append(barkodResim)
             }
-            
-            sqlite3_finalize(statement)
         }
         
+        sqlite3_finalize(statement)
         return results
     }
     

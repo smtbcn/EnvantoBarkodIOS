@@ -361,9 +361,6 @@ struct BarcodeUploadView: View {
                     } else if !viewModel.isDeviceAuthorized {
                         // Cihaz yetkili değilse uyarı mesajı göster (Android mantığı)
                         unauthorizedDeviceView
-                    } else if !ImageStorageManager.isSystemReady() {
-                        // Sistem hazır değilse hata mesajı göster
-                        systemNotReadyView
                     } else {
                         mainContent
                     }
@@ -484,44 +481,6 @@ struct BarcodeUploadView: View {
                 HStack {
                     Image(systemName: "arrow.clockwise")
                     Text("Yeniden Kontrol Et")
-                }
-                .padding()
-                .background(Color.blue)
-                .foregroundColor(.white)
-                .cornerRadius(10)
-            }
-                
-                Spacer()
-        }
-        .padding()
-    }
-    
-    // MARK: - Sistem Hazır Değil Görünümü
-    private var systemNotReadyView: some View {
-        VStack(spacing: 20) {
-            Spacer()
-            
-            Image(systemName: "folder.badge.questionmark")
-                .font(.system(size: 80))
-                .foregroundColor(.red)
-            
-            Text("Sistem Hatası")
-                .font(.title)
-                .fontWeight(.bold)
-                .multilineTextAlignment(.center)
-            
-            Text("Envanto klasörü oluşturulamadı. Dosya sistem izinlerini kontrol edin.")
-                .font(.body)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
-            
-            Button(action: {
-                viewModel.loadCustomerImageGroups()
-            }) {
-                HStack {
-                    Image(systemName: "arrow.clockwise")
-                    Text("Yeniden Dene")
                 }
                 .padding()
                 .background(Color.blue)

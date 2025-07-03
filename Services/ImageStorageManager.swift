@@ -1,199 +1,116 @@
 import Foundation
 import UIKit
-import UniformTypeIdentifiers
 
 class ImageStorageManager {
     
     // MARK: - Constants
     private static let TAG = "ImageStorageManager"
-    private static let ENVANTO_FOLDER_NAME = "Envanto"
     
-    // MARK: - Automatic Folder Management
-    
-    /// Otomatik olarak kullanıcının Files klasöründe Envanto klasörü oluşturur
-    private static func getEnvantoFolder() -> URL? {
-        // Documents dizinini al (Files uygulamasından erişilebilir)
-        guard let documentsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
-            print("❌ Documents dizini bulunamadı")
-            return nil
-        }
-        
-        print("📍 Documents dizini: \(documentsDir.path)")
-        print("📍 Bu yol Files uygulamasında 'On My iPhone > Envanto Barkod' olarak görünür")
-        
-        let envantoFolder = documentsDir.appendingPathComponent(ENVANTO_FOLDER_NAME)
-        
-        // Envanto klasörü yoksa oluştur
-        if !FileManager.default.fileExists(atPath: envantoFolder.path) {
-            do {
-                try FileManager.default.createDirectory(at: envantoFolder, withIntermediateDirectories: true, attributes: nil)
-                print("📁 Envanto klasörü oluşturuldu: \(envantoFolder.path)")
-                print("📱 Files uygulamasında şu yolda görünür: On My iPhone > Envanto Barkod > Envanto")
-            } catch {
-                print("❌ Envanto klasörü oluşturulamadı: \(error)")
-                return nil
-            }
-        } else {
-            print("✅ Envanto klasörü mevcut: \(envantoFolder.path)")
-            print("📱 Files uygulamasında şu yolda görünür: On My iPhone > Envanto Barkod > Envanto")
-        }
-        
-        return envantoFolder
-    }
-    
-    /// Müşteri klasörünü oluştur ve döndür
-    private static func getCustomerFolder(customerName: String) -> URL? {
-        guard let envantoFolder = getEnvantoFolder() else {
-            return nil
-        }
-        
-        // Müşteri adını güvenli hale getir
-        let safeCustomerName = customerName.replacingOccurrences(of: "[^a-zA-Z0-9.-]", 
-                                                               with: "_", 
-                                                               options: .regularExpression)
-        
-        let customerFolder = envantoFolder.appendingPathComponent(safeCustomerName)
-        
-        // Müşteri klasörü yoksa oluştur
-        if !FileManager.default.fileExists(atPath: customerFolder.path) {
-            do {
-                try FileManager.default.createDirectory(at: customerFolder, withIntermediateDirectories: true, attributes: nil)
-                print("📁 Müşteri klasörü oluşturuldu: \(customerFolder.path)")
-            } catch {
-                print("❌ Müşteri klasörü oluşturulamadı: \(error)")
-                return nil
-            }
-        }
-        
-        return customerFolder
-    }
-    
-    // MARK: - Save Image
+    // MARK: - Save Image (App Documents Only)
     static func saveImage(image: UIImage, customerName: String, isGallery: Bool, yukleyen: String) async -> String? {
         
-        guard let customerFolder = getCustomerFolder(customerName: customerName) else {
-            print("❌ Müşteri klasörü oluşturulamadı")
-            return nil
-        }
-        
-        // Dosya adı oluştur
-        let fileName = generateFileName(customerName: customerName, isGallery: isGallery)
-        let filePath = customerFolder.appendingPathComponent(fileName)
-        let finalPath = getUniqueFilePath(basePath: filePath)
-        
-        // Resmi kaydet
-        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
-            print("❌ Resim JPEG'e çevrilemedi")
-            return nil
-        }
-        
-        do {
-            try imageData.write(to: finalPath)
-            print("✅ Resim kaydedildi: \(finalPath.path)")
+        // App Documents'a kaydet (Files uygulamasından erişilebilir)
+        if let documentsPath = saveToAppDocuments(image: image, customerName: customerName, isGallery: isGallery) {
             
-            // Relative path oluştur (Envanto'dan başlayarak)
-            guard let envantoFolder = getEnvantoFolder() else {
-                return nil
+            // Relative path'i de göster
+            if let documentsDir = getAppDocumentsDirectory() {
+                let relativePath = documentsPath.replacingOccurrences(of: documentsDir.path, with: "Documents")
             }
             
-            let relativePath = "Envanto/" + finalPath.path.replacingOccurrences(of: envantoFolder.path + "/", with: "")
+            // Dosya kontrol et
+            let fileExists = FileManager.default.fileExists(atPath: documentsPath)
             
-            // Veritabanına relative path kaydet
+            // 🗄️ Database'e kaydet 
+            
             let dbManager = DatabaseManager.getInstance()
             let dbSaved = dbManager.insertBarkodResim(
                 musteriAdi: customerName,
-                resimYolu: relativePath,
+                resimYolu: documentsPath,
                 yukleyen: yukleyen
             )
             
             if dbSaved {
-                print("📊 Veritabanına kaydedildi: \(relativePath)")
+                dbManager.printDatabaseInfo()
                 
                 // Upload tetikle
                 triggerUploadAfterSave()
             } else {
-                print("❌ Veritabanı kayıt hatası!")
             }
             
-            return finalPath.path
-            
-        } catch {
-            print("❌ Resim kaydedilemedi: \(error)")
-            return nil
-        }
-    }
-    
-    // MARK: - File Operations
-    
-    /// Relative path'i mutlak path'e çevirir
-    static func getAbsolutePath(from relativePath: String) -> String? {
-        guard let envantoFolder = getEnvantoFolder() else {
-            return nil
-        }
-        
-        if relativePath.hasPrefix("Envanto/") {
-            // Envanto/ prefix'ini kaldır ve tam path oluştur
-            let pathWithoutPrefix = String(relativePath.dropFirst(8)) // "Envanto/" = 8 karakter
-            let absolutePath = envantoFolder.appendingPathComponent(pathWithoutPrefix).path
-            return absolutePath
-        } else if relativePath.hasPrefix("/") {
-            // Zaten mutlak path ise olduğu gibi dön (eski kayıtlar için)
-            return relativePath
+            return documentsPath
         }
         
         return nil
     }
     
-    /// Dosya varlığını kontrol eder
-    static func fileExists(relativePath: String) -> Bool {
-        guard let absolutePath = getAbsolutePath(from: relativePath) else {
-            return false
-        }
-        return FileManager.default.fileExists(atPath: absolutePath)
+    // MARK: - Upload Trigger (Android mantığı)
+    private static func triggerUploadAfterSave() {
+        // UserDefaults'tan WiFi ayarını oku
+        let wifiOnly = UserDefaults.standard.bool(forKey: Constants.UserDefaults.wifiOnly)
+        
+        
+        // Upload servisini başlat
+        UploadService.shared.startUploadService(wifiOnly: wifiOnly)
     }
     
-    /// Dosyayı siler
-    static func deleteImage(relativePath: String) -> Bool {
-        guard let absolutePath = getAbsolutePath(from: relativePath) else {
-            return false
+    // MARK: - Debug: Print actual Documents path
+    private static func printActualDocumentsPath() {
+        if let documentsDir = getAppDocumentsDirectory() {
+            
+            // Envanto klasörü var mı kontrol et
+            let envantoDir = documentsDir.appendingPathComponent("Envanto")
+            if FileManager.default.fileExists(atPath: envantoDir.path) {
+                
+                do {
+                    let contents = try FileManager.default.contentsOfDirectory(atPath: envantoDir.path)
+                    
+                    // Her müşteri klasöründe kaç resim var
+                    for customerFolder in contents.prefix(3) {
+                        let customerPath = envantoDir.appendingPathComponent(customerFolder)
+                        if let customerContents = try? FileManager.default.contentsOfDirectory(atPath: customerPath.path) {
+                            let imageCount = customerContents.filter { $0.hasSuffix(".jpg") || $0.hasSuffix(".jpeg") || $0.hasSuffix(".png") }.count
+                        }
+                    }
+                } catch {
+                }
+            } else {
+            }
+        } else {
+        }
+    }
+
+    
+    // MARK: - Save to App Documents (Files App Access)
+    private static func saveToAppDocuments(image: UIImage, customerName: String, isGallery: Bool) -> String? {
+        guard let customerDir = getAppDocumentsCustomerDir(for: customerName) else {
+            return nil
         }
         
-        let fileURL = URL(fileURLWithPath: absolutePath)
+        // Android'deki gibi dosya adı oluştur
+        let fileName = generateFileName(customerName: customerName, isGallery: isGallery)
+        let filePath = customerDir.appendingPathComponent(fileName)
+        
+        // Aynı isimde dosya varsa sayı ekle (Android mantığı)
+        let finalPath = getUniqueFilePath(basePath: filePath)
+        
+        
+        // Resmi JPEG olarak kaydet
+        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+            return nil
+        }
         
         do {
-            try FileManager.default.removeItem(at: fileURL)
-            print("🗑️ Dosya silindi: \(relativePath)")
-            return true
+            try imageData.write(to: finalPath)
+            
+            // Dosya boyutunu da kontrol et
+            if let attributes = try? FileManager.default.attributesOfItem(atPath: finalPath.path),
+               let fileSize = attributes[.size] as? Int64 {
+            }
+            
+            return finalPath.path
         } catch {
-            print("❌ Dosya silinemedi: \(error)")
-            return false
+            return nil
         }
-    }
-    
-    /// Müşteri klasörünü tamamen siler
-    static func deleteCustomerFolder(customerName: String) -> Bool {
-        guard let envantoFolder = getEnvantoFolder() else {
-            return false
-        }
-        
-        let safeCustomerName = customerName.replacingOccurrences(of: "[^a-zA-Z0-9.-]", 
-                                                               with: "_", 
-                                                               options: .regularExpression)
-        let customerPath = envantoFolder.appendingPathComponent(safeCustomerName)
-        
-        do {
-            try FileManager.default.removeItem(at: customerPath)
-            print("🗑️ Müşteri klasörü silindi: \(customerPath.path)")
-            return true
-        } catch {
-            print("❌ Müşteri klasörü silinemedi: \(error)")
-            return false
-        }
-    }
-    
-    /// Sistem durumunu kontrol eder (klasör varlığı vs.)
-    static func isSystemReady() -> Bool {
-        return getEnvantoFolder() != nil
     }
     
     // MARK: - PhotosPicker için URL'den kaydetme
@@ -206,19 +123,53 @@ class ImageStorageManager {
         return await saveImage(image: image, customerName: customerName, isGallery: true, yukleyen: yukleyen)
     }
     
-    // MARK: - Helper Functions
-    
+    // MARK: - Generate File Name (Android Pattern + Customer)
     private static func generateFileName(customerName: String, isGallery: Bool) -> String {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyyMMdd_HHmmss"
         let timeStamp = dateFormatter.string(from: Date())
         
+        // Android'deki gibi güvenli müşteri adı
         let safeCustomerName = customerName.replacingOccurrences(of: "[^a-zA-Z0-9.-]", 
-                                                               with: "_", 
-                                                               options: .regularExpression)
+                                                                with: "_", 
+                                                                options: .regularExpression)
         
         let prefix = isGallery ? "GALLERY" : "CAMERA"
         return "\(safeCustomerName)_\(prefix)_\(timeStamp).jpg"
+    }
+    
+    // MARK: - App Documents Directory Functions (Files App Access)
+    private static func getAppDocumentsDirectory() -> URL? {
+        return FileManager.default.urls(for: .documentDirectory, 
+                                       in: .userDomainMask).first
+    }
+    
+    private static func getAppDocumentsCustomerDir(for customerName: String) -> URL? {
+        guard let documentsDir = getAppDocumentsDirectory() else {
+            return nil
+        }
+        
+        let envantoDir = documentsDir.appendingPathComponent("Envanto")
+        
+        // Android'deki gibi güvenli klasör adı oluştur
+        let safeCustomerName = customerName.replacingOccurrences(of: "[^a-zA-Z0-9.-]", 
+                                                                with: "_", 
+                                                                options: .regularExpression)
+        
+        let customerDir = envantoDir.appendingPathComponent(safeCustomerName)
+        
+        // Klasör yoksa oluştur
+        if !FileManager.default.fileExists(atPath: customerDir.path) {
+            do {
+                try FileManager.default.createDirectory(at: customerDir, 
+                                                      withIntermediateDirectories: true, 
+                                                      attributes: nil)
+            } catch {
+                return nil
+            }
+        }
+        
+        return customerDir
     }
     
     private static func getUniqueFilePath(basePath: URL) -> URL {
@@ -236,8 +187,132 @@ class ImageStorageManager {
         return finalPath
     }
     
-    private static func triggerUploadAfterSave() {
-        let wifiOnly = UserDefaults.standard.bool(forKey: Constants.UserDefaults.wifiOnly)
-        UploadService.shared.startUploadService(wifiOnly: wifiOnly)
+    // MARK: - List Customer Images (App Documents)
+    static func listCustomerImages(customerName: String) async -> [String] {
+        // App Documents'tan ara
+        let documentsImages = getAppDocumentsImages(customerName: customerName)
+        
+        return documentsImages.sorted()
+    }
+    
+    private static func getAppDocumentsImages(customerName: String) -> [String] {
+        guard let customerDir = getAppDocumentsCustomerDir(for: customerName) else { return [] }
+        
+        do {
+            let fileURLs = try FileManager.default.contentsOfDirectory(at: customerDir, 
+                                                                       includingPropertiesForKeys: nil)
+            
+            // Sadece resim dosyalarını filtrele
+            let imagePaths = fileURLs
+                .filter { url in
+                    let pathExtension = url.pathExtension.lowercased()
+                    return ["jpg", "jpeg", "png"].contains(pathExtension)
+                }
+                .map { $0.path }
+                .sorted()
+            
+            return imagePaths
+        } catch {
+            return []
+        }
+    }
+    
+    // MARK: - Delete Image (App Documents)
+    static func deleteImage(at path: String) async -> Bool {
+        let fileURL = URL(fileURLWithPath: path)
+        
+        do {
+            try FileManager.default.removeItem(at: fileURL)
+            
+            // Boş klasörleri temizle
+            cleanupEmptyDirectories(fileURL.deletingLastPathComponent())
+            return true
+        } catch {
+            return false
+        }
+    }
+    
+    // MARK: - Cleanup Empty Directories
+    private static func cleanupEmptyDirectories(_ directory: URL) {
+        let contents = try? FileManager.default.contentsOfDirectory(at: directory, 
+                                                                   includingPropertiesForKeys: nil)
+        
+        // Klasör boşsa ve Envanto klasörü değilse sil
+        if contents?.isEmpty == true && directory.lastPathComponent != "Envanto" {
+            do {
+                try FileManager.default.removeItem(at: directory)
+                
+                // Üst klasörü de kontrol et
+                cleanupEmptyDirectories(directory.deletingLastPathComponent())
+            } catch {
+            }
+        }
+    }
+    
+    // MARK: - Delete Customer Images (App Documents)
+    static func deleteCustomerImages(customerName: String) async -> Bool {
+        
+        // 🎯 Klasör adını aynı şekilde dönüştür (getAppDocumentsCustomerDir ile aynı mantık)
+        let safeCustomerName = customerName.replacingOccurrences(of: "[^a-zA-Z0-9.-]", 
+                                                                with: "_", 
+                                                                options: .regularExpression)
+        
+        var fileSuccess = false
+        var dbSuccess = false
+        
+        // 1️⃣ Database kayıtlarını sil
+        dbSuccess = DatabaseManager.getInstance().deleteCustomerImages(musteriAdi: customerName)
+        
+        // 2️⃣ App Documents müşteri klasörünü sil
+        if let customerDir = getAppDocumentsCustomerDir(for: customerName) {
+            do {
+                try FileManager.default.removeItem(at: customerDir)
+                cleanupEmptyDirectories(customerDir.deletingLastPathComponent())
+                fileSuccess = true
+            } catch {
+                fileSuccess = false
+            }
+        } else {
+            fileSuccess = false
+        }
+        
+        // 3️⃣ Sonuç değerlendirmesi
+        
+        // En az birisi başarılıysa UI'ı güncelle
+        return dbSuccess || fileSuccess
+    }
+    
+    // MARK: - Get Storage Info
+    static func getStorageInfo() async -> String {
+        var info = "📱 Envanto Storage Info:\n"
+        
+        // App Documents bilgisi
+        if let documentsDir = getAppDocumentsDirectory() {
+            let envantoDir = documentsDir.appendingPathComponent("Envanto")
+            info += "📁 Files App: \(envantoDir.path)\n"
+            
+            do {
+                let contents = try FileManager.default.contentsOfDirectory(at: envantoDir, 
+                                                                           includingPropertiesForKeys: nil)
+                info += "📁 Müşteri klasörleri: \(contents.count)\n"
+                
+                // Her müşteri için resim sayısı
+                for customerDir in contents.prefix(5) {
+                    if customerDir.hasDirectoryPath {
+                        let customerName = customerDir.lastPathComponent
+                        let imageCount = getAppDocumentsImages(customerName: customerName).count
+                        info += "   • \(customerName): \(imageCount) resim\n"
+                    }
+                }
+                
+                if contents.count > 5 {
+                    info += "   ... ve \(contents.count - 5) müşteri daha\n"
+                }
+            } catch {
+                info += "📁 Files App: Henüz oluşturulmadı\n"
+            }
+        }
+        
+        return info
     }
 } 
