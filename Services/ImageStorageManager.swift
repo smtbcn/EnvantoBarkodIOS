@@ -6,89 +6,68 @@ class ImageStorageManager {
     
     // MARK: - Constants
     private static let TAG = "ImageStorageManager"
-    private static let USER_SELECTED_FOLDER_KEY = "userSelectedFolder"
+    private static let ENVANTO_FOLDER_NAME = "Envanto"
     
-    // MARK: - User Selected Folder Management (Firefox benzeri)
+    // MARK: - Automatic Folder Management
     
-    /// Kullanıcının seçtiği klasör URL'ini kaydet
-    static func saveUserSelectedFolder(_ url: URL) {
-        // Security-scoped resource olarak kaydet
-        let bookmarkData = try? url.bookmarkData(options: .minimalBookmark, includingResourceValuesForKeys: nil, relativeTo: nil)
-        UserDefaults.standard.set(bookmarkData, forKey: USER_SELECTED_FOLDER_KEY)
-        print("📁 Kullanıcı klasörü kaydedildi: \(url.path)")
-    }
-    
-    /// Kullanıcının seçtiği klasör URL'ini getir
-    static func getUserSelectedFolder() -> URL? {
-        guard let bookmarkData = UserDefaults.standard.data(forKey: USER_SELECTED_FOLDER_KEY) else {
-            print("❌ Kaydedilmiş klasör bulunamadı")
+    /// Otomatik olarak kullanıcının Files klasöründe Envanto klasörü oluşturur
+    private static func getEnvantoFolder() -> URL? {
+        // Documents dizinini al (Files uygulamasından erişilebilir)
+        guard let documentsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            print("❌ Documents dizini bulunamadı")
             return nil
         }
         
-        var isStale = false
-        do {
-            let url = try URL(resolvingBookmarkData: bookmarkData, options: .withoutUI, relativeTo: nil, bookmarkDataIsStale: &isStale)
-            
-            if isStale {
-                print("⚠️ Klasör bookmark'u eski, yeniden seçim gerekli")
-                return nil
-            }
-            
-            // Security-scoped resource'a erişim başlat
-            guard url.startAccessingSecurityScopedResource() else {
-                print("❌ Klasör erişim izni alınamadı")
-                return nil
-            }
-            
-            print("✅ Kullanıcı klasörü bulundu: \(url.path)")
-            return url
-        } catch {
-            print("❌ Klasör bookmark çözümlenemedi: \(error)")
-            return nil
-        }
-    }
-    
-    /// Kullanıcının klasör seçip seçmediğini kontrol et
-    static func isUserFolderSelected() -> Bool {
-        return getUserSelectedFolder() != nil
-    }
-    
-    // MARK: - Save Image (User Selected Folder)
-    static func saveImage(image: UIImage, customerName: String, isGallery: Bool, yukleyen: String) async -> String? {
+        let envantoFolder = documentsDir.appendingPathComponent(ENVANTO_FOLDER_NAME)
         
-        guard let userFolder = getUserSelectedFolder() else {
-            print("❌ Kullanıcı klasörü seçmemiş!")
-            return nil
-        }
-        
-        // Envanto ana klasörü oluştur
-        let envantoFolder = userFolder.appendingPathComponent("Envanto")
-        
-        do {
-            if !FileManager.default.fileExists(atPath: envantoFolder.path) {
+        // Envanto klasörü yoksa oluştur
+        if !FileManager.default.fileExists(atPath: envantoFolder.path) {
+            do {
                 try FileManager.default.createDirectory(at: envantoFolder, withIntermediateDirectories: true, attributes: nil)
                 print("📁 Envanto klasörü oluşturuldu: \(envantoFolder.path)")
+            } catch {
+                print("❌ Envanto klasörü oluşturulamadı: \(error)")
+                return nil
             }
-        } catch {
-            print("❌ Envanto klasörü oluşturulamadı: \(error)")
-            userFolder.stopAccessingSecurityScopedResource()
+        } else {
+            print("✅ Envanto klasörü mevcut: \(envantoFolder.path)")
+        }
+        
+        return envantoFolder
+    }
+    
+    /// Müşteri klasörünü oluştur ve döndür
+    private static func getCustomerFolder(customerName: String) -> URL? {
+        guard let envantoFolder = getEnvantoFolder() else {
             return nil
         }
         
-        // Müşteri klasörü oluştur
+        // Müşteri adını güvenli hale getir
         let safeCustomerName = customerName.replacingOccurrences(of: "[^a-zA-Z0-9.-]", 
                                                                with: "_", 
                                                                options: .regularExpression)
+        
         let customerFolder = envantoFolder.appendingPathComponent(safeCustomerName)
         
-        do {
-            if !FileManager.default.fileExists(atPath: customerFolder.path) {
+        // Müşteri klasörü yoksa oluştur
+        if !FileManager.default.fileExists(atPath: customerFolder.path) {
+            do {
                 try FileManager.default.createDirectory(at: customerFolder, withIntermediateDirectories: true, attributes: nil)
                 print("📁 Müşteri klasörü oluşturuldu: \(customerFolder.path)")
+            } catch {
+                print("❌ Müşteri klasörü oluşturulamadı: \(error)")
+                return nil
             }
-        } catch {
-            print("❌ Müşteri klasörü oluşturulamadı: \(error)")
-            userFolder.stopAccessingSecurityScopedResource()
+        }
+        
+        return customerFolder
+    }
+    
+    // MARK: - Save Image
+    static func saveImage(image: UIImage, customerName: String, isGallery: Bool, yukleyen: String) async -> String? {
+        
+        guard let customerFolder = getCustomerFolder(customerName: customerName) else {
+            print("❌ Müşteri klasörü oluşturulamadı")
             return nil
         }
         
@@ -100,7 +79,6 @@ class ImageStorageManager {
         // Resmi kaydet
         guard let imageData = image.jpegData(compressionQuality: 0.8) else {
             print("❌ Resim JPEG'e çevrilemedi")
-            userFolder.stopAccessingSecurityScopedResource()
             return nil
         }
         
@@ -109,6 +87,10 @@ class ImageStorageManager {
             print("✅ Resim kaydedildi: \(finalPath.path)")
             
             // Relative path oluştur (Envanto'dan başlayarak)
+            guard let envantoFolder = getEnvantoFolder() else {
+                return nil
+            }
+            
             let relativePath = "Envanto/" + finalPath.path.replacingOccurrences(of: envantoFolder.path + "/", with: "")
             
             // Veritabanına relative path kaydet
@@ -128,12 +110,10 @@ class ImageStorageManager {
                 print("❌ Veritabanı kayıt hatası!")
             }
             
-            userFolder.stopAccessingSecurityScopedResource()
             return finalPath.path
             
         } catch {
             print("❌ Resim kaydedilemedi: \(error)")
-            userFolder.stopAccessingSecurityScopedResource()
             return nil
         }
     }
@@ -142,13 +122,21 @@ class ImageStorageManager {
     
     /// Relative path'i mutlak path'e çevirir
     static func getAbsolutePath(from relativePath: String) -> String? {
-        guard let userFolder = getUserSelectedFolder() else {
+        guard let envantoFolder = getEnvantoFolder() else {
             return nil
         }
         
-        let absolutePath = userFolder.appendingPathComponent(relativePath).path
-        userFolder.stopAccessingSecurityScopedResource()
-        return absolutePath
+        if relativePath.hasPrefix("Envanto/") {
+            // Envanto/ prefix'ini kaldır ve tam path oluştur
+            let pathWithoutPrefix = String(relativePath.dropFirst(8)) // "Envanto/" = 8 karakter
+            let absolutePath = envantoFolder.appendingPathComponent(pathWithoutPrefix).path
+            return absolutePath
+        } else if relativePath.hasPrefix("/") {
+            // Zaten mutlak path ise olduğu gibi dön (eski kayıtlar için)
+            return relativePath
+        }
+        
+        return nil
     }
     
     /// Dosya varlığını kontrol eder
@@ -161,45 +149,46 @@ class ImageStorageManager {
     
     /// Dosyayı siler
     static func deleteImage(relativePath: String) -> Bool {
-        guard let userFolder = getUserSelectedFolder() else {
+        guard let absolutePath = getAbsolutePath(from: relativePath) else {
             return false
         }
         
-        let absolutePath = userFolder.appendingPathComponent(relativePath)
+        let fileURL = URL(fileURLWithPath: absolutePath)
         
         do {
-            try FileManager.default.removeItem(at: absolutePath)
+            try FileManager.default.removeItem(at: fileURL)
             print("🗑️ Dosya silindi: \(relativePath)")
-            userFolder.stopAccessingSecurityScopedResource()
             return true
         } catch {
             print("❌ Dosya silinemedi: \(error)")
-            userFolder.stopAccessingSecurityScopedResource()
             return false
         }
     }
     
     /// Müşteri klasörünü tamamen siler
     static func deleteCustomerFolder(customerName: String) -> Bool {
-        guard let userFolder = getUserSelectedFolder() else {
+        guard let envantoFolder = getEnvantoFolder() else {
             return false
         }
         
         let safeCustomerName = customerName.replacingOccurrences(of: "[^a-zA-Z0-9.-]", 
                                                                with: "_", 
                                                                options: .regularExpression)
-        let customerPath = userFolder.appendingPathComponent("Envanto").appendingPathComponent(safeCustomerName)
+        let customerPath = envantoFolder.appendingPathComponent(safeCustomerName)
         
         do {
             try FileManager.default.removeItem(at: customerPath)
             print("🗑️ Müşteri klasörü silindi: \(customerPath.path)")
-            userFolder.stopAccessingSecurityScopedResource()
             return true
         } catch {
             print("❌ Müşteri klasörü silinemedi: \(error)")
-            userFolder.stopAccessingSecurityScopedResource()
             return false
         }
+    }
+    
+    /// Sistem durumunu kontrol eder (klasör varlığı vs.)
+    static func isSystemReady() -> Bool {
+        return getEnvantoFolder() != nil
     }
     
     // MARK: - PhotosPicker için URL'den kaydetme
