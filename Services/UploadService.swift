@@ -31,6 +31,8 @@ class UploadService: ObservableObject {
     @Published var uploadProgress: (current: Int, total: Int) = (0, 0)
     @Published var uploadStatus = "Hazır"
     
+
+    
     private var uploadTimer: Timer?
     private var backgroundTask: UIBackgroundTaskIdentifier = .invalid
     private var cancellables = Set<AnyCancellable>()
@@ -107,6 +109,13 @@ class UploadService: ObservableObject {
     // MARK: - Upload Logic (Android UploadRetryService benzeri)
     @MainActor
     private func checkAndUploadPendingImages(wifiOnly: Bool) async {
+        // 🔒 Global Upload Lock - BackgroundUploadManager ile çakışma önleme
+        guard Constants.UploadLock.lockUpload() else {
+            print("⏸️ UploadService: Upload zaten devam ediyor (BackgroundUploadManager), atlanıyor")
+            uploadStatus = "Background upload devam ediyor..."
+            return
+        }
+        defer { Constants.UploadLock.unlockUpload() }
         
         // Database'den yüklenmemiş resimleri al
         let dbManager = DatabaseManager.getInstance()
@@ -166,6 +175,15 @@ class UploadService: ObservableObject {
         
         for (index, imageRecord) in pendingImages.enumerated() {
             uploadProgress = (index, totalCount)
+            
+            // 🔍 CRITICAL: Upload öncesi database'de hala pending mi kontrol et
+            let currentPendingImages = dbManager.getAllPendingImages()
+            let stillPending = currentPendingImages.first(where: { $0.id == imageRecord.id })
+            
+            if stillPending == nil {
+                print("⏭️ UploadService: Resim zaten yüklenmiş, atlanıyor - ID: \(imageRecord.id)")
+                continue
+            }
             
             // PATH KONTROL DETAYI
             if imageRecord.resimYolu.isEmpty {

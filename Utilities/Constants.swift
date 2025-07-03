@@ -6,13 +6,15 @@ struct Constants {
     struct Network {
         static let defaultBaseURL = "https://envanto.app/barkodindex.asp?barcode="
         static let timeoutInterval: TimeInterval = 30.0
+        static let baseURL = "https://envanto.app/barkod_yukle_android"
+        static let uploadTimeout: TimeInterval = 30.0
     }
     
     struct UserDefaults {
         static let baseURL = "base_url"
         static let deviceOwner = "device_owner"
         static let isFirstLaunch = "is_first_launch"
-        static let wifiOnly = "wifi_only" // Android uyumlu key
+        static let wifiOnly = "upload_wifi_only"
         static let wifiOnlyUpload = "wifi_only_upload"
         static let batteryOptimizationInfoShown = "battery_optimization_info_shown"
         static let lastUpdateCheck = "last_update_check"
@@ -47,6 +49,35 @@ struct Constants {
     struct Sounds {
         static let beepSoundID: UInt32 = 1004
         static let vibrationSoundID: UInt32 = kSystemSoundID_Vibrate
+    }
+    
+    // MARK: - Upload Lock (Global - Duplicate Upload Prevention)
+    struct UploadLock {
+        static var isUploadInProgress = false
+        static let uploadLock = NSLock()
+        
+        static func lockUpload() -> Bool {
+            uploadLock.lock()
+            defer { uploadLock.unlock() }
+            
+            if isUploadInProgress {
+                return false // Upload zaten devam ediyor
+            }
+            
+            isUploadInProgress = true
+            return true // Upload başlatılabilir
+        }
+        
+        static func unlockUpload() {
+            uploadLock.lock()
+            defer { uploadLock.unlock() }
+            isUploadInProgress = false
+        }
+    }
+    
+    // MARK: - File Storage
+    struct Storage {
+        static let appFolderName = "Envanto"
     }
 }
 

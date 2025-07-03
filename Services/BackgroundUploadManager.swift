@@ -13,6 +13,8 @@ class BackgroundUploadManager {
     private let networkMonitor = NWPathMonitor()
     private let monitorQueue = DispatchQueue(label: "NetworkMonitor")
     
+
+    
     private init() {
         registerBackgroundTasks()
         startNetworkMonitoring()
@@ -77,6 +79,13 @@ class BackgroundUploadManager {
     
     // MARK: - Perform Background Upload
     private func performBackgroundUpload() async -> Bool {
+        // 🔒 Global Upload Lock - UploadService ile çakışma önleme
+        guard Constants.UploadLock.lockUpload() else {
+            print("⏸️ Background upload: Upload zaten devam ediyor (UploadService), atlanıyor")
+            return false
+        }
+        defer { Constants.UploadLock.unlockUpload() }
+        
         print("📤 Background upload başlıyor...")
         
         // WiFi ayarını kontrol et
@@ -116,6 +125,15 @@ class BackgroundUploadManager {
         
         for i in 0..<maxUploads {
             let imageRecord = pendingImages[i]
+            
+            // 🔍 CRITICAL: Upload öncesi database'de hala pending mi kontrol et
+            let currentPendingImages = dbManager.getAllPendingImages()
+            let stillPending = currentPendingImages.first(where: { $0.id == imageRecord.id })
+            
+            if stillPending == nil {
+                print("⏭️ Background upload: Resim zaten yüklenmiş, atlanıyor - ID: \(imageRecord.id)")
+                continue
+            }
             
             // Network kontrolü (her resim için)
             let currentCheck = NetworkUtils.canUploadWithSettings(wifiOnly: wifiOnly)
