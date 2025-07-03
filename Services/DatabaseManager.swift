@@ -1,6 +1,11 @@
 import Foundation
 import SQLite3
 
+// MARK: - Thread Safety Note
+// DatabaseManager tüm database işlemlerini serial queue (databaseQueue) üzerinden yapar.
+// Bu sayede SQLite multi-threaded access hatalarının önüne geçilir.
+// BackgroundUploadManager, UploadService ve UI thread'leri güvenle database'e erişebilir.
+
 // SQLITE_TRANSIENT macro tanımı
 private let SQLITE_TRANSIENT = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
 
@@ -274,40 +279,44 @@ class DatabaseManager {
         return false
     }
     
-    // MARK: - Get Uploaded Images Count
+    // MARK: - Get Uploaded Images Count (Thread-safe)
     func getUploadedImagesCount() -> Int {
         guard db != nil else { return 0 }
         
-        let countSQL = "SELECT COUNT(*) FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER)"
-        var statement: OpaquePointer?
-        var count = 0
-        
-        if sqlite3_prepare_v2(db, countSQL, -1, &statement, nil) == SQLITE_OK {
-            if sqlite3_step(statement) == SQLITE_ROW {
-                count = Int(sqlite3_column_int(statement, 0))
+        return databaseQueue.sync {
+            let countSQL = "SELECT COUNT(*) FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER)"
+            var statement: OpaquePointer?
+            var count = 0
+            
+            if sqlite3_prepare_v2(db, countSQL, -1, &statement, nil) == SQLITE_OK {
+                if sqlite3_step(statement) == SQLITE_ROW {
+                    count = Int(sqlite3_column_int(statement, 0))
+                }
             }
+            
+            sqlite3_finalize(statement)
+            return count
         }
-        
-        sqlite3_finalize(statement)
-        return count
     }
     
-    // MARK: - Get Pending Upload Count (yuklendi = 0)
+    // MARK: - Get Pending Upload Count (yuklendi = 0) (Thread-safe)
     func getPendingUploadCount() -> Int {
         guard db != nil else { return 0 }
         
-        let countSQL = "SELECT COUNT(*) FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) WHERE \(DatabaseManager.COLUMN_YUKLENDI) = 0"
-        var statement: OpaquePointer?
-        var count = 0
-        
-        if sqlite3_prepare_v2(db, countSQL, -1, &statement, nil) == SQLITE_OK {
-            if sqlite3_step(statement) == SQLITE_ROW {
-                count = Int(sqlite3_column_int(statement, 0))
+        return databaseQueue.sync {
+            let countSQL = "SELECT COUNT(*) FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) WHERE \(DatabaseManager.COLUMN_YUKLENDI) = 0"
+            var statement: OpaquePointer?
+            var count = 0
+            
+            if sqlite3_prepare_v2(db, countSQL, -1, &statement, nil) == SQLITE_OK {
+                if sqlite3_step(statement) == SQLITE_ROW {
+                    count = Int(sqlite3_column_int(statement, 0))
+                }
             }
+            
+            sqlite3_finalize(statement)
+            return count
         }
-        
-        sqlite3_finalize(statement)
-        return count
     }
     
     // MARK: - Get Customer Images (belirli müşterinin resimlerini getir - Thread-safe)
@@ -616,112 +625,124 @@ class DatabaseManager {
     func saveCihazYetki(cihazBilgisi: String, cihazSahibi: String, cihazOnay: Int) -> Bool {
         guard db != nil else { return false }
         
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-        let sonKontrol = dateFormatter.string(from: Date())
-        
-        // Önce mevcut kaydı kontrol et
-        if var existingRecord = getCihazYetki(cihazBilgisi: cihazBilgisi) {
-            // Güncelle
-            let updateSQL = """
-                UPDATE \(DatabaseManager.TABLE_CIHAZ_YETKI) 
-                SET \(DatabaseManager.COLUMN_CIHAZ_SAHIBI) = ?, 
-                    \(DatabaseManager.COLUMN_CIHAZ_ONAY) = ?, 
-                    \(DatabaseManager.COLUMN_CIHAZ_SON_KONTROL) = ?
-                WHERE \(DatabaseManager.COLUMN_CIHAZ_BILGISI) = ?
-            """
+        return databaseQueue.sync {
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+            let sonKontrol = dateFormatter.string(from: Date())
             
-            var statement: OpaquePointer?
-            if sqlite3_prepare_v2(db, updateSQL, -1, &statement, nil) == SQLITE_OK {
-                sqlite3_bind_text(statement, 1, cihazSahibi, -1, nil)
-                sqlite3_bind_int(statement, 2, Int32(cihazOnay))
-                sqlite3_bind_text(statement, 3, sonKontrol, -1, nil)
-                sqlite3_bind_text(statement, 4, cihazBilgisi, -1, nil)
+            // Önce mevcut kaydı kontrol et
+            if var existingRecord = getCihazYetki(cihazBilgisi: cihazBilgisi) {
+                // Güncelle
+                let updateSQL = """
+                    UPDATE \(DatabaseManager.TABLE_CIHAZ_YETKI) 
+                    SET \(DatabaseManager.COLUMN_CIHAZ_SAHIBI) = ?, 
+                        \(DatabaseManager.COLUMN_CIHAZ_ONAY) = ?, 
+                        \(DatabaseManager.COLUMN_CIHAZ_SON_KONTROL) = ?
+                    WHERE \(DatabaseManager.COLUMN_CIHAZ_BILGISI) = ?
+                """
                 
-                if sqlite3_step(statement) == SQLITE_DONE {
-                    sqlite3_finalize(statement)
-                    return true
+                var statement: OpaquePointer?
+                if sqlite3_prepare_v2(db, updateSQL, -1, &statement, nil) == SQLITE_OK {
+                    sqlite3_bind_text(statement, 1, cihazSahibi, -1, nil)
+                    sqlite3_bind_int(statement, 2, Int32(cihazOnay))
+                    sqlite3_bind_text(statement, 3, sonKontrol, -1, nil)
+                    sqlite3_bind_text(statement, 4, cihazBilgisi, -1, nil)
+                    
+                    if sqlite3_step(statement) == SQLITE_DONE {
+                        sqlite3_finalize(statement)
+                        return true
+                    }
                 }
+                sqlite3_finalize(statement)
+            } else {
+                // Yeni kayıt ekle
+                let insertSQL = """
+                    INSERT INTO \(DatabaseManager.TABLE_CIHAZ_YETKI) 
+                    (\(DatabaseManager.COLUMN_CIHAZ_BILGISI), \(DatabaseManager.COLUMN_CIHAZ_SAHIBI), 
+                     \(DatabaseManager.COLUMN_CIHAZ_ONAY), \(DatabaseManager.COLUMN_CIHAZ_SON_KONTROL)) 
+                    VALUES (?, ?, ?, ?)
+                """
+                
+                var statement: OpaquePointer?
+                if sqlite3_prepare_v2(db, insertSQL, -1, &statement, nil) == SQLITE_OK {
+                    sqlite3_bind_text(statement, 1, cihazBilgisi, -1, nil)
+                    sqlite3_bind_text(statement, 2, cihazSahibi, -1, nil)
+                    sqlite3_bind_int(statement, 3, Int32(cihazOnay))
+                    sqlite3_bind_text(statement, 4, sonKontrol, -1, nil)
+                    
+                    if sqlite3_step(statement) == SQLITE_DONE {
+                        sqlite3_finalize(statement)
+                        return true
+                    }
+                }
+                sqlite3_finalize(statement)
             }
-            sqlite3_finalize(statement)
-        } else {
-            // Yeni kayıt ekle
-            let insertSQL = """
-                INSERT INTO \(DatabaseManager.TABLE_CIHAZ_YETKI) 
-                (\(DatabaseManager.COLUMN_CIHAZ_BILGISI), \(DatabaseManager.COLUMN_CIHAZ_SAHIBI), 
-                 \(DatabaseManager.COLUMN_CIHAZ_ONAY), \(DatabaseManager.COLUMN_CIHAZ_SON_KONTROL)) 
-                VALUES (?, ?, ?, ?)
-            """
             
-            var statement: OpaquePointer?
-            if sqlite3_prepare_v2(db, insertSQL, -1, &statement, nil) == SQLITE_OK {
-                sqlite3_bind_text(statement, 1, cihazBilgisi, -1, nil)
-                sqlite3_bind_text(statement, 2, cihazSahibi, -1, nil)
-                sqlite3_bind_int(statement, 3, Int32(cihazOnay))
-                sqlite3_bind_text(statement, 4, sonKontrol, -1, nil)
-                
-                if sqlite3_step(statement) == SQLITE_DONE {
-                    sqlite3_finalize(statement)
-                    return true
-                }
-            }
-            sqlite3_finalize(statement)
+            return false
         }
-        
-        return false
     }
     
     func getCihazYetki(cihazBilgisi: String) -> CihazYetki? {
         guard db != nil else { return nil }
         
-        let selectSQL = """
-            SELECT \(DatabaseManager.COLUMN_CIHAZ_ID), \(DatabaseManager.COLUMN_CIHAZ_BILGISI), 
-                   \(DatabaseManager.COLUMN_CIHAZ_SAHIBI), \(DatabaseManager.COLUMN_CIHAZ_ONAY), 
-                   \(DatabaseManager.COLUMN_CIHAZ_SON_KONTROL)
-            FROM \(DatabaseManager.TABLE_CIHAZ_YETKI) 
-            WHERE \(DatabaseManager.COLUMN_CIHAZ_BILGISI) = ? 
-            LIMIT 1
-        """
-        
-        var statement: OpaquePointer?
-        var result: CihazYetki?
-        
-        if sqlite3_prepare_v2(db, selectSQL, -1, &statement, nil) == SQLITE_OK {
-            sqlite3_bind_text(statement, 1, cihazBilgisi, -1, nil)
+        return databaseQueue.sync {
+            let selectSQL = """
+                SELECT \(DatabaseManager.COLUMN_CIHAZ_ID), \(DatabaseManager.COLUMN_CIHAZ_BILGISI), 
+                       \(DatabaseManager.COLUMN_CIHAZ_SAHIBI), \(DatabaseManager.COLUMN_CIHAZ_ONAY), 
+                       \(DatabaseManager.COLUMN_CIHAZ_SON_KONTROL)
+                FROM \(DatabaseManager.TABLE_CIHAZ_YETKI) 
+                WHERE \(DatabaseManager.COLUMN_CIHAZ_BILGISI) = ? 
+                LIMIT 1
+            """
             
-            if sqlite3_step(statement) == SQLITE_ROW {
-                let id = Int(sqlite3_column_int(statement, 0))
-                let cihazBilgisi = String(cString: sqlite3_column_text(statement, 1))
-                let cihazSahibi = String(cString: sqlite3_column_text(statement, 2))
-                let cihazOnay = Int(sqlite3_column_int(statement, 3))
-                let sonKontrol = String(cString: sqlite3_column_text(statement, 4))
+            var statement: OpaquePointer?
+            var result: CihazYetki?
+            
+            if sqlite3_prepare_v2(db, selectSQL, -1, &statement, nil) == SQLITE_OK {
+                sqlite3_bind_text(statement, 1, cihazBilgisi, -1, nil)
                 
-                result = CihazYetki(
-                    id: id,
-                    cihazBilgisi: cihazBilgisi,
-                    cihazSahibi: cihazSahibi,
-                    cihazOnay: cihazOnay,
-                    sonKontrol: sonKontrol
-                )
+                if sqlite3_step(statement) == SQLITE_ROW {
+                    let id = Int(sqlite3_column_int(statement, 0))
+                    let cihazBilgisi = String(cString: sqlite3_column_text(statement, 1))
+                    let cihazSahibi = String(cString: sqlite3_column_text(statement, 2))
+                    let cihazOnay = Int(sqlite3_column_int(statement, 3))
+                    let sonKontrol = String(cString: sqlite3_column_text(statement, 4))
+                    
+                    result = CihazYetki(
+                        id: id,
+                        cihazBilgisi: cihazBilgisi,
+                        cihazSahibi: cihazSahibi,
+                        cihazOnay: cihazOnay,
+                        sonKontrol: sonKontrol
+                    )
+                }
             }
+            
+            sqlite3_finalize(statement)
+            return result
         }
-        
-        sqlite3_finalize(statement)
-        return result
     }
     
     func getCihazSahibi(cihazBilgisi: String) -> String {
-        if let cihazYetki = getCihazYetki(cihazBilgisi: cihazBilgisi) {
-            return cihazYetki.cihazSahibi
+        guard db != nil else { return "" }
+        
+        return databaseQueue.sync {
+            if let cihazYetki = getCihazYetki(cihazBilgisi: cihazBilgisi) {
+                return cihazYetki.cihazSahibi
+            }
+            return ""
         }
-        return ""
     }
     
     func isCihazYetkili(cihazBilgisi: String) -> Bool {
-        if let cihazYetki = getCihazYetki(cihazBilgisi: cihazBilgisi) {
-            return cihazYetki.cihazOnay == 1
+        guard db != nil else { return false }
+        
+        return databaseQueue.sync {
+            if let cihazYetki = getCihazYetki(cihazBilgisi: cihazBilgisi) {
+                return cihazYetki.cihazOnay == 1
+            }
+            return false
         }
-        return false
     }
     
     // MARK: - Import Existing Images (Mevcut dosyaları database'e aktar)
