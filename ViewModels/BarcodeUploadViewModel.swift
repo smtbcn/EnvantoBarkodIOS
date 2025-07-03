@@ -678,7 +678,7 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         }
     }
     
-    // MARK: - Delete Customer Folder (Tüm müşteri klasörünü sil - ID bazlı)
+    // MARK: - Delete Customer Folder (Sadece yüklenmiş resimleri sil - toplu silme)
     func deleteCustomerFolder(_ customerName: String) {
         Task {
             let dbManager = DatabaseManager.getInstance()
@@ -693,32 +693,61 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
                 customerRecords = dbManager.getCustomerImages(musteriAdi: dbCustomerName)
             }
             
-            // Database ID'lerini topla
-            let databaseIds = customerRecords.map { $0.id }
+            // ⚠️ SADECE YÜKLENMİŞ RESİMLERİ FİLTRELE (yuklendi = 1)
+            let uploadedRecords = customerRecords.filter { $0.isUploaded }
+            let pendingRecords = customerRecords.filter { !$0.isUploaded }
             
-            // Debug: Silinecek ID'leri logla
-
+            if uploadedRecords.isEmpty {
+                await MainActor.run {
+                    showError("Bu müşteriye ait yüklenmiş resim bulunamadı. Sadece bekleyen resimler var.")
+                }
+                return
+            }
             
-            // 1️⃣ Database'den ID'ler ile toplu silme (Daha güvenilir)
-            let dbDeleteSuccess = dbManager.deleteImagesByIds(databaseIds)
+            // Yüklenmiş resimlerin ID'lerini topla
+            let uploadedIds = uploadedRecords.map { $0.id }
+            let uploadedPaths = uploadedRecords.map { $0.resimYolu }
             
-            // 2️⃣ Dosya klasörünü sil (ImageStorageManager)
-            let fileDeleteSuccess = await ImageStorageManager.deleteCustomerImages(customerName: customerName)
+            // 1️⃣ Database'den sadece yüklenmiş resimleri sil
+            let dbDeleteSuccess = dbManager.deleteImagesByIds(uploadedIds)
+            
+            // 2️⃣ Sadece yüklenmiş resim dosyalarını sil
+            var fileDeleteSuccess = true
+            var deletedFileCount = 0
+            
+            for imagePath in uploadedPaths {
+                let success = await ImageStorageManager.deleteImage(at: imagePath)
+                if success {
+                    deletedFileCount += 1
+                } else {
+                    fileDeleteSuccess = false
+                }
+            }
             
             await MainActor.run {
-                if dbDeleteSuccess || fileDeleteSuccess {
-                    // UI'dan müşterinin tüm resimlerini kaldır
-                    let removedCount = savedImages.filter { $0.customerName == customerName }.count
-                    savedImages.removeAll { $0.customerName == customerName }
+                if dbDeleteSuccess || deletedFileCount > 0 {
+                    // UI'dan sadece yüklenmiş resimleri kaldır
+                    savedImages.removeAll { image in
+                        uploadedIds.contains(image.databaseId)
+                    }
                     
-                    
+                    // Başarı mesajı
+                    let message = """
+                    ✅ Toplu silme tamamlandı:
+                    • Silinen: \(uploadedRecords.count) yüklenmiş resim
+                    • Korunan: \(pendingRecords.count) bekleyen resim
+                    """
                     
                     // Müşteri gruplarını güncelle
                     loadCustomerImageGroups()
+                    
+                    // Bilgi mesajı (hata değil, bilgilendirme)
+                    if pendingRecords.count > 0 {
+                        showError(message) // showError yerine showInfo olabilir ama şimdilik bu
+                    }
                 } else {
-                    // Her ikisi de başarısızsa hata mesajı
-        
-                    showError("Müşteri klasörü silme hatası: Hem database hem dosya silme başarısız")
+                    // Hiçbir silme işlemi başarısız
+                    showError("Yüklenmiş resimler silinemedi")
                 }
             }
         }

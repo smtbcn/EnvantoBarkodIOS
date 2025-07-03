@@ -380,7 +380,7 @@ struct BarcodeUploadView: View {
             } message: {
                 Text(alertMessage)
             }
-            .alert("Müşteri Klasörünü Sil", isPresented: $showingDeleteCustomerAlert) {
+            .alert("Toplu Resim Silme", isPresented: $showingDeleteCustomerAlert) {
                 Button("İptal", role: .cancel) { }
                 Button("Sil", role: .destructive) {
                     // Müşteri klasörünü sil
@@ -392,7 +392,7 @@ struct BarcodeUploadView: View {
                     customerToDelete = ""
                 }
             } message: {
-                Text("'\(customerToDelete)' müşterisine ait tüm resimler silinecek. Bu işlem geri alınamaz.")
+                Text("'\(customerToDelete)' müşterisine ait SADECE YÜKLENMİŞ resimler silinecek.\n\n⚠️ Yükleme bekleyen resimler korunacak.\n\nBu işlem geri alınamaz.")
         }
             .onChange(of: selectedPhotos) { photos in
                 Task {
