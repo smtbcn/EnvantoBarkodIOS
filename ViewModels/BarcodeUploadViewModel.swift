@@ -149,6 +149,21 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         loadSavedImages()
         // Müşteri gruplarını da yükle
         loadCustomerImageGroups()
+        
+        // 🚀 Upload service'i başlat (background upload için)
+        startUploadServiceIfNeeded()
+    }
+    
+    // MARK: - Upload Service Management
+    private func startUploadServiceIfNeeded() {
+        let wifiOnly = UserDefaults.standard.bool(forKey: "upload_wifi_only")
+        
+        // Upload service'i başlat
+        UploadService.shared.startUploadService(wifiOnly: wifiOnly)
+        print("🚀 Upload service başlatıldı (WiFi Only: \(wifiOnly))")
+        
+        // Background manager'a da bilgi ver
+        BackgroundUploadManager.shared.checkPendingUploadsImmediately()
     }
     
     private func onDeviceAuthFailure() {

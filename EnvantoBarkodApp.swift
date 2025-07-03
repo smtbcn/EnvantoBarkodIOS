@@ -19,6 +19,11 @@ struct EnvantoBarkodApp: App {
                     // Uygulama arka plana geçtiğinde background task zamanla
                     BackgroundUploadManager.shared.scheduleBackgroundUpload()
                 }
+                .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+                    // Uygulama foreground'a geçtiğinde pending upload'ları kontrol et
+                    print("📱 App foreground'a geçti - Upload kontrol ediliyor")
+                    BackgroundUploadManager.shared.checkPendingUploadsImmediately()
+                }
         }
     }
     

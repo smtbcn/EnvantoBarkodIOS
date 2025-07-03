@@ -33,14 +33,21 @@ class BackgroundUploadManager {
     
     // MARK: - Schedule Background Task
     func scheduleBackgroundUpload() {
-        let request = BGAppRefreshTaskRequest(identifier: BackgroundUploadManager.backgroundTaskIdentifier)
-        request.earliestBeginDate = Date(timeIntervalSinceNow: 15 * 60) // 15 dakika sonra
+        // iOS Background Task sınırlamaları nedeniyle basit timer kullanıyoruz
+        print("📅 Background upload timer başlatılıyor...")
         
-        do {
-            try BGTaskScheduler.shared.submit(request)
-            print("✅ Background upload task zamanlandı")
-        } catch {
-            print("❌ Background task zamanlama hatası: \(error)")
+        // Network değişikliği algılandığında kısa bir süre sonra upload kontrol et
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+            Task {
+                await self.performBackgroundUpload()
+            }
+        }
+    }
+    
+    // MARK: - Alternative: Immediate Upload Check (iOS Background sınırlamaları için)
+    func checkPendingUploadsImmediately() {
+        Task {
+            await performBackgroundUpload()
         }
     }
     
