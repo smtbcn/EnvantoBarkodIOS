@@ -1,7 +1,7 @@
 import SwiftUI
 import AVFoundation
 import Vision
-import Combine
+import AudioToolbox
 
 class ScannerViewModel: NSObject, ObservableObject {
     @Published var isFlashOn = false
@@ -13,33 +13,50 @@ class ScannerViewModel: NSObject, ObservableObject {
     @Published var showWebBrowser = false
     @Published var currentURL = ""
     
-    // Optimize edilmiş servisler
-    private let cameraService = CameraService()
-    private let barcodeService = BarcodeService()
-    private var cancellables = Set<AnyCancellable>()
+    let captureSession = AVCaptureSession()
+    private var videoOutput = AVCaptureVideoDataOutput()
+    private var captureDevice: AVCaptureDevice?
+    private let sessionQueue = DispatchQueue(label: "camera.session.queue")
     
     private var lastScanTime: Date = Date()
     private let scanCooldown: TimeInterval = 2.0 // 2 saniye bekleme süresi
     
     override init() {
         super.init()
-        setupServices()
+        setupCamera()
         setupScannerAnimation()
     }
     
-    private func setupServices() {
-        // CameraService ile BarcodeService'i bağla
-        cameraService.delegate = self
-        barcodeService.cameraService = cameraService
-        
-        // Barkod algılama dinleyicisi - main thread'de çalışacak
-        barcodeService.$detectedBarcode
-            .compactMap { $0 }
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] barcodeResult in
-                self?.handleBarcodeDetection(barcodeResult.content)
+    private func setupCamera() {
+        sessionQueue.async { [weak self] in
+            guard let self = self else { return }
+            
+            self.captureSession.beginConfiguration()
+            
+            // Kamera cihazını ayarla
+            guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else {
+                return
             }
-            .store(in: &cancellables)
+            
+            self.captureDevice = device
+            
+            do {
+                let input = try AVCaptureDeviceInput(device: device)
+                if self.captureSession.canAddInput(input) {
+                    self.captureSession.addInput(input)
+                }
+            } catch {
+                return
+            }
+            
+            // Video output'u ayarla
+            self.videoOutput.setSampleBufferDelegate(self, queue: DispatchQueue(label: "video.output.queue"))
+            if self.captureSession.canAddOutput(self.videoOutput) {
+                self.captureSession.addOutput(self.videoOutput)
+            }
+            
+            self.captureSession.commitConfiguration()
+        }
     }
     
     private func setupScannerAnimation() {
@@ -49,70 +66,116 @@ class ScannerViewModel: NSObject, ObservableObject {
         }
     }
     
-    // CameraService'e yönlendirme
-    var captureSession: AVCaptureSession {
-        return cameraService.captureSession
-    }
-    
     func startScanning() {
-        cameraService.startRunning()
+        sessionQueue.async { [weak self] in
+            guard let self = self else { return }
+            if !self.captureSession.isRunning {
+                self.captureSession.startRunning()
+            }
+        }
     }
     
     func stopScanning() {
-        cameraService.stopRunning()
+        sessionQueue.async { [weak self] in
+            guard let self = self else { return }
+            if self.captureSession.isRunning {
+                self.captureSession.stopRunning()
+            }
+        }
     }
     
     func toggleFlash() {
-        let newFlashState = cameraService.toggleFlash()
-        DispatchQueue.main.async {
-            self.isFlashOn = newFlashState
+        guard let device = captureDevice, device.hasTorch else { return }
+        
+        do {
+            try device.lockForConfiguration()
+            
+            if isFlashOn {
+                device.torchMode = .off
+            } else {
+                device.torchMode = .on
+            }
+            
+            device.unlockForConfiguration()
+            
+            DispatchQueue.main.async {
+                self.isFlashOn.toggle()
+            }
+        } catch {
         }
     }
     
     func resetScanning() {
-        DispatchQueue.main.async {
-            self.scannedBarcode = ""
-            self.lastScanTime = Date()
-        }
-        barcodeService.resetDetection()
+        scannedBarcode = ""
+        lastScanTime = Date()
     }
     
     func handleBarcodeDetection(_ barcode: String) {
-        // Cooldown kontrolü
-        let now = Date()
-        if now.timeIntervalSince(lastScanTime) < scanCooldown {
-            return
-        }
+        // Android'deki beep.mp3 dosyasını çal
+        AudioManager.shared.playBeepSound()
         
-        lastScanTime = now
+        // Titreşim
+        AudioManager.shared.playVibration()
         
-        DispatchQueue.main.async {
-            self.scannedBarcode = barcode
-            
-            // Haptic feedback
-            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-            impactFeedback.impactOccurred()
-        }
+        // Haptic feedback
+        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+        impactFeedback.impactOccurred()
     }
     
     func openWebsite(with barcodeContent: String) {
         let baseURL = UserDefaults.standard.string(forKey: Constants.UserDefaults.baseURL) ?? Constants.Network.defaultBaseURL
         let fullURL = "\(baseURL)\(barcodeContent)"
         
-        DispatchQueue.main.async {
+            DispatchQueue.main.async {
             self.currentURL = fullURL
             self.showWebBrowser = true
         }
     }
     
-    func focusAt(point: CGPoint) {
-        cameraService.focusAt(point: point)
+    private func performBarcodeDetection(on image: CVPixelBuffer) {
+        let request = VNDetectBarcodesRequest { [weak self] request, error in
+            guard let self = self else { return }
+            
+            if let error = error {
+                return
+            }
+            
+            guard let results = request.results as? [VNBarcodeObservation],
+                  let firstBarcode = results.first,
+                  let barcodeValue = firstBarcode.payloadStringValue else {
+                return
+            }
+            
+            // Cooldown kontrolü
+            let now = Date()
+            if now.timeIntervalSince(self.lastScanTime) < self.scanCooldown {
+                return
+            }
+            
+            self.lastScanTime = now
+            
+            DispatchQueue.main.async {
+                self.scannedBarcode = barcodeValue
+            }
+        }
+        
+        // QR kod ve Data Matrix'i destekle
+        request.symbologies = [.qr, .dataMatrix]
+        
+        let handler = VNImageRequestHandler(cvPixelBuffer: image, options: [:])
+        
+        do {
+            try handler.perform([request])
+        } catch {
+        }
     }
 }
 
-// MARK: - CameraServiceDelegate
-extension ScannerViewModel: CameraServiceDelegate {
-    func cameraService(_ service: CameraService, didCapture pixelBuffer: CVPixelBuffer) {
-        barcodeService.detectBarcode(in: pixelBuffer)
+// MARK: - AVCaptureVideoDataOutputSampleBufferDelegate
+extension ScannerViewModel: AVCaptureVideoDataOutputSampleBufferDelegate {
+    func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+        guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+        
+        performBarcodeDetection(on: pixelBuffer)
     }
 } 

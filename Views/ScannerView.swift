@@ -10,7 +10,7 @@ struct ScannerView: View {
     var body: some View {
         ZStack {
             // Kamera önizlemesi
-            ScannerCameraPreview(session: viewModel.captureSession, viewModel: viewModel)
+            ScannerCameraPreview(session: viewModel.captureSession)
                 .ignoresSafeArea()
             
             // Scanner overlay
@@ -138,7 +138,6 @@ struct ScannerView: View {
 
 struct ScannerCameraPreview: UIViewRepresentable {
     let session: AVCaptureSession
-    let viewModel: ScannerViewModel
     
     func makeUIView(context: Context) -> UIView {
         let view = UIView(frame: UIScreen.main.bounds)
@@ -148,82 +147,11 @@ struct ScannerCameraPreview: UIViewRepresentable {
         previewLayer.videoGravity = .resizeAspectFill
         view.layer.addSublayer(previewLayer)
         
-        // Dokunmatik odaklama için gesture recognizer ekle
-        let tapGesture = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleTap(_:)))
-        view.addGestureRecognizer(tapGesture)
-        
-        // Coordinator'a view referansını ver
-        context.coordinator.previewView = view
-        context.coordinator.previewLayer = previewLayer
-        
         return view
     }
     
     func updateUIView(_ uiView: UIView, context: Context) {
-        // Preview layer boyutunu güncelle
-        if let previewLayer = context.coordinator.previewLayer {
-            previewLayer.frame = uiView.frame
-        }
-    }
-    
-    func makeCoordinator() -> Coordinator {
-        Coordinator(viewModel: viewModel)
-    }
-    
-    class Coordinator: NSObject {
-        let viewModel: ScannerViewModel
-        weak var previewView: UIView?
-        var previewLayer: AVCaptureVideoPreviewLayer?
-        
-        init(viewModel: ScannerViewModel) {
-            self.viewModel = viewModel
-        }
-        
-        @objc func handleTap(_ gesture: UITapGestureRecognizer) {
-            guard let previewView = previewView,
-                  let previewLayer = previewLayer else { return }
-            
-            let tapPoint = gesture.location(in: previewView)
-            
-            // Dokunma noktasını kamera koordinat sistemine çevir
-            let devicePoint = previewLayer.captureDevicePointConverted(fromLayerPoint: tapPoint)
-            
-            // Odaklama işlemini gerçekleştir
-            viewModel.focusAt(point: devicePoint)
-            
-            // Görsel geri bildirim göster
-            showFocusIndicator(at: tapPoint, in: previewView)
-        }
-        
-        private func showFocusIndicator(at point: CGPoint, in view: UIView) {
-            // Önceki odaklama göstergesini kaldır
-            view.subviews.filter { $0.tag == 999 }.forEach { $0.removeFromSuperview() }
-            
-            // Odaklama göstergesi oluştur
-            let focusView = UIView(frame: CGRect(x: 0, y: 0, width: 80, height: 80))
-            focusView.center = point
-            focusView.backgroundColor = UIColor.clear
-            focusView.layer.borderColor = UIColor.white.cgColor
-            focusView.layer.borderWidth = 2
-            focusView.layer.cornerRadius = 40
-            focusView.tag = 999
-            focusView.alpha = 0
-            
-            view.addSubview(focusView)
-            
-            // Animasyon
-            UIView.animate(withDuration: 0.3, animations: {
-                focusView.alpha = 1
-                focusView.transform = CGAffineTransform(scaleX: 0.8, y: 0.8)
-            }) { _ in
-                UIView.animate(withDuration: 0.5, delay: 0.5, animations: {
-                    focusView.alpha = 0
-                    focusView.transform = CGAffineTransform(scaleX: 1.2, y: 1.2)
-                }) { _ in
-                    focusView.removeFromSuperview()
-                }
-            }
-        }
+        // Güncelleme gerektiğinde buraya kod eklenebilir
     }
 }
 

@@ -8,9 +8,6 @@ class BarcodeService: ObservableObject {
     private var lastDetectionTime = Date()
     private let detectionCooldown: TimeInterval = 2.0
     
-    // Ses çalmak için CameraService referansı
-    weak var cameraService: CameraService?
-    
     func detectBarcode(in pixelBuffer: CVPixelBuffer) {
         // Cooldown kontrolü
         let now = Date()
@@ -18,9 +15,7 @@ class BarcodeService: ObservableObject {
             return
         }
         
-        DispatchQueue.main.async {
-            self.isProcessing = true
-        }
+        isProcessing = true
         
         let request = VNDetectBarcodesRequest { [weak self] request, error in
             guard let self = self else { return }
@@ -53,13 +48,11 @@ class BarcodeService: ObservableObject {
             self.lastDetectionTime = now
             
             DispatchQueue.main.async {
-                // Barkod bulundu - ses çal
-                self.cameraService?.playBeepSound()
                 self.detectedBarcode = barcodeResult
             }
         }
         
-        // Desteklenen barkod formatları - sadece QR ve Data Matrix
+        // Desteklenen barkod formatları
         request.symbologies = [
             .qr,
             .dataMatrix
@@ -101,9 +94,7 @@ class BarcodeService: ObservableObject {
     }
     
     func resetDetection() {
-        DispatchQueue.main.async {
-            self.detectedBarcode = nil
-        }
+        detectedBarcode = nil
         lastDetectionTime = Date()
     }
 } 
