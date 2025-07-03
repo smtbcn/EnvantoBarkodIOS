@@ -689,70 +689,44 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         }
     }
     
-    // MARK: - Delete Customer Folder (Tüm müşteri klasörünü sil)
+    // MARK: - Delete Customer Folder (Tüm müşteri klasörünü sil - ID bazlı)
     func deleteCustomerFolder(_ customerName: String) {
         Task {
             let dbManager = DatabaseManager.getInstance()
             
-            // 🎯 Müşteri adı format kontrolü (database vs UI format)
-            let dbCustomerName = customerName.replacingOccurrences(of: " ", with: "_") // SAMET BICEN → SAMET_BICEN
-            let displayCustomerName = customerName // UI format
+            // 🎯 Müşterinin SavedImage'larından database ID'lerini topla
+            let customerImages = savedImages.filter { $0.customerName == customerName }
+            let databaseIds = customerImages.map { $0.databaseId }
             
+            // Debug: Silinecek ID'leri logla
+            print("🗑️ Müşteri '\(customerName)' için \(databaseIds.count) kayıt silinecek")
+            print("🆔 Database ID'leri: \(databaseIds)")
             
-            // Önce müşterinin database'deki kayıtlarını kontrol et
-            let existingRecords1 = dbManager.getCustomerImages(musteriAdi: displayCustomerName)
-            let existingRecords2 = dbManager.getCustomerImages(musteriAdi: dbCustomerName)
+            // 1️⃣ Database'den ID'ler ile toplu silme (Daha güvenilir)
+            let dbDeleteSuccess = dbManager.deleteImagesByIds(databaseIds)
             
-            // 🔍 Database'deki GERÇEK müşteri adlarını göster
-            let allImages = dbManager.getAllImages()
-            let uniqueCustomers = Set(allImages.map { $0.musteriAdi })
-            
-            // Bu müşteriyle eşleşen kayıtları bul
-            let matchingRecords = allImages.filter { record in
-                record.musteriAdi == displayCustomerName || 
-                record.musteriAdi == dbCustomerName ||
-                record.musteriAdi.lowercased() == displayCustomerName.lowercased() ||
-                record.musteriAdi.lowercased() == dbCustomerName.lowercased()
-            }
-            for record in matchingRecords.prefix(3) {
-            }
-            
-            // 1️⃣ Önce database'den tüm kayıtları sil (her iki format için de dene)
-            var dbDeleteSuccess = false
-            
-            // Eşleşen kayıtlar varsa, gerçek müşteri adını kullan
-            if !matchingRecords.isEmpty {
-                let realCustomerName = matchingRecords.first!.musteriAdi
-                dbDeleteSuccess = dbManager.deleteCustomerImages(musteriAdi: realCustomerName)
-            } else {
-                // Eşleşen kayıt yoksa eski yöntemi dene
-                dbDeleteSuccess = dbManager.deleteCustomerImages(musteriAdi: displayCustomerName)
-                
-                if !dbDeleteSuccess {
-                    // Display format başarısız olduysa database format dene
-                    dbDeleteSuccess = dbManager.deleteCustomerImages(musteriAdi: dbCustomerName)
-                }
-            }
-            
-            // 2️⃣ Sonra dosya klasörünü sil (ImageStorageManager)
+            // 2️⃣ Dosya klasörünü sil (ImageStorageManager)
             let fileDeleteSuccess = await ImageStorageManager.deleteCustomerImages(customerName: customerName)
-            
-            // Sonuç değerlendirmesi
             
             await MainActor.run {
                 if dbDeleteSuccess || fileDeleteSuccess {
-                    // En az birisi başarılıysa UI'dan kaldır
+                    // UI'dan müşterinin tüm resimlerini kaldır
                     let removedCount = savedImages.filter { $0.customerName == customerName }.count
                     savedImages.removeAll { $0.customerName == customerName }
+                    
+                    print("✅ Müşteri '\(customerName)' silindi:")
+                    print("   📊 Database: \(dbDeleteSuccess ? "✅" : "❌") (\(databaseIds.count) ID)")
+                    print("   📁 Dosyalar: \(fileDeleteSuccess ? "✅" : "❌")")
+                    print("   🖼️ UI'dan kaldırılan: \(removedCount) resim")
                     
                     // Müşteri gruplarını güncelle
                     loadCustomerImageGroups()
                 } else {
                     // Her ikisi de başarısızsa hata mesajı
+                    print("❌ Müşteri '\(customerName)' silinirken hata oluştu")
                     showError("Müşteri klasörü silme hatası: Hem database hem dosya silme başarısız")
                 }
             }
-            
         }
     }
     

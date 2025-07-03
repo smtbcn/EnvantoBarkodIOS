@@ -511,6 +511,30 @@ class DatabaseManager {
         return false
     }
     
+    // MARK: - Delete Images By IDs (ID listesi ile toplu silme - Daha güvenilir)
+    func deleteImagesByIds(_ ids: [Int]) -> Bool {
+        guard db != nil, !ids.isEmpty else { return false }
+        
+        var totalDeleted = 0
+        
+        // Her ID için ayrı DELETE işlemi (güvenilir yaklaşım)
+        for id in ids {
+            let deleteSQL = "DELETE FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) WHERE \(DatabaseManager.COLUMN_ID) = ?"
+            var statement: OpaquePointer?
+            
+            if sqlite3_prepare_v2(db, deleteSQL, -1, &statement, nil) == SQLITE_OK {
+                sqlite3_bind_int(statement, 1, Int32(id))
+                
+                if sqlite3_step(statement) == SQLITE_DONE {
+                    totalDeleted += Int(sqlite3_changes(db))
+                }
+            }
+            sqlite3_finalize(statement)
+        }
+        
+        return totalDeleted > 0
+    }
+    
     // MARK: - Update Upload Status
     func updateUploadStatus(id: Int, yuklendi: Int) -> Bool {
         guard db != nil else { return false }
