@@ -2,8 +2,9 @@ import Foundation
 import UIKit
 import BackgroundTasks
 import Network
+import UserNotifications
 
-// MARK: - Background Upload Manager (iOS Background App Refresh)
+// MARK: - Background Upload Manager (iOS Background App Refresh + Force-Quit Notification)
 class BackgroundUploadManager {
     static let shared = BackgroundUploadManager()
     
@@ -13,9 +14,25 @@ class BackgroundUploadManager {
     private let networkMonitor = NWPathMonitor()
     private let monitorQueue = DispatchQueue(label: "NetworkMonitor")
     
+    // WiFi notification tracking
+    private var lastWiFiNotificationTime: Date?
+    private let wifiNotificationCooldown: TimeInterval = 300 // 5 dakika cooldown
+    
     private init() {
         registerBackgroundTasks()
         startNetworkMonitoring()
+        requestNotificationPermissions()
+    }
+    
+    // MARK: - Notification Permissions
+    private func requestNotificationPermissions() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+            if granted {
+                print("✅ Background notification izni verildi")
+            } else {
+                print("❌ Background notification izni reddedildi: \(error?.localizedDescription ?? "Bilinmeyen hata")")
+            }
+        }
     }
     
     // MARK: - Background Task Registration
@@ -171,33 +188,44 @@ class BackgroundUploadManager {
         return uploadedCount > 0
     }
     
-    // MARK: - Network Monitoring (WiFi değişimlerini takip et)
+    // MARK: - Network Monitoring (WiFi değişimlerini takip et + Force-quit notification)
     private func startNetworkMonitoring() {
         networkMonitor.pathUpdateHandler = { [weak self] path in
             print("🌐 Network durumu değişti: \(path.status), WiFi: \(path.usesInterfaceType(.wifi)), Cellular: \(path.usesInterfaceType(.cellular))")
             
             if path.status == .satisfied {
                 if path.usesInterfaceType(.wifi) {
-                    print("📶 WiFi bağlantısı algılandı - HEMEN upload kontrol ediliyor")
+                    print("📶 WiFi bağlantısı algılandı!")
                     
-                    // Anında kontrol et
-                    DispatchQueue.main.async {
-                        self?.checkPendingUploadsImmediately()
+                    // Force-quit durumu için notification gönder
+                    self?.checkAndSendWiFiNotification()
+                    
+                    // App aktifse normal upload işlemini yap
+                    if UIApplication.shared.applicationState == .active {
+                        print("📱 App aktif - HEMEN upload kontrol ediliyor")
+                        
+                        // Anında kontrol et
+                        DispatchQueue.main.async {
+                            self?.checkPendingUploadsImmediately()
+                        }
+                        
+                        // 2 saniye sonra da bir daha kontrol et
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                            self?.checkPendingUploadsImmediately()
+                        }
+                    } else {
+                        print("📱 App background/inactive - Notification gönderildi")
                     }
                     
-                    // 2 saniye sonra da bir daha kontrol et
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                        self?.checkPendingUploadsImmediately()
-                    }
-                    
-                    // Background task da zamanla
+                    // Background task da zamanla (app background'deyse)
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                         self?.scheduleBackgroundUpload()
                     }
+                    
                 } else if path.usesInterfaceType(.cellular) {
                     // Cellular varsa da (WiFi Only değilse) upload et
                     let wifiOnly = UserDefaults.standard.bool(forKey: "upload_wifi_only")
-                    if !wifiOnly {
+                    if !wifiOnly && UIApplication.shared.applicationState == .active {
                         print("📱 Cellular bağlantısı algılandı - Upload kontrol ediliyor")
                         DispatchQueue.main.async {
                             self?.checkPendingUploadsImmediately()
@@ -300,10 +328,57 @@ class BackgroundUploadManager {
         return ""
     }
     
-    // MARK: - Notification
+    // MARK: - WiFi Notification (Force-quit durumu için)
+    private func checkAndSendWiFiNotification() {
+        // Cooldown kontrolü (5 dakikada bir notification)
+        if let lastTime = lastWiFiNotificationTime {
+            let timeSinceLastNotification = Date().timeIntervalSince(lastTime)
+            if timeSinceLastNotification < wifiNotificationCooldown {
+                print("🔇 WiFi notification cooldown aktif (\(Int(wifiNotificationCooldown - timeSinceLastNotification)) saniye kaldı)")
+                return
+            }
+        }
+        
+        // Bekleyen resim var mı kontrol et
+        let dbManager = DatabaseManager.getInstance()
+        let pendingCount = dbManager.getPendingUploadCount()
+        
+        if pendingCount == 0 {
+            print("✅ Bekleyen resim yok - WiFi notification gerekmiyor")
+            return
+        }
+        
+        // Notification gönder
+        let content = UNMutableNotificationContent()
+        content.title = "📶 WiFi Bağlantısı Algılandı!"
+        content.body = "\(pendingCount) resim yükleme bekliyor. Uygulamayı açarak yükleme işlemini başlatın."
+        content.sound = UNNotificationSound.default
+        content.badge = NSNumber(value: pendingCount)
+        
+        // Kullanıcı notification'a tıklayınca uygulamayı aç
+        content.categoryIdentifier = "WIFI_UPLOAD_CATEGORY"
+        content.userInfo = ["action": "open_app_for_upload", "pendingCount": pendingCount]
+        
+        let request = UNNotificationRequest(
+            identifier: "wifi_upload_notification",
+            content: content,
+            trigger: nil // Anında gönder
+        )
+        
+        UNUserNotificationCenter.current().add(request) { [weak self] error in
+            if let error = error {
+                print("❌ WiFi notification hatası: \(error)")
+            } else {
+                print("✅ WiFi notification gönderildi: \(pendingCount) resim bekliyor")
+                self?.lastWiFiNotificationTime = Date()
+            }
+        }
+    }
+    
+    // MARK: - Upload Success Notification
     private func sendUploadNotification(count: Int) {
         let content = UNMutableNotificationContent()
-        content.title = "Envanto Barkod"
+        content.title = "✅ Envanto Barkod"
         content.body = "\(count) resim başarıyla yüklendi"
         content.sound = UNNotificationSound.default
         
@@ -315,7 +390,7 @@ class BackgroundUploadManager {
         
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
-                print("❌ Notification hatası: \(error)")
+                print("❌ Upload notification hatası: \(error)")
             }
         }
     }

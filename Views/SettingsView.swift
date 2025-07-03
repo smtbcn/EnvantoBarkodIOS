@@ -77,6 +77,17 @@ struct SettingsView: View {
                                 .foregroundColor(.green)
                         }
                     }
+                    
+                    Button(action: {
+                        testWiFiNotification()
+                    }) {
+                        HStack {
+                            Image(systemName: "bell.badge")
+                                .foregroundColor(.orange)
+                            Text("WiFi Notification Test")
+                                .foregroundColor(.orange)
+                        }
+                    }
                 }
                 
                 // Database İşlemleri
@@ -241,6 +252,38 @@ struct SettingsView: View {
         
         // Kullanıcıya feedback ver
         let impact = UIImpactFeedbackGenerator(style: .medium)
+        impact.impactOccurred()
+    }
+    
+    private func testWiFiNotification() {
+        print("🔔 WiFi notification test")
+        
+        // Force notification test - BackgroundUploadManager'daki private metodu bypass et
+        let content = UNMutableNotificationContent()
+        content.title = "📶 WiFi Test Notification"
+        content.body = "Bu bir test bildirimidir. WiFi bağlantısında bu notification gelecek."
+        content.sound = UNNotificationSound.default
+        content.badge = NSNumber(value: 5) // Test badge
+        
+        content.categoryIdentifier = "WIFI_UPLOAD_CATEGORY"
+        content.userInfo = ["action": "open_app_for_upload", "pendingCount": 5]
+        
+        let request = UNNotificationRequest(
+            identifier: "wifi_test_notification",
+            content: content,
+            trigger: nil
+        )
+        
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("❌ Test notification hatası: \(error)")
+            } else {
+                print("✅ Test notification gönderildi")
+            }
+        }
+        
+        // Haptic feedback
+        let impact = UIImpactFeedbackGenerator(style: .light)
         impact.impactOccurred()
     }
     

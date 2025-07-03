@@ -3,6 +3,7 @@ import UserNotifications
 
 @main
 struct EnvantoBarkodApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
     init() {
         // Background upload manager'ı başlat
@@ -49,5 +50,70 @@ struct EnvantoBarkodApp: App {
                 print("❌ Notification izni reddedildi")
             }
         }
+    }
+}
+
+// MARK: - AppDelegate for Notification Handling
+class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
+    
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+        
+        // Notification delegate'i ayarla
+        UNUserNotificationCenter.current().delegate = self
+        
+        // Notification kategorilerini kaydet
+        setupNotificationCategories()
+        
+        return true
+    }
+    
+    // MARK: - Notification Categories
+    private func setupNotificationCategories() {
+        let uploadAction = UNNotificationAction(
+            identifier: "UPLOAD_ACTION",
+            title: "Şimdi Yükle",
+            options: [.foreground]
+        )
+        
+        let category = UNNotificationCategory(
+            identifier: "WIFI_UPLOAD_CATEGORY",
+            actions: [uploadAction],
+            intentIdentifiers: [],
+            options: []
+        )
+        
+        UNUserNotificationCenter.current().setNotificationCategories([category])
+    }
+    
+    // MARK: - Notification Response Handling
+    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+        
+        let userInfo = response.notification.request.content.userInfo
+        
+        if let action = userInfo["action"] as? String {
+            switch action {
+            case "open_app_for_upload":
+                print("📱 Kullanıcı WiFi notification'ına tıkladı - Upload başlatılıyor")
+                
+                // Uygulama açıldığında upload'u başlat
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    BackgroundUploadManager.shared.checkPendingUploadsImmediately()
+                }
+            default:
+                break
+            }
+        }
+        
+        // Badge'i temizle
+        UIApplication.shared.applicationIconBadgeNumber = 0
+        
+        completionHandler()
+    }
+    
+    // MARK: - Foreground Notification Handling
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        
+        // App foreground'dayken de notification göster
+        completionHandler([.alert, .sound, .badge])
     }
 } 
