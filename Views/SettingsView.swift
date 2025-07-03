@@ -88,6 +88,17 @@ struct SettingsView: View {
                                 .foregroundColor(.orange)
                         }
                     }
+                    
+                    Button(action: {
+                        testScheduledReminder()
+                    }) {
+                        HStack {
+                            Image(systemName: "clock.badge")
+                                .foregroundColor(.purple)
+                            Text("Scheduled Reminder Test")
+                                .foregroundColor(.purple)
+                        }
+                    }
                 }
                 
                 // Database İşlemleri
@@ -279,6 +290,38 @@ struct SettingsView: View {
                 print("❌ Test notification hatası: \(error)")
             } else {
                 print("✅ Test notification gönderildi")
+            }
+        }
+        
+        // Haptic feedback
+        let impact = UIImpactFeedbackGenerator(style: .light)
+        impact.impactOccurred()
+    }
+    
+    private func testScheduledReminder() {
+        print("⏰ Scheduled reminder test")
+        
+        // 5 saniye sonra çalışacak test reminder
+        let content = UNMutableNotificationContent()
+        content.title = "⏰ Scheduled Reminder Test"
+        content.body = "Bu bir test scheduled reminder'ıdır. Force-quit durumunda bu tür notification'lar çalışır."
+        content.sound = UNNotificationSound.default
+        content.categoryIdentifier = "UPLOAD_REMINDER_CATEGORY"
+        content.userInfo = ["action": "check_uploads", "scheduled": true]
+        
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 5, repeats: false)
+        
+        let request = UNNotificationRequest(
+            identifier: "test_scheduled_reminder",
+            content: content,
+            trigger: trigger
+        )
+        
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("❌ Test scheduled reminder hatası: \(error)")
+            } else {
+                print("✅ Test scheduled reminder zamanlandı (5 saniye sonra)")
             }
         }
         

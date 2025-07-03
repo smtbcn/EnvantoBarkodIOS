@@ -15,6 +15,11 @@ struct EnvantoBarkodApp: App {
         // App başlarken upload kontrol et
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
             print("🚀 App başladı - İlk upload kontrol")
+            
+            // Force-quit durumu için app launch check
+            BackgroundUploadManager.shared.checkUploadsOnAppLaunch()
+            
+            // Normal upload check
             BackgroundUploadManager.shared.checkPendingUploadsImmediately()
         }
     }
@@ -75,14 +80,27 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
             options: [.foreground]
         )
         
-        let category = UNNotificationCategory(
+        let checkAction = UNNotificationAction(
+            identifier: "CHECK_ACTION",
+            title: "Kontrol Et",
+            options: [.foreground]
+        )
+        
+        let wifiCategory = UNNotificationCategory(
             identifier: "WIFI_UPLOAD_CATEGORY",
             actions: [uploadAction],
             intentIdentifiers: [],
             options: []
         )
         
-        UNUserNotificationCenter.current().setNotificationCategories([category])
+        let reminderCategory = UNNotificationCategory(
+            identifier: "UPLOAD_REMINDER_CATEGORY",
+            actions: [checkAction],
+            intentIdentifiers: [],
+            options: []
+        )
+        
+        UNUserNotificationCenter.current().setNotificationCategories([wifiCategory, reminderCategory])
     }
     
     // MARK: - Notification Response Handling
@@ -99,6 +117,15 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                     BackgroundUploadManager.shared.checkPendingUploadsImmediately()
                 }
+                
+            case "check_uploads":
+                print("📱 Kullanıcı scheduled reminder'a tıkladı - Upload kontrol ediliyor")
+                
+                // Scheduled reminder'dan gelen tıklama
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    BackgroundUploadManager.shared.checkUploadsOnAppLaunch()
+                }
+                
             default:
                 break
             }
