@@ -30,6 +30,7 @@
 		AB123456789012340000005D /* BackgroundUploadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB123456789012340000005E /* BackgroundUploadManager.swift */; };
 		AB123456789012340000005B /* DeviceIdentifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB123456789012340000005C /* DeviceIdentifier.swift */; };
 		AB12345678901234ASSETS002 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AB12345678901234ASSETS001 /* Assets.xcassets */; };
+		AB123456789012340000006F /* beep.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000070 /* beep.mp3 */; };
 
 /* End PBXBuildFile section */
 
@@ -58,6 +59,7 @@
 		AB123456789012340000005E /* BackgroundUploadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundUploadManager.swift; sourceTree = "<group>"; };
 		AB123456789012340000005C /* DeviceIdentifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceIdentifier.swift; sourceTree = "<group>"; };
 		AB12345678901234ASSETS001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		AB1234567890123400000070 /* beep.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = beep.mp3; sourceTree = "<group>"; };
 
 /* End PBXFileReference section */
 
@@ -85,6 +87,7 @@
 				AB1234567890123400000029 /* Utilities */,
 				AB123456789012340000002A /* Protocols */,
 				AB12345678901234ASSETS001 /* Assets.xcassets */,
+				AB1234567890123400000070 /* beep.mp3 */,
 				AB1234567890123400000056 /* Frameworks */,
 				AB1234567890123400000024 /* Products */,
 			);
@@ -232,6 +235,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				AB12345678901234ASSETS002 /* Assets.xcassets in Resources */,
+				AB123456789012340000006F /* beep.mp3 in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -12,11 +12,48 @@ class CameraService: NSObject, ObservableObject {
     private var videoOutput = AVCaptureVideoDataOutput()
     private let sessionQueue = DispatchQueue(label: "camera.session.queue")
     
+    // Gelişmiş odaklama sistemi
+    private var autoFocusTimer: Timer?
+    private var currentFocusZone = 0
+    private let focusZones: [CGPoint] = [
+        CGPoint(x: 0.5, y: 0.5),   // Merkez
+        CGPoint(x: 0.35, y: 0.4),  // Sol üst
+        CGPoint(x: 0.65, y: 0.4),  // Sağ üst
+        CGPoint(x: 0.35, y: 0.6),  // Sol alt
+        CGPoint(x: 0.65, y: 0.6)   // Sağ alt
+    ]
+    
+    // Ses sistemi
+    private var audioPlayer: AVAudioPlayer?
+    
     weak var delegate: CameraServiceDelegate?
     
     override init() {
         super.init()
+        setupAudioPlayer()
         setupCamera()
+    }
+    
+    private func setupAudioPlayer() {
+        guard let soundURL = Bundle.main.url(forResource: "beep", withExtension: "mp3") else {
+            return
+        }
+        
+        do {
+            audioPlayer = try AVAudioPlayer(contentsOf: soundURL)
+            audioPlayer?.prepareToPlay()
+            audioPlayer?.volume = 0.8
+        } catch {
+            // Ses dosyası yüklenemedi, sessiz çalışacak
+        }
+    }
+    
+    func playBeepSound() {
+        DispatchQueue.main.async { [weak self] in
+            self?.audioPlayer?.stop()
+            self?.audioPlayer?.currentTime = 0
+            self?.audioPlayer?.play()
+        }
     }
     
     private func setupCamera() {
@@ -27,6 +64,11 @@ class CameraService: NSObject, ObservableObject {
     
     private func configureCaptureSession() {
         captureSession.beginConfiguration()
+        
+        // En iyi kalite için session preset ayarla
+        if captureSession.canSetSessionPreset(.hd1280x720) {
+            captureSession.sessionPreset = .hd1280x720
+        }
         
         // Kamera cihazını seç
         guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else {
@@ -43,16 +85,20 @@ class CameraService: NSObject, ObservableObject {
                 captureSession.addInput(input)
             }
             
-            // Video çıkışını ayarla
+            // Video çıkışını ayarla - barkod tarama için optimize
             videoOutput.setSampleBufferDelegate(self, queue: DispatchQueue(label: "video.output.queue"))
+            videoOutput.videoSettings = [
+                kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA
+            ]
+            
             if captureSession.canAddOutput(videoOutput) {
                 captureSession.addOutput(videoOutput)
             }
             
-            // Kamera ayarlarını optimize et
+            // Gelişmiş kamera optimizasyonları
             try device.lockForConfiguration()
             
-            // Otomatik odaklama
+            // Sürekli otomatik odaklama (en iyi barkod tarama performansı)
             if device.isFocusModeSupported(.continuousAutoFocus) {
                 device.focusMode = .continuousAutoFocus
             }
@@ -60,6 +106,35 @@ class CameraService: NSObject, ObservableObject {
             // Otomatik pozlama
             if device.isExposureModeSupported(.continuousAutoExposure) {
                 device.exposureMode = .continuousAutoExposure
+            }
+            
+            // Beyaz dengesi
+            if device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) {
+                device.whiteBalanceMode = .continuousAutoWhiteBalance
+            }
+            
+            // Video stabilizasyon (destekleniyorsa)
+            if let connection = videoOutput.connection(with: .video) {
+                if connection.isVideoStabilizationSupported {
+                    connection.preferredVideoStabilizationMode = .auto
+                }
+            }
+            
+            // ISO ve shutter speed optimizasyonu (barkod okuma için)
+            if device.isExposureModeSupported(.custom) {
+                // Orta düzey ISO (gürültü vs netlik dengesi)
+                let minISO = device.activeFormat.minISO
+                let maxISO = device.activeFormat.maxISO
+                let targetISO = min(maxISO, max(minISO, 400))
+                
+                // Hızlı shutter (hareket bulanıklığını önler)
+                let minDuration = device.activeFormat.minExposureDuration
+                let maxDuration = device.activeFormat.maxExposureDuration
+                let targetDuration = CMTimeMake(value: 1, timescale: 120) // 1/120 saniye
+                
+                let clampedDuration = CMTimeClampToRange(targetDuration, range: CMTimeRangeFromTimeToTime(start: minDuration, end: maxDuration))
+                
+                device.setExposureModeCustom(duration: clampedDuration, iso: targetISO, completionHandler: nil)
             }
             
             device.unlockForConfiguration()
@@ -81,6 +156,7 @@ class CameraService: NSObject, ObservableObject {
                 
                 DispatchQueue.main.async {
                     self.isRunning = true
+                    self.startAdvancedAutoFocus()
                 }
             }
         }
@@ -95,8 +171,52 @@ class CameraService: NSObject, ObservableObject {
                 
                 DispatchQueue.main.async {
                     self.isRunning = false
+                    self.stopAdvancedAutoFocus()
                 }
             }
+        }
+    }
+    
+    private func startAdvancedAutoFocus() {
+        stopAdvancedAutoFocus() // Önceki timer'ı temizle
+        
+        // İlk odaklama merkez noktada
+        focusAt(point: focusZones[0])
+        
+        // 2 saniye sonra çoklu-bölge odaklamayı başlat
+        autoFocusTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
+            self?.performMultiZoneFocus()
+        }
+    }
+    
+    private func stopAdvancedAutoFocus() {
+        autoFocusTimer?.invalidate()
+        autoFocusTimer = nil
+    }
+    
+    private func performMultiZoneFocus() {
+        guard let device = captureDevice else { return }
+        
+        currentFocusZone = (currentFocusZone + 1) % focusZones.count
+        let focusPoint = focusZones[currentFocusZone]
+        
+        do {
+            try device.lockForConfiguration()
+            
+            if device.isFocusModeSupported(.autoFocus) {
+                device.focusMode = .autoFocus
+                device.focusPointOfInterest = focusPoint
+            }
+            
+            if device.isExposureModeSupported(.autoExpose) {
+                device.exposureMode = .autoExpose
+                device.exposurePointOfInterest = focusPoint
+            }
+            
+            device.unlockForConfiguration()
+            
+        } catch {
+            // Sessizce devam et
         }
     }
     
@@ -107,7 +227,7 @@ class CameraService: NSObject, ObservableObject {
             try device.lockForConfiguration()
             
             if device.torchMode == .off {
-                device.torchMode = .on
+                try device.setTorchModeOn(level: 1.0)
             } else {
                 device.torchMode = .off
             }
@@ -152,6 +272,7 @@ class CameraService: NSObject, ObservableObject {
     }
     
     deinit {
+        stopAdvancedAutoFocus()
         stopRunning()
     }
 }
