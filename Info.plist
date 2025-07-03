@@ -46,6 +46,19 @@
     <key>API_BASE_URL</key>
     <string>https://your-api-server.com/api</string>
     
+    <!-- Background Modes (Arka plan yükleme için) -->
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>background-app-refresh</string>
+        <string>background-processing</string>
+    </array>
+    
+    <!-- Background Task Identifiers -->
+    <key>BGTaskSchedulerPermittedIdentifiers</key>
+    <array>
+        <string>com.envanto.barcode.upload</string>
+    </array>
+    
     <!-- Güvenlik -->
     <key>NSAppTransportSecurity</key>
     <dict>
