@@ -361,6 +361,12 @@ struct BarcodeUploadView: View {
                     } else if !viewModel.isDeviceAuthorized {
                         // Cihaz yetkili değilse uyarı mesajı göster (Android mantığı)
                         unauthorizedDeviceView
+                    } else if !ImageStorageManager.isUserFolderSelected() {
+                        // Kullanıcı klasör seçmemişse klasör seçim ekranını göster
+                        FolderSelectionView {
+                            // Klasör seçildikten sonra resim listesini yenile
+                            viewModel.loadCustomerImageGroups()
+                        }
                     } else {
                         mainContent
                     }
