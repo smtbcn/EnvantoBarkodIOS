@@ -11,6 +11,19 @@ struct SettingsView: View {
     @State private var showingURLAlert = false
     @State private var showingResetAlert = false
     @State private var showingClearDatabaseAlert = false
+    @State private var showingUnsavedChangesAlert = false
+    
+    // Orijinal değerler (değişiklik takibi için)
+    @State private var originalBaseURL = ""
+    @State private var originalDeviceOwner = ""
+    @State private var originalWifiOnlyUpload = false
+    
+    // Değişiklik var mı kontrolü
+    private var hasUnsavedChanges: Bool {
+        return baseURL != originalBaseURL || 
+               deviceOwner != originalDeviceOwner || 
+               wifiOnlyUpload != originalWifiOnlyUpload
+    }
     
     var body: some View {
         Form {
@@ -94,21 +107,35 @@ struct SettingsView: View {
         }
         .navigationTitle("Ayarlar")
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(hasUnsavedChanges)
         .toolbar {
+            // Geri butonu (değişiklik varsa özel)
+            if hasUnsavedChanges {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Geri") {
+                        showingUnsavedChangesAlert = true
+                    }
+                }
+            }
+            
+            // Kaydet butonu
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button("Kaydet") {
                     saveSettings()
+                    dismiss() // Kaydet sonrası sayfayı kapat
                 }
+                .disabled(!hasUnsavedChanges) // Değişiklik yoksa disable
             }
         }
         .alert("Base URL Ayarla", isPresented: $showingURLAlert) {
-            TextField("https://örnek.com/api", text: $baseURL)
-            Button("Kaydet") {
-                if baseURL.isValidURL {
-                    UserDefaults.standard.set(baseURL, forKey: Constants.UserDefaults.baseURL)
-                }
+            TextField("https://envanto.app/barkodindex.asp?barcode=", text: $baseURL)
+            Button("Tamam") {
+                // Sadece baseURL state'ini güncelle, kaydetme işlemi ana Kaydet butonunda olacak
             }
-            Button("İptal", role: .cancel) { }
+            Button("İptal", role: .cancel) { 
+                // İptal edilirse orijinal değere dön
+                baseURL = originalBaseURL
+            }
         } message: {
             Text("Barkod tarama sonuçlarının yönlendirileceği base URL'yi girin.")
         }
@@ -128,6 +155,19 @@ struct SettingsView: View {
         } message: {
             Text("Barkod resim veritabanındaki tüm kayıtlar silinecek. Dosyalar korunur ancak yükleme geçmişi kaybolur. Bu işlem geri alınamaz.")
         }
+        .alert("Kaydedilmemiş Değişiklikler", isPresented: $showingUnsavedChangesAlert) {
+            Button("Kaydet ve Çık") {
+                saveSettings()
+                dismiss()
+            }
+            Button("Kaydetmeden Çık", role: .destructive) {
+                resetToOriginalValues()
+                dismiss()
+            }
+            Button("İptal", role: .cancel) { }
+        } message: {
+            Text("Yaptığınız değişiklikler kaydedilmemiş. Ne yapmak istiyorsunuz?")
+        }
         .onAppear {
             loadSettings()
         }
@@ -145,6 +185,17 @@ struct SettingsView: View {
         
         // WiFi only ayarını yükle (Default: true)
         wifiOnlyUpload = UserDefaults.standard.object(forKey: Constants.UserDefaults.wifiOnly) as? Bool ?? true
+        
+        // Orijinal değerleri kaydet
+        originalDeviceOwner = deviceOwner
+        originalBaseURL = baseURL
+        originalWifiOnlyUpload = wifiOnlyUpload
+    }
+    
+    private func resetToOriginalValues() {
+        deviceOwner = originalDeviceOwner
+        baseURL = originalBaseURL
+        wifiOnlyUpload = originalWifiOnlyUpload
     }
     
     private func saveSettings() {
@@ -156,6 +207,11 @@ struct SettingsView: View {
         
         // Upload servisini güncelle
         updateUploadService()
+        
+        // Orijinal değerleri güncelle (artık kaydedildi)
+        originalDeviceOwner = deviceOwner
+        originalBaseURL = baseURL
+        originalWifiOnlyUpload = wifiOnlyUpload
     }
     
     private func updateUploadService() {
@@ -174,6 +230,11 @@ struct SettingsView: View {
         baseURL = Constants.Network.defaultBaseURL
         wifiOnlyUpload = true
         viewModel.updateDeviceOwner("")
+        
+        // Orijinal değerleri de güncelle
+        originalDeviceOwner = deviceOwner
+        originalBaseURL = baseURL
+        originalWifiOnlyUpload = wifiOnlyUpload
     }
     
 
