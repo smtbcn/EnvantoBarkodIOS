@@ -6,35 +6,76 @@ class ImageStorageManager {
     // MARK: - Constants
     private static let TAG = "ImageStorageManager"
     
+    // MARK: - Path Management Functions
+    /// Mutlak path'i relative path'e çevirir (build-safe)
+    static func createRelativePath(from absolutePath: String) -> String {
+        guard let documentsDir = getAppDocumentsDirectory() else {
+            return absolutePath // Fallback olarak mutlak path dön
+        }
+        
+        let documentsPath = documentsDir.path
+        if absolutePath.hasPrefix(documentsPath) {
+            let relativePath = absolutePath.replacingOccurrences(of: documentsPath, with: "Documents")
+            return relativePath
+        }
+        
+        return absolutePath // Eğer Documents altında değilse, olduğu gibi dön
+    }
+    
+    /// Relative path'i mutlak path'e çevirir (runtime'da kullanım için)
+    static func getAbsolutePath(from relativePath: String) -> String? {
+        guard let documentsDir = getAppDocumentsDirectory() else {
+            return nil
+        }
+        
+        if relativePath.hasPrefix("Documents") {
+            let absolutePath = relativePath.replacingOccurrences(of: "Documents", with: documentsDir.path)
+            return absolutePath
+        } else if relativePath.hasPrefix("/") {
+            // Zaten mutlak path ise olduğu gibi dön (eski kayıtlar için)
+            return relativePath
+        }
+        
+        return nil
+    }
+    
+    /// Relative path kullanarak dosya varlığını kontrol eder
+    static func fileExists(relativePath: String) -> Bool {
+        guard let absolutePath = getAbsolutePath(from: relativePath) else {
+            return false
+        }
+        return FileManager.default.fileExists(atPath: absolutePath)
+    }
+    
     // MARK: - Save Image (App Documents Only)
     static func saveImage(image: UIImage, customerName: String, isGallery: Bool, yukleyen: String) async -> String? {
         
         // App Documents'a kaydet (Files uygulamasından erişilebilir)
         if let documentsPath = saveToAppDocuments(image: image, customerName: customerName, isGallery: isGallery) {
             
-            // Relative path'i de göster
-            if let documentsDir = getAppDocumentsDirectory() {
-                let relativePath = documentsPath.replacingOccurrences(of: documentsDir.path, with: "Documents")
-            }
+            // ✅ Relative path oluştur (build-safe)
+            let relativePath = createRelativePath(from: documentsPath)
             
             // Dosya kontrol et
             let fileExists = FileManager.default.fileExists(atPath: documentsPath)
+            print("📁 Dosya kaydedildi: \(fileExists ? "✅" : "❌") | Relative: \(relativePath)")
             
-            // 🗄️ Database'e kaydet 
-            
+            // 🗄️ Database'e RELATIVE PATH kaydet 
             let dbManager = DatabaseManager.getInstance()
             let dbSaved = dbManager.insertBarkodResim(
                 musteriAdi: customerName,
-                resimYolu: documentsPath,
+                resimYolu: relativePath, // ✅ Artık relative path kaydediliyor
                 yukleyen: yukleyen
             )
             
             if dbSaved {
+                print("📊 Veritabanına kaydedildi: \(relativePath)")
                 dbManager.printDatabaseInfo()
                 
                 // Upload tetikle
                 triggerUploadAfterSave()
             } else {
+                print("❌ Veritabanı kayıt hatası!")
             }
             
             return documentsPath
