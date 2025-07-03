@@ -65,6 +65,20 @@ struct SettingsView: View {
                     }
                 }
                 
+                // Upload İşlemleri
+                Section(header: Text("Upload İşlemleri")) {
+                    Button(action: {
+                        manualUpload()
+                    }) {
+                        HStack {
+                            Image(systemName: "icloud.and.arrow.up")
+                                .foregroundColor(.green)
+                            Text("Şimdi Yükle (Manuel)")
+                                .foregroundColor(.green)
+                        }
+                    }
+                }
+                
                 // Database İşlemleri
                 Section(header: Text("Database İşlemleri")) {
                     Button(action: {
@@ -212,6 +226,22 @@ struct SettingsView: View {
         
         // Upload servisini yeniden başlat
         updateUploadService()
+    }
+    
+    private func manualUpload() {
+        print("📤 Manuel upload tetiklendi")
+        
+        // İki yöntemle de upload'u tetikle
+        
+        // 1. BackgroundUploadManager ile
+        BackgroundUploadManager.shared.checkPendingUploadsImmediately()
+        
+        // 2. UploadService ile (eski method)
+        UploadService.shared.startUploadService(wifiOnly: wifiOnlyUpload)
+        
+        // Kullanıcıya feedback ver
+        let impact = UIImpactFeedbackGenerator(style: .medium)
+        impact.impactOccurred()
     }
     
     private func clearDatabase() {

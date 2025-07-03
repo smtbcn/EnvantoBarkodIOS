@@ -46,8 +46,27 @@ class BackgroundUploadManager {
     
     // MARK: - Alternative: Immediate Upload Check (iOS Background sınırlamaları için)
     func checkPendingUploadsImmediately() {
+        print("🔍 Manual upload kontrol başlatılıyor...")
+        
+        // Önce network durumunu kontrol et
+        let currentPath = networkMonitor.currentPath
+        print("🌐 Mevcut network durumu: \(currentPath.status)")
+        print("📶 WiFi: \(currentPath.usesInterfaceType(.wifi))")
+        print("📱 Cellular: \(currentPath.usesInterfaceType(.cellular))")
+        
+        // Database durumunu kontrol et
+        let dbManager = DatabaseManager.getInstance()
+        let pendingCount = dbManager.getPendingUploadCount()
+        print("📊 Bekleyen resim sayısı: \(pendingCount)")
+        
+        if pendingCount == 0 {
+            print("✅ Yüklenecek resim yok")
+            return
+        }
+        
         Task {
-            await performBackgroundUpload()
+            let success = await performBackgroundUpload()
+            print("🎯 Manual upload sonucu: \(success ? "Başarılı" : "Başarısız")")
         }
     }
     
@@ -155,19 +174,43 @@ class BackgroundUploadManager {
     // MARK: - Network Monitoring (WiFi değişimlerini takip et)
     private func startNetworkMonitoring() {
         networkMonitor.pathUpdateHandler = { [weak self] path in
+            print("🌐 Network durumu değişti: \(path.status), WiFi: \(path.usesInterfaceType(.wifi)), Cellular: \(path.usesInterfaceType(.cellular))")
+            
             if path.status == .satisfied {
                 if path.usesInterfaceType(.wifi) {
-                    print("📶 WiFi bağlantısı algılandı - Background upload kontrol ediliyor")
+                    print("📶 WiFi bağlantısı algılandı - HEMEN upload kontrol ediliyor")
                     
-                    // WiFi bağlantısı geldiğinde upload'u tetikle
+                    // Anında kontrol et
+                    DispatchQueue.main.async {
+                        self?.checkPendingUploadsImmediately()
+                    }
+                    
+                    // 2 saniye sonra da bir daha kontrol et
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                        self?.checkPendingUploadsImmediately()
+                    }
+                    
+                    // Background task da zamanla
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                         self?.scheduleBackgroundUpload()
                     }
+                } else if path.usesInterfaceType(.cellular) {
+                    // Cellular varsa da (WiFi Only değilse) upload et
+                    let wifiOnly = UserDefaults.standard.bool(forKey: "upload_wifi_only")
+                    if !wifiOnly {
+                        print("📱 Cellular bağlantısı algılandı - Upload kontrol ediliyor")
+                        DispatchQueue.main.async {
+                            self?.checkPendingUploadsImmediately()
+                        }
+                    }
                 }
+            } else {
+                print("🚫 Network bağlantısı yok")
             }
         }
         
         networkMonitor.start(queue: monitorQueue)
+        print("🔄 Network monitoring başlatıldı")
     }
     
     // MARK: - Upload Implementation (UploadService'ten kopyalandı)
