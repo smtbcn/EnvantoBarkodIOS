@@ -107,7 +107,8 @@ struct ScannerView: View {
         .onReceive(viewModel.$scannedBarcode) { barcode in
             if !barcode.isEmpty {
                 viewModel.handleBarcodeDetection(barcode)
-                // Android logic: External browser aç ve ScannerView'ı kapat
+                // Kamerayı durdur ve browser'ı aç
+                viewModel.stopScanning()
                 viewModel.openWebsite(with: barcode)
             }
         }
@@ -117,12 +118,14 @@ struct ScannerView: View {
                 appState.closeScannerToMainMenu()
             }
         }
-        .sheet(isPresented: $viewModel.showWebBrowser) {
+        .fullScreenCover(isPresented: $viewModel.showWebBrowser) {
             WebBrowserView(
                 url: viewModel.currentURL,
                 onReturnToScanner: {
                     viewModel.showWebBrowser = false
                     viewModel.resetScanning()
+                    // Kamerayı tekrar başlat
+                    viewModel.startScanning()
                 },
                 onClose: {
                     viewModel.showWebBrowser = false
