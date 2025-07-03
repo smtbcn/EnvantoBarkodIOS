@@ -694,13 +694,23 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         Task {
             let dbManager = DatabaseManager.getInstance()
             
-            // 🎯 Müşterinin SavedImage'larından database ID'lerini topla
-            let customerImages = savedImages.filter { $0.customerName == customerName }
-            let databaseIds = customerImages.map { $0.databaseId }
+            // 🎯 Database'den direkt müşterinin tüm resimlerini al (Format denemesi)
+            let dbCustomerName = customerName.replacingOccurrences(of: " ", with: "_") // SAMET BICEN → SAMET_BICEN
+            let displayCustomerName = customerName // UI format
+            
+            // Müşterinin database kayıtlarını al (her iki format için de dene)
+            var customerRecords = dbManager.getCustomerImages(musteriAdi: displayCustomerName)
+            if customerRecords.isEmpty {
+                customerRecords = dbManager.getCustomerImages(musteriAdi: dbCustomerName)
+            }
+            
+            // Database ID'lerini topla
+            let databaseIds = customerRecords.map { $0.id }
             
             // Debug: Silinecek ID'leri logla
             print("🗑️ Müşteri '\(customerName)' için \(databaseIds.count) kayıt silinecek")
             print("🆔 Database ID'leri: \(databaseIds)")
+            print("📝 Database'de bulunan format: \(customerRecords.first?.musteriAdi ?? "N/A")")
             
             // 1️⃣ Database'den ID'ler ile toplu silme (Daha güvenilir)
             let dbDeleteSuccess = dbManager.deleteImagesByIds(databaseIds)

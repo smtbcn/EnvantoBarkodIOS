@@ -32,6 +32,9 @@ class DatabaseManager {
     private var db: OpaquePointer?
     private static var shared: DatabaseManager?
     
+    // MARK: - Thread Safety
+    private let databaseQueue = DispatchQueue(label: "com.envanto.database", qos: .utility)
+    
     // MARK: - Singleton Instance
     static func getInstance() -> DatabaseManager {
         if shared == nil {
@@ -307,68 +310,65 @@ class DatabaseManager {
         return count
     }
     
-    // MARK: - Get Customer Images (belirli müşterinin resimlerini getir)
+    // MARK: - Get Customer Images (belirli müşterinin resimlerini getir - Thread-safe)
     func getCustomerImages(musteriAdi: String) -> [BarkodResim] {
         guard db != nil else { return [] }
         
-        // Debug: Database'deki müşteri adı formatını kontrol et
-        
-        let selectSQL = """
-            SELECT \(DatabaseManager.COLUMN_ID), \(DatabaseManager.COLUMN_MUSTERI_ADI), 
-                   \(DatabaseManager.COLUMN_RESIM_YOLU), \(DatabaseManager.COLUMN_TARIH), 
-                   \(DatabaseManager.COLUMN_YUKLEYEN), \(DatabaseManager.COLUMN_YUKLENDI)
-            FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) 
-            WHERE \(DatabaseManager.COLUMN_MUSTERI_ADI) = ? 
-            ORDER BY \(DatabaseManager.COLUMN_TARIH) DESC
-        """
-        
-        var statement: OpaquePointer?
-        var results: [BarkodResim] = []
-        
-        if sqlite3_prepare_v2(db, selectSQL, -1, &statement, nil) == SQLITE_OK {
-            sqlite3_bind_text(statement, 1, musteriAdi, -1, SQLITE_TRANSIENT)
+        return databaseQueue.sync {
+            let selectSQL = """
+                SELECT \(DatabaseManager.COLUMN_ID), \(DatabaseManager.COLUMN_MUSTERI_ADI), 
+                       \(DatabaseManager.COLUMN_RESIM_YOLU), \(DatabaseManager.COLUMN_TARIH), 
+                       \(DatabaseManager.COLUMN_YUKLEYEN), \(DatabaseManager.COLUMN_YUKLENDI)
+                FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) 
+                WHERE \(DatabaseManager.COLUMN_MUSTERI_ADI) = ? 
+                ORDER BY \(DatabaseManager.COLUMN_TARIH) DESC
+            """
             
+            var statement: OpaquePointer?
+            var results: [BarkodResim] = []
             
-            while sqlite3_step(statement) == SQLITE_ROW {
-                let id = Int(sqlite3_column_int(statement, 0))
+            if sqlite3_prepare_v2(db, selectSQL, -1, &statement, nil) == SQLITE_OK {
+                sqlite3_bind_text(statement, 1, musteriAdi, -1, SQLITE_TRANSIENT)
                 
-                // Güvenli string okuma (NULL kontrol)
-                let musteriAdiPtr = sqlite3_column_text(statement, 1)
-                let musteriAdiResult = musteriAdiPtr != nil ? String(cString: musteriAdiPtr!) : ""
-                
-                let resimYoluPtr = sqlite3_column_text(statement, 2)
-                let resimYolu = resimYoluPtr != nil ? String(cString: resimYoluPtr!) : ""
-                
-                let tarihPtr = sqlite3_column_text(statement, 3)
-                let tarih = tarihPtr != nil ? String(cString: tarihPtr!) : ""
-                
-                let yukleyenPtr = sqlite3_column_text(statement, 4)
-                let yukleyen = yukleyenPtr != nil ? String(cString: yukleyenPtr!) : ""
-                
-                let yuklendi = Int(sqlite3_column_int(statement, 5))
-                
-                
-                // Boş kayıtları atla
-                if musteriAdiResult.isEmpty || resimYolu.isEmpty {
-                    continue
+                while sqlite3_step(statement) == SQLITE_ROW {
+                    let id = Int(sqlite3_column_int(statement, 0))
+                    
+                    // Güvenli string okuma (NULL kontrol)
+                    let musteriAdiPtr = sqlite3_column_text(statement, 1)
+                    let musteriAdiResult = musteriAdiPtr != nil ? String(cString: musteriAdiPtr!) : ""
+                    
+                    let resimYoluPtr = sqlite3_column_text(statement, 2)
+                    let resimYolu = resimYoluPtr != nil ? String(cString: resimYoluPtr!) : ""
+                    
+                    let tarihPtr = sqlite3_column_text(statement, 3)
+                    let tarih = tarihPtr != nil ? String(cString: tarihPtr!) : ""
+                    
+                    let yukleyenPtr = sqlite3_column_text(statement, 4)
+                    let yukleyen = yukleyenPtr != nil ? String(cString: yukleyenPtr!) : ""
+                    
+                    let yuklendi = Int(sqlite3_column_int(statement, 5))
+                    
+                    // Boş kayıtları atla
+                    if musteriAdiResult.isEmpty || resimYolu.isEmpty {
+                        continue
+                    }
+                    
+                    let barkodResim = BarkodResim(
+                        id: id,
+                        musteriAdi: musteriAdiResult,
+                        resimYolu: resimYolu,
+                        tarih: tarih,
+                        yukleyen: yukleyen,
+                        yuklendi: yuklendi
+                    )
+                    
+                    results.append(barkodResim)
                 }
-                
-                let barkodResim = BarkodResim(
-                    id: id,
-                    musteriAdi: musteriAdiResult,
-                    resimYolu: resimYolu,
-                    tarih: tarih,
-                    yukleyen: yukleyen,
-                    yuklendi: yuklendi
-                )
-                
-                results.append(barkodResim)
             }
-        } else {
+            
+            sqlite3_finalize(statement)
+            return results
         }
-        
-        sqlite3_finalize(statement)
-        return results
     }
     
     // MARK: - Get All Pending Images (yüklenmemiş tüm resimler)
@@ -511,28 +511,30 @@ class DatabaseManager {
         return false
     }
     
-    // MARK: - Delete Images By IDs (ID listesi ile toplu silme - Daha güvenilir)
+    // MARK: - Delete Images By IDs (ID listesi ile toplu silme - Thread-safe)
     func deleteImagesByIds(_ ids: [Int]) -> Bool {
         guard db != nil, !ids.isEmpty else { return false }
         
-        var totalDeleted = 0
-        
-        // Her ID için ayrı DELETE işlemi (güvenilir yaklaşım)
-        for id in ids {
-            let deleteSQL = "DELETE FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) WHERE \(DatabaseManager.COLUMN_ID) = ?"
-            var statement: OpaquePointer?
+        return databaseQueue.sync {
+            var totalDeleted = 0
             
-            if sqlite3_prepare_v2(db, deleteSQL, -1, &statement, nil) == SQLITE_OK {
-                sqlite3_bind_int(statement, 1, Int32(id))
+            // Her ID için ayrı DELETE işlemi (güvenilir yaklaşım)
+            for id in ids {
+                let deleteSQL = "DELETE FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) WHERE \(DatabaseManager.COLUMN_ID) = ?"
+                var statement: OpaquePointer?
                 
-                if sqlite3_step(statement) == SQLITE_DONE {
-                    totalDeleted += Int(sqlite3_changes(db))
+                if sqlite3_prepare_v2(db, deleteSQL, -1, &statement, nil) == SQLITE_OK {
+                    sqlite3_bind_int(statement, 1, Int32(id))
+                    
+                    if sqlite3_step(statement) == SQLITE_DONE {
+                        totalDeleted += Int(sqlite3_changes(db))
+                    }
                 }
+                sqlite3_finalize(statement)
             }
-            sqlite3_finalize(statement)
+            
+            return totalDeleted > 0
         }
-        
-        return totalDeleted > 0
     }
     
     // MARK: - Update Upload Status
