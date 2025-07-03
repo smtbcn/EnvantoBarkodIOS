@@ -111,7 +111,6 @@ class UploadService: ObservableObject {
     private func checkAndUploadPendingImages(wifiOnly: Bool) async {
         // 🔒 Global Upload Lock - BackgroundUploadManager ile çakışma önleme
         guard Constants.UploadLock.lockUpload() else {
-            print("⏸️ UploadService: Upload zaten devam ediyor (BackgroundUploadManager), atlanıyor")
             uploadStatus = "Background upload devam ediyor..."
             return
         }
@@ -181,7 +180,6 @@ class UploadService: ObservableObject {
             let stillPending = currentPendingImages.first(where: { $0.id == imageRecord.id })
             
             if stillPending == nil {
-                print("⏭️ UploadService: Resim zaten yüklenmiş, atlanıyor - ID: \(imageRecord.id)")
                 continue
             }
             

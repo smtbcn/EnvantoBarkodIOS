@@ -12,11 +12,6 @@ class ImageStorageManager {
         // App Documents'a kaydet (Files uygulamasından erişilebilir)
         if let documentsPath = saveToAppDocuments(image: image, customerName: customerName, isGallery: isGallery) {
             
-            // Relative path'i de göster
-            if let documentsDir = getAppDocumentsDirectory() {
-                let relativePath = documentsPath.replacingOccurrences(of: documentsDir.path, with: "Documents")
-            }
-            
             // Dosya kontrol et
             let fileExists = FileManager.default.fileExists(atPath: documentsPath)
             
@@ -30,11 +25,8 @@ class ImageStorageManager {
             )
             
             if dbSaved {
-                dbManager.printDatabaseInfo()
-                
                 // Upload tetikle
                 triggerUploadAfterSave()
-            } else {
             }
             
             return documentsPath
@@ -53,31 +45,7 @@ class ImageStorageManager {
         UploadService.shared.startUploadService(wifiOnly: wifiOnly)
     }
     
-    // MARK: - Debug: Print actual Documents path
-    private static func printActualDocumentsPath() {
-        if let documentsDir = getAppDocumentsDirectory() {
-            
-            // Envanto klasörü var mı kontrol et
-            let envantoDir = documentsDir.appendingPathComponent("Envanto")
-            if FileManager.default.fileExists(atPath: envantoDir.path) {
-                
-                do {
-                    let contents = try FileManager.default.contentsOfDirectory(atPath: envantoDir.path)
-                    
-                    // Her müşteri klasöründe kaç resim var
-                    for customerFolder in contents.prefix(3) {
-                        let customerPath = envantoDir.appendingPathComponent(customerFolder)
-                        if let customerContents = try? FileManager.default.contentsOfDirectory(atPath: customerPath.path) {
-                            let imageCount = customerContents.filter { $0.hasSuffix(".jpg") || $0.hasSuffix(".jpeg") || $0.hasSuffix(".png") }.count
-                        }
-                    }
-                } catch {
-                }
-            } else {
-            }
-        } else {
-        }
-    }
+
 
     
     // MARK: - Save to App Documents (Files App Access)
@@ -102,10 +70,7 @@ class ImageStorageManager {
         do {
             try imageData.write(to: finalPath)
             
-            // Dosya boyutunu da kontrol et
-            if let attributes = try? FileManager.default.attributesOfItem(atPath: finalPath.path),
-               let fileSize = attributes[.size] as? Int64 {
-            }
+
             
             return finalPath.path
         } catch {

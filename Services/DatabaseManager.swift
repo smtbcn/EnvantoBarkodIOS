@@ -544,13 +544,11 @@ class DatabaseManager {
                 if sqlite3_step(statement) == SQLITE_DONE {
                     let affectedRows = sqlite3_changes(db)
                     sqlite3_finalize(statement)
-                    print("✅ Upload status güncellendi - ID: \(id), Yüklendi: \(yuklendi), Etkilenen satır: \(affectedRows)")
                     return affectedRows > 0
                 }
             }
             
             sqlite3_finalize(statement)
-            print("❌ Upload status güncellenemedi - ID: \(id)")
             return false
         }
     }
@@ -795,268 +793,13 @@ class DatabaseManager {
         }
     }
     
-    // MARK: - Import Existing Images (Mevcut dosyaları database'e aktar)
-    func importExistingImages() {
-        
-        // App Documents'tan müşteri klasörlerini bul
-        guard let documentsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
-            return
-        }
-        
-        let envantoDir = documentsDir.appendingPathComponent("Envanto")
-        
-        do {
-            let customerFolders = try FileManager.default.contentsOfDirectory(at: envantoDir, includingPropertiesForKeys: nil)
-            var importedCount = 0
-            
-            for customerFolder in customerFolders {
-                if customerFolder.hasDirectoryPath {
-                    let customerName = customerFolder.lastPathComponent.replacingOccurrences(of: "_", with: " ")
-                    
-                    // Müşteri klasöründeki resimleri bul
-                    let imageFiles = try FileManager.default.contentsOfDirectory(at: customerFolder, includingPropertiesForKeys: nil)
-                    
-                    for imageFile in imageFiles {
-                        let fileName = imageFile.lastPathComponent
-                        if fileName.hasSuffix(".jpg") || fileName.hasSuffix(".jpeg") || fileName.hasSuffix(".png") {
-                            
-                            // Bu dosya database'de var mı kontrol et
-                            if !isImageInDatabase(imagePath: imageFile.path) {
-                                
-                                // Dosya adından yukleyen bilgisini çıkar (varsayılan cihaz sahibi)
-                                let currentDeviceOwner = UserDefaults.standard.string(forKey: "device_owner") ?? 
-                                                       UserDefaults.standard.string(forKey: Constants.UserDefaults.deviceOwner) ?? 
-                                                       "Bilinmeyen Cihaz"
-                                
-                                // Database'e ekle
-                                let success = insertBarkodResim(
-                                    musteriAdi: customerName,
-                                    resimYolu: imageFile.path,
-                                    yukleyen: currentDeviceOwner
-                                )
-                                
-                                if success {
-                                    importedCount += 1
-                                } else {
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            
-            
-            if importedCount > 0 {
-                printDatabaseInfo()
-            }
-            
-        } catch {
-        }
-    }
-    
-    // Resmin database'de olup olmadığını kontrol et
-    private func isImageInDatabase(imagePath: String) -> Bool {
-        guard db != nil else { return false }
-        
-        let selectSQL = "SELECT COUNT(*) FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) WHERE \(DatabaseManager.COLUMN_RESIM_YOLU) = ?"
-        var statement: OpaquePointer?
-        var exists = false
-        
-        if sqlite3_prepare_v2(db, selectSQL, -1, &statement, nil) == SQLITE_OK {
-            sqlite3_bind_text(statement, 1, imagePath, -1, nil)
-            
-            if sqlite3_step(statement) == SQLITE_ROW {
-                let count = Int(sqlite3_column_int(statement, 0))
-                exists = count > 0
-            }
-        }
-        
-        sqlite3_finalize(statement)
-        return exists
-    }
 
-    // MARK: - Manual Database Test (Debug için)
-    func testDatabaseOperations() {
-        
-        // 1. Connection test
-        if db != nil {
-        } else {
-            return
-        }
-        
-        // 2. Simple SQL test
-        let testSQL = "SELECT 1"
-        var statement: OpaquePointer?
-        if sqlite3_prepare_v2(db, testSQL, -1, &statement, nil) == SQLITE_OK {
-            if sqlite3_step(statement) == SQLITE_ROW {
-                let result = sqlite3_column_int(statement, 0)
-            } else {
-            }
-        } else {
-        }
-        sqlite3_finalize(statement)
-        
-        // 3. Database info
-        if let dbPath = getDatabasePath() {
-            let fileExists = FileManager.default.fileExists(atPath: dbPath)
-            
-            if fileExists {
-                if let attributes = try? FileManager.default.attributesOfItem(atPath: dbPath),
-                   let fileSize = attributes[.size] as? Int64 {
-                }
-            }
-        }
-        
-        // 4. Table creation test
-        let createTestTableSQL = "CREATE TABLE IF NOT EXISTS test_table (id INTEGER PRIMARY KEY, name TEXT)"
-        if sqlite3_exec(db, createTestTableSQL, nil, nil, nil) == SQLITE_OK {
-            
-            // Test insert
-            let insertTestSQL = "INSERT INTO test_table (name) VALUES ('test')"
-            if sqlite3_exec(db, insertTestSQL, nil, nil, nil) == SQLITE_OK {
-                
-                // Test select
-                let selectTestSQL = "SELECT COUNT(*) FROM test_table"
-                var selectStatement: OpaquePointer?
-                if sqlite3_prepare_v2(db, selectTestSQL, -1, &selectStatement, nil) == SQLITE_OK {
-                    if sqlite3_step(selectStatement) == SQLITE_ROW {
-                        let count = sqlite3_column_int(selectStatement, 0)
-                    }
-                }
-                sqlite3_finalize(selectStatement)
-                
-                // Test table'ı temizle
-                sqlite3_exec(db, "DROP TABLE test_table", nil, nil, nil)
-            } else {
-            }
-        } else {
-            if let errorMessage = sqlite3_errmsg(db) {
-            }
-        }
-        
-    }
+    
 
-    // MARK: - Debug Methods
-    func printDatabaseInfo() {
-        
-        // Database connection durumu
-        if let dbPtr = db {
-        }
-        
-        // Database dosya durumu
-        if let dbPath = getDatabasePath() {
-            let fileExists = FileManager.default.fileExists(atPath: dbPath)
-            
-            if fileExists {
-                if let attributes = try? FileManager.default.attributesOfItem(atPath: dbPath),
-                   let fileSize = attributes[.size] as? Int64 {
-                }
-            }
-        }
-        
-        // Database tablo kontrolü
-        checkTableExists()
-        
-        let totalCount = getUploadedImagesCount()
-        let pendingCount = getPendingUploadCount()
-        
-        
-        // Son kayıtları göster
-        if totalCount > 0 {
-            let recentImages = getRecentImages(limit: 3)
-            for (index, image) in recentImages.enumerated() {
-            }
-        }
-        
-        // Cihaz sahibi bilgisini de göster
-        let currentDeviceOwner = UserDefaults.standard.string(forKey: "device_owner") ?? "Belirtilmemiş"
-        
-        // Cihaz yetki durumunu da göster
-        let deviceId = DeviceIdentifier.getUniqueDeviceId()
-        if let cihazYetki = getCihazYetki(cihazBilgisi: deviceId) {
-        } else {
-        }
-        
-    }
-    
-    // Tabloların var olup olmadığını kontrol et
-    private func checkTableExists() {
-        guard db != nil else {
-            return
-        }
-        
-        
-        // Önce tüm tabloları listele
-        let listTablesSQL = "SELECT name FROM sqlite_master WHERE type='table'"
-        var listStatement: OpaquePointer?
-        var foundTables: [String] = []
-        
-        if sqlite3_prepare_v2(db, listTablesSQL, -1, &listStatement, nil) == SQLITE_OK {
-            while sqlite3_step(listStatement) == SQLITE_ROW {
-                let tableName = String(cString: sqlite3_column_text(listStatement, 0))
-                foundTables.append(tableName)
-            }
-        } else {
-        }
-        sqlite3_finalize(listStatement)
-        
-        // Basit string karşılaştırması ile kontrol et
-        let hasBarkodResimler = foundTables.contains(DatabaseManager.TABLE_BARKOD_RESIMLER)
-        let hasCihazYetki = foundTables.contains(DatabaseManager.TABLE_CIHAZ_YETKI)
-        
-        if hasBarkodResimler {
-        } else {
-        }
-        
-        if hasCihazYetki {
-        } else {
-        }
-        
-    }
-    
-    // Son kayıtları getir
-    private func getRecentImages(limit: Int) -> [BarkodResim] {
-        guard db != nil else { return [] }
-        
-        let selectSQL = """
-            SELECT \(DatabaseManager.COLUMN_ID), \(DatabaseManager.COLUMN_MUSTERI_ADI), 
-                   \(DatabaseManager.COLUMN_RESIM_YOLU), \(DatabaseManager.COLUMN_TARIH), 
-                   \(DatabaseManager.COLUMN_YUKLEYEN), \(DatabaseManager.COLUMN_YUKLENDI)
-            FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) 
-            ORDER BY \(DatabaseManager.COLUMN_ID) DESC 
-            LIMIT ?
-        """
-        
-        var statement: OpaquePointer?
-        var results: [BarkodResim] = []
-        
-        if sqlite3_prepare_v2(db, selectSQL, -1, &statement, nil) == SQLITE_OK {
-            sqlite3_bind_int(statement, 1, Int32(limit))
-            
-            while sqlite3_step(statement) == SQLITE_ROW {
-                let id = Int(sqlite3_column_int(statement, 0))
-                let musteriAdi = String(cString: sqlite3_column_text(statement, 1))
-                let resimYolu = String(cString: sqlite3_column_text(statement, 2))
-                let tarih = String(cString: sqlite3_column_text(statement, 3))
-                let yukleyen = String(cString: sqlite3_column_text(statement, 4))
-                let yuklendi = Int(sqlite3_column_int(statement, 5))
-                
-                let barkodResim = BarkodResim(
-                    id: id,
-                    musteriAdi: musteriAdi,
-                    resimYolu: resimYolu,
-                    tarih: tarih,
-                    yukleyen: yukleyen,
-                    yuklendi: yuklendi
-                )
-                
-                results.append(barkodResim)
-            }
-        }
-        
-        sqlite3_finalize(statement)
-        return results
-    }
+
+
+
+
     
     // MARK: - Get All Images (pending + uploaded)
     func getAllImages() -> [BarkodResim] {
@@ -1142,7 +885,6 @@ class DatabaseManager {
                     deletedFiles += 1
                 } catch {
                 }
-            } else {
             }
         }
         
@@ -1159,7 +901,6 @@ class DatabaseManager {
                     if contents.isEmpty {
                         try FileManager.default.removeItem(at: customerDir)
                         deletedFolders += 1
-                    } else {
                     }
                 } catch {
                 }
@@ -1174,14 +915,10 @@ class DatabaseManager {
         if sqlite3_prepare_v2(db, deleteSQL, -1, &statement, nil) == SQLITE_OK {
             if sqlite3_step(statement) == SQLITE_DONE {
                 deletedRows = Int(sqlite3_changes(db))
-            } else {
             }
-        } else {
         }
         
         sqlite3_finalize(statement)
-        
-        // 4. SONUÇLARI RAPOR ET
         
         return deletedRows > 0
     }

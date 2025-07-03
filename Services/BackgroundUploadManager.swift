@@ -30,13 +30,13 @@ class BackgroundUploadManager {
             self?.handleBackgroundUpload(task: task as! BGAppRefreshTask)
         }
         
-        print("📱 Background task kaydedildi: \(BackgroundUploadManager.backgroundTaskIdentifier)")
+
     }
     
     // MARK: - Schedule Background Task
     func scheduleBackgroundUpload() {
         // iOS Background Task sınırlamaları nedeniyle basit timer kullanıyoruz
-        print("📅 Background upload timer başlatılıyor...")
+
         
         // Network değişikliği algılandığında kısa bir süre sonra upload kontrol et
         DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
@@ -55,11 +55,11 @@ class BackgroundUploadManager {
     
     // MARK: - Handle Background Upload
     private func handleBackgroundUpload(task: BGAppRefreshTask) {
-        print("🚀 Background upload task başladı")
+
         
         // Task'ın iptal edilme durumunu handle et
         task.expirationHandler = {
-            print("⏰ Background task süresi doldu")
+
             task.setTaskCompleted(success: false)
         }
         
@@ -81,12 +81,9 @@ class BackgroundUploadManager {
     private func performBackgroundUpload() async -> Bool {
         // 🔒 Global Upload Lock - UploadService ile çakışma önleme
         guard Constants.UploadLock.lockUpload() else {
-            print("⏸️ Background upload: Upload zaten devam ediyor (UploadService), atlanıyor")
             return false
         }
         defer { Constants.UploadLock.unlockUpload() }
-        
-        print("📤 Background upload başlıyor...")
         
         // WiFi ayarını kontrol et
         let wifiOnly = UserDefaults.standard.bool(forKey: "upload_wifi_only")
@@ -95,7 +92,6 @@ class BackgroundUploadManager {
         let uploadCheck = NetworkUtils.canUploadWithSettings(wifiOnly: wifiOnly)
         
         if !uploadCheck.canUpload {
-            print("🚫 Background upload durumu: \(uploadCheck.reason)")
             return false
         }
         
@@ -104,18 +100,14 @@ class BackgroundUploadManager {
         let pendingImages = dbManager.getAllPendingImages()
         
         if pendingImages.isEmpty {
-            print("✅ Background upload: Yüklenecek resim yok")
             return true
         }
-        
-        print("📊 Background upload: \(pendingImages.count) resim yüklenecek")
         
         // Cihaz yetki kontrolü
         let deviceId = DeviceIdentifier.getUniqueDeviceId()
         let isAuthorized = dbManager.isCihazYetkili(cihazBilgisi: deviceId)
         
         if !isAuthorized {
-            print("🚫 Background upload: Cihaz yetkili değil")
             return false
         }
         
@@ -131,7 +123,6 @@ class BackgroundUploadManager {
             let stillPending = currentPendingImages.first(where: { $0.id == imageRecord.id })
             
             if stillPending == nil {
-                print("⏭️ Background upload: Resim zaten yüklenmiş, atlanıyor - ID: \(imageRecord.id)")
                 continue
             }
             
@@ -150,17 +141,13 @@ class BackgroundUploadManager {
                 
                 if updateResult {
                     uploadedCount += 1
-                    print("✅ Background upload: Resim yüklendi (\(uploadedCount)/\(maxUploads))")
-                } else {
-                    print("❌ Background upload: Database güncellenemedi")
                 }
             } else {
-                print("❌ Background upload: Resim yüklenemedi")
                 break
             }
         }
         
-        print("🎯 Background upload tamamlandı: \(uploadedCount) resim yüklendi")
+
         
         // Notification gönder (kullanıcıya bilgi ver)
         if uploadedCount > 0 {
@@ -175,7 +162,7 @@ class BackgroundUploadManager {
         networkMonitor.pathUpdateHandler = { [weak self] path in
             if path.status == .satisfied {
                 if path.usesInterfaceType(.wifi) {
-                    print("📶 WiFi bağlantısı algılandı - Background upload kontrol ediliyor")
+
                     
                     // WiFi bağlantısı geldiğinde upload'u tetikle
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
@@ -288,10 +275,6 @@ class BackgroundUploadManager {
             trigger: nil
         )
         
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                print("❌ Notification hatası: \(error)")
-            }
-        }
+        UNUserNotificationCenter.current().add(request) { _ in }
     }
 } 

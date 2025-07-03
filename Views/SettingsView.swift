@@ -65,30 +65,7 @@ struct SettingsView: View {
                     }
                 }
                 
-                // Database İşlemleri
-                Section(header: Text("Database İşlemleri")) {
-                    Button(action: {
-                        testDatabase()
-                    }) {
-                        HStack {
-                            Image(systemName: "wrench.and.screwdriver")
-                                .foregroundColor(.purple)
-                            Text("Database Test Çalıştır")
-                                .foregroundColor(.purple)
-                        }
-                    }
-                    
-                    Button(action: {
-                        importExistingImages()
-                    }) {
-                        HStack {
-                            Image(systemName: "square.and.arrow.down")
-                                .foregroundColor(.blue)
-                            Text("Mevcut Resimleri Database'e Aktar")
-                                .foregroundColor(.blue)
-                        }
-                    }
-                }
+
                 
                 // Tehlikeli İşlemler
                 Section(header: Text("Tehlikeli İşlemler")) {
@@ -166,8 +143,8 @@ struct SettingsView: View {
         deviceOwner = viewModel.deviceOwner
         baseURL = UserDefaults.standard.string(forKey: Constants.UserDefaults.baseURL) ?? Constants.Network.defaultBaseURL
         
-        // WiFi only ayarını yükle (Android uyumlu key kullan)
-        wifiOnlyUpload = UserDefaults.standard.bool(forKey: Constants.UserDefaults.wifiOnly)
+        // WiFi only ayarını yükle (Default: true)
+        wifiOnlyUpload = UserDefaults.standard.object(forKey: Constants.UserDefaults.wifiOnly) as? Bool ?? true
     }
     
     private func saveSettings() {
@@ -195,24 +172,11 @@ struct SettingsView: View {
         // Değerleri sıfırla
         deviceOwner = ""
         baseURL = Constants.Network.defaultBaseURL
-        wifiOnlyUpload = false
+        wifiOnlyUpload = true
         viewModel.updateDeviceOwner("")
     }
     
-    private func testDatabase() {
-        
-        let dbManager = DatabaseManager.getInstance()
-        dbManager.testDatabaseOperations()
-    }
-    
-    private func importExistingImages() {
-        
-        let dbManager = DatabaseManager.getInstance()
-        dbManager.importExistingImages()
-        
-        // Upload servisini yeniden başlat
-        updateUploadService()
-    }
+
     
     private func clearDatabase() {
         // Database'deki tüm barkod resim kayıtlarını temizle

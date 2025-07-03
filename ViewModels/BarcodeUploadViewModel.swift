@@ -61,31 +61,9 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
     // MARK: - Database Initialization
     private func initializeDatabase() {
         let dbManager = DatabaseManager.getInstance()
-        dbManager.printDatabaseInfo()
-        
-        // Mevcut resimleri database'e import et (ilk çalıştırmada)
-        dbManager.importExistingImages()
     }
     
-    // MARK: - Database Debug Functions
-    func getDatabaseStats() -> String {
-        let dbManager = DatabaseManager.getInstance()
-        let totalCount = dbManager.getUploadedImagesCount()
-        let pendingCount = dbManager.getPendingUploadCount()
-        let uploadedCount = totalCount - pendingCount
-        
-        return """
-        📊 Veritabanı İstatistikleri:
-        • Toplam resim: \(totalCount)
-        • Yüklenen: \(uploadedCount)
-        • Bekleyen: \(pendingCount)
-        """
-    }
-    
-    func getCustomerDatabaseImages(customerName: String) -> [BarkodResim] {
-        let dbManager = DatabaseManager.getInstance()
-        return dbManager.getCustomerImages(musteriAdi: customerName)
-    }
+
     
     // MARK: - Device Info (Yukleyen bilgisi için)
     private func getDeviceOwnerInfo() -> String {
@@ -160,7 +138,7 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         
         // Upload service'i başlat
         UploadService.shared.startUploadService(wifiOnly: wifiOnly)
-        print("🚀 Upload service başlatıldı (WiFi Only: \(wifiOnly))")
+
         
         // Background manager'a da bilgi ver
         BackgroundUploadManager.shared.checkPendingUploadsImmediately()
@@ -390,8 +368,6 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
             let savedImages = imageRecords.compactMap { record -> SavedImage? in
                 // Dosya var mı kontrol et ama dosya yoksa da kayıt göster
                 let fileExists = FileManager.default.fileExists(atPath: record.resimYolu)
-                if !fileExists {
-                }
                 
                 // 🎯 Display format customer name
                 let displayCustomerName = record.musteriAdi.replacingOccurrences(of: "_", with: " ")
@@ -492,10 +468,8 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
             
             await MainActor.run {
                 savedImages = customerImages.compactMap { record in
-                    // Dosya var mı kontrol et ama dosya yoksa da kayıt göster
-                    let fileExists = FileManager.default.fileExists(atPath: record.resimYolu)
-                    if !fileExists {
-                    }
+                                    // Dosya var mı kontrol et ama dosya yoksa da kayıt göster
+                let fileExists = FileManager.default.fileExists(atPath: record.resimYolu)
                     
                     // 🎯 Display format customer name
                     let displayCustomerName = record.musteriAdi.replacingOccurrences(of: "_", with: " ")
@@ -723,9 +697,7 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
             let databaseIds = customerRecords.map { $0.id }
             
             // Debug: Silinecek ID'leri logla
-            print("🗑️ Müşteri '\(customerName)' için \(databaseIds.count) kayıt silinecek")
-            print("🆔 Database ID'leri: \(databaseIds)")
-            print("📝 Database'de bulunan format: \(customerRecords.first?.musteriAdi ?? "N/A")")
+
             
             // 1️⃣ Database'den ID'ler ile toplu silme (Daha güvenilir)
             let dbDeleteSuccess = dbManager.deleteImagesByIds(databaseIds)
@@ -739,16 +711,13 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
                     let removedCount = savedImages.filter { $0.customerName == customerName }.count
                     savedImages.removeAll { $0.customerName == customerName }
                     
-                    print("✅ Müşteri '\(customerName)' silindi:")
-                    print("   📊 Database: \(dbDeleteSuccess ? "✅" : "❌") (\(databaseIds.count) ID)")
-                    print("   📁 Dosyalar: \(fileDeleteSuccess ? "✅" : "❌")")
-                    print("   🖼️ UI'dan kaldırılan: \(removedCount) resim")
+                    
                     
                     // Müşteri gruplarını güncelle
                     loadCustomerImageGroups()
                 } else {
                     // Her ikisi de başarısızsa hata mesajı
-                    print("❌ Müşteri '\(customerName)' silinirken hata oluştu")
+        
                     showError("Müşteri klasörü silme hatası: Hem database hem dosya silme başarısız")
                 }
             }
