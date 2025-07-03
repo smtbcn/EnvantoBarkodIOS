@@ -630,8 +630,22 @@ class DatabaseManager {
             dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
             let sonKontrol = dateFormatter.string(from: Date())
             
-            // Önce mevcut kaydı kontrol et
-            if var existingRecord = getCihazYetki(cihazBilgisi: cihazBilgisi) {
+            // Önce mevcut kaydı kontrol et (nested sync'ten kaçın)
+            let existsSQL = "SELECT COUNT(*) FROM \(DatabaseManager.TABLE_CIHAZ_YETKI) WHERE \(DatabaseManager.COLUMN_CIHAZ_BILGISI) = ?"
+            var existsStatement: OpaquePointer?
+            var recordExists = false
+            
+            if sqlite3_prepare_v2(db, existsSQL, -1, &existsStatement, nil) == SQLITE_OK {
+                sqlite3_bind_text(existsStatement, 1, cihazBilgisi, -1, nil)
+                
+                if sqlite3_step(existsStatement) == SQLITE_ROW {
+                    let count = Int(sqlite3_column_int(existsStatement, 0))
+                    recordExists = (count > 0)
+                }
+            }
+            sqlite3_finalize(existsStatement)
+            
+            if recordExists {
                 // Güncelle
                 let updateSQL = """
                     UPDATE \(DatabaseManager.TABLE_CIHAZ_YETKI) 
@@ -727,10 +741,28 @@ class DatabaseManager {
         guard db != nil else { return "" }
         
         return databaseQueue.sync {
-            if let cihazYetki = getCihazYetki(cihazBilgisi: cihazBilgisi) {
-                return cihazYetki.cihazSahibi
+            // getCihazYetki kodunu doğrudan burada çalıştır (nested sync'ten kaçın)
+            let selectSQL = """
+                SELECT \(DatabaseManager.COLUMN_CIHAZ_SAHIBI)
+                FROM \(DatabaseManager.TABLE_CIHAZ_YETKI) 
+                WHERE \(DatabaseManager.COLUMN_CIHAZ_BILGISI) = ? 
+                LIMIT 1
+            """
+            
+            var statement: OpaquePointer?
+            var result = ""
+            
+            if sqlite3_prepare_v2(db, selectSQL, -1, &statement, nil) == SQLITE_OK {
+                sqlite3_bind_text(statement, 1, cihazBilgisi, -1, nil)
+                
+                if sqlite3_step(statement) == SQLITE_ROW {
+                    let cihazSahibiPtr = sqlite3_column_text(statement, 0)
+                    result = cihazSahibiPtr != nil ? String(cString: cihazSahibiPtr!) : ""
+                }
             }
-            return ""
+            
+            sqlite3_finalize(statement)
+            return result
         }
     }
     
@@ -738,10 +770,28 @@ class DatabaseManager {
         guard db != nil else { return false }
         
         return databaseQueue.sync {
-            if let cihazYetki = getCihazYetki(cihazBilgisi: cihazBilgisi) {
-                return cihazYetki.cihazOnay == 1
+            // getCihazYetki kodunu doğrudan burada çalıştır (nested sync'ten kaçın)
+            let selectSQL = """
+                SELECT \(DatabaseManager.COLUMN_CIHAZ_ONAY)
+                FROM \(DatabaseManager.TABLE_CIHAZ_YETKI) 
+                WHERE \(DatabaseManager.COLUMN_CIHAZ_BILGISI) = ? 
+                LIMIT 1
+            """
+            
+            var statement: OpaquePointer?
+            var isAuthorized = false
+            
+            if sqlite3_prepare_v2(db, selectSQL, -1, &statement, nil) == SQLITE_OK {
+                sqlite3_bind_text(statement, 1, cihazBilgisi, -1, nil)
+                
+                if sqlite3_step(statement) == SQLITE_ROW {
+                    let cihazOnay = Int(sqlite3_column_int(statement, 0))
+                    isAuthorized = (cihazOnay == 1)
+                }
             }
-            return false
+            
+            sqlite3_finalize(statement)
+            return isAuthorized
         }
     }
     
