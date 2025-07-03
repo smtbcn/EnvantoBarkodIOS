@@ -18,6 +18,9 @@ class ImageStorageManager {
             return nil
         }
         
+        print("📍 Documents dizini: \(documentsDir.path)")
+        print("📍 Bu yol Files uygulamasında 'On My iPhone > Envanto Barkod' olarak görünür")
+        
         let envantoFolder = documentsDir.appendingPathComponent(ENVANTO_FOLDER_NAME)
         
         // Envanto klasörü yoksa oluştur
@@ -25,12 +28,14 @@ class ImageStorageManager {
             do {
                 try FileManager.default.createDirectory(at: envantoFolder, withIntermediateDirectories: true, attributes: nil)
                 print("📁 Envanto klasörü oluşturuldu: \(envantoFolder.path)")
+                print("📱 Files uygulamasında şu yolda görünür: On My iPhone > Envanto Barkod > Envanto")
             } catch {
                 print("❌ Envanto klasörü oluşturulamadı: \(error)")
                 return nil
             }
         } else {
             print("✅ Envanto klasörü mevcut: \(envantoFolder.path)")
+            print("📱 Files uygulamasında şu yolda görünür: On My iPhone > Envanto Barkod > Envanto")
         }
         
         return envantoFolder

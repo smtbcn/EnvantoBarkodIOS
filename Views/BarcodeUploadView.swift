@@ -490,8 +490,8 @@ struct BarcodeUploadView: View {
                 .foregroundColor(.white)
                 .cornerRadius(10)
             }
-            
-            Spacer()
+                
+                Spacer()
         }
         .padding()
     }
@@ -1163,7 +1163,7 @@ struct AndroidImageRow: View {
                                 .cornerRadius(6)
                                 
                         case .failure(_):
-                            Image(systemName: "photo")
+                    Image(systemName: "photo")
                                 .font(.system(size: 20))
                                 .foregroundColor(.secondary)
                                 .frame(width: 50, height: 50)

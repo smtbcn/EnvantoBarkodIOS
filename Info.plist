@@ -100,7 +100,7 @@
     <key>LSMinimumSystemVersion</key>
     <string>15.0</string>
     
-    <!-- Dosya Paylaşımı -->
+    <!-- Dosya Paylaşımı - Files Uygulamasında Görünüm İçin -->
     <key>UIFileSharingEnabled</key>
     <true/>
     <key>LSSupportsOpeningDocumentsInPlace</key>
