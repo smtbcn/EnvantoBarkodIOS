@@ -108,7 +108,8 @@ class NetworkUtils: ObservableObject {
         let isWiFiConnected = NetworkUtils.isWifiConnected()
         
         print("🔍 DEBUG canUploadWithSettings:")
-        print("  - wifiOnly: \(wifiOnly)")
+        print("  - wifiOnly parametre: \(wifiOnly)")
+        print("  - UserDefaults key '\(Constants.UserDefaults.wifiOnly)': \(UserDefaults.standard.bool(forKey: Constants.UserDefaults.wifiOnly))")
         print("  - isNetworkAvailable: \(isNetworkAvailable)")
         print("  - isWiFiConnected: \(isWiFiConnected)")
         
