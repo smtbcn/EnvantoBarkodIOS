@@ -40,13 +40,14 @@ class NetworkUtils: ObservableObject {
     }
     
     private func updateConnectionType(path: NWPath) {
-        if path.usesInterfaceType(.wifi) {
+        // CRITICAL: WiFi bağlantısı için hem interface hem de gerçek bağlantı kontrolü
+        if path.usesInterfaceType(.wifi) && path.status == .satisfied {
             connectionType = .wifi
             isWiFiConnected = true
-        } else if path.usesInterfaceType(.cellular) {
+        } else if path.usesInterfaceType(.cellular) && path.status == .satisfied {
             connectionType = .cellular
             isWiFiConnected = false
-        } else if path.usesInterfaceType(.wiredEthernet) {
+        } else if path.usesInterfaceType(.wiredEthernet) && path.status == .satisfied {
             connectionType = .wiredEthernet
             isWiFiConnected = false
         } else {
