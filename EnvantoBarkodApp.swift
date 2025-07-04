@@ -5,6 +5,9 @@ import UserNotifications
 struct EnvantoBarkodApp: App {
     
     init() {
+        // İlk açılış kontrolü ve default ayarları kaydet
+        setupDefaultSettings()
+        
         // Background upload manager'ı başlat
         _ = BackgroundUploadManager.shared
         
@@ -24,6 +27,21 @@ struct EnvantoBarkodApp: App {
         
                     BackgroundUploadManager.shared.checkPendingUploadsImmediately()
                 }
+        }
+    }
+    
+    // MARK: - İlk açılış ve default ayarlar
+    private func setupDefaultSettings() {
+        let isFirstLaunch = !UserDefaults.standard.bool(forKey: Constants.UserDefaults.isFirstLaunch)
+        
+        if isFirstLaunch {
+            // İlk açılış - default ayarları kaydet
+            UserDefaults.standard.set(true, forKey: Constants.UserDefaults.isFirstLaunch)
+            UserDefaults.standard.set(true, forKey: Constants.UserDefaults.wifiOnly) // 🔥 DEFAULT: Sadece WiFi AÇIK
+            UserDefaults.standard.set(Constants.Network.defaultBaseURL, forKey: Constants.UserDefaults.baseURL)
+            
+            // Ayarları hemen kaydet
+            UserDefaults.standard.synchronize()
         }
     }
     

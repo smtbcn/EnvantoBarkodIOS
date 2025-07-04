@@ -44,19 +44,16 @@ class NetworkUtils: ObservableObject {
         if path.usesInterfaceType(.wifi) && path.status == .satisfied {
             connectionType = .wifi
             isWiFiConnected = true
-            print("🔵 DEBUG: WiFi bağlantısı algılandı - isWiFiConnected = true")
+
         } else if path.usesInterfaceType(.cellular) && path.status == .satisfied {
             connectionType = .cellular
             isWiFiConnected = false
-            print("📱 DEBUG: Cellular bağlantısı algılandı - isWiFiConnected = false")
         } else if path.usesInterfaceType(.wiredEthernet) && path.status == .satisfied {
             connectionType = .wiredEthernet
             isWiFiConnected = false
-            print("🔌 DEBUG: Ethernet bağlantısı algılandı - isWiFiConnected = false")
         } else {
             connectionType = .none
             isWiFiConnected = false
-            print("❌ DEBUG: Bağlantı yok - isWiFiConnected = false")
         }
     }
     
@@ -107,23 +104,13 @@ class NetworkUtils: ObservableObject {
         let isNetworkAvailable = NetworkUtils.isNetworkAvailable()
         let isWiFiConnected = NetworkUtils.isWifiConnected()
         
-        print("🔍 DEBUG canUploadWithSettings:")
-        print("  - wifiOnly parametre: \(wifiOnly)")
-        print("  - UserDefaults key '\(Constants.UserDefaults.wifiOnly)': \(UserDefaults.standard.bool(forKey: Constants.UserDefaults.wifiOnly))")
-        print("  - isNetworkAvailable: \(isNetworkAvailable)")
-        print("  - isWiFiConnected: \(isWiFiConnected)")
-        
         if !isNetworkAvailable {
-            print("  - SONUÇ: İnternet bağlantısı yok")
             return (false, "İnternet bağlantısı bekleniyor...")
         }
         
         if wifiOnly && !isWiFiConnected {
-            print("  - SONUÇ: WiFi-only aktif ama WiFi bağlı değil")
             return (false, "WiFi bağlantısı bekleniyor...")
         }
-        
-        print("  - SONUÇ: Upload yapılabilir")
         return (true, "Yükleme hazır")
     }
     

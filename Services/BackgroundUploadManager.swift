@@ -35,11 +35,8 @@ class BackgroundUploadManager {
     
     // MARK: - Schedule Background Task
     func scheduleBackgroundUpload() {
-        // iOS Background Task sınırlamaları nedeniyle basit timer kullanıyoruz
-
-        
-        // Network değişikliği algılandığında kısa bir süre sonra upload kontrol et
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+        // 🔋 PIL OPTİMİZASYONU: Network değişikliği algılandığında daha uzun süre bekle
+        DispatchQueue.main.asyncAfter(deadline: .now() + Constants.Timing.backgroundUploadDelay) {
             Task {
                 await self.performBackgroundUpload()
             }
@@ -163,9 +160,15 @@ class BackgroundUploadManager {
             // CRITICAL: Hem bağlantı hem de WiFi interface kontrolü birlikte
             if path.status == .satisfied && path.usesInterfaceType(.wifi) {
                 
-                // Gerçek WiFi bağlantısı geldiğinde upload'u tetikle
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                    self?.scheduleBackgroundUpload()
+                // 🔋 PIL OPTİMİZASYONU: WiFi bağlantısı geldiğinde daha uzun bekle
+                DispatchQueue.main.asyncAfter(deadline: .now() + Constants.Timing.networkChangeDelay) {
+                    // Sadece bekleyen resim varsa upload'u tetikle
+                    let dbManager = DatabaseManager.getInstance()
+                    let pendingCount = dbManager.getAllPendingImages().count
+                    
+                    if pendingCount > 0 {
+                        self?.scheduleBackgroundUpload()
+                    }
                 }
             }
         }

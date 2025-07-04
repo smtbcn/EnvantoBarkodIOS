@@ -44,6 +44,11 @@ struct Constants {
         static let mediumDelay: TimeInterval = 1.0
         static let longDelay: TimeInterval = 2.0
         static let updateCheckInterval: TimeInterval = 24 * 60 * 60 // 24 saat
+        
+        // 🔋 PIL OPTİMİZASYONU: Upload servisi timing ayarları
+        static let uploadCheckInterval: TimeInterval = 60.0 // 60 saniye (önceden 10 saniye)
+        static let networkChangeDelay: TimeInterval = 5.0 // Network değişikliği sonrası bekleme
+        static let backgroundUploadDelay: TimeInterval = 10.0 // Background upload gecikmesi
     }
     
     struct Sounds {

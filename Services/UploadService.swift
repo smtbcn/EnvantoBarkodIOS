@@ -83,7 +83,8 @@ class UploadService: ObservableObject {
         
         stopUploadService() // Mevcut servisi durdur
         
-        uploadTimer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: true) { [weak self] _ in
+        // 🔋 PIL OPTİMİZASYONU: 10 saniye → 60 saniye (6x daha az pil tüketimi)
+        uploadTimer = Timer.scheduledTimer(withTimeInterval: Constants.Timing.uploadCheckInterval, repeats: true) { [weak self] _ in
             Task {
                 await self?.checkAndUploadPendingImages(wifiOnly: wifiOnly)
             }
@@ -119,16 +120,17 @@ class UploadService: ObservableObject {
         // Database'den yüklenmemiş resimleri al
         let dbManager = DatabaseManager.getInstance()
         
-        // Cleanup mantığı kaldırıldı - Sadece pending resimleri işle
-        
         let pendingImages = dbManager.getAllPendingImages()
         let totalCount = pendingImages.count
         
-        // Bekleyen resim yoksa erken çıkış
+        // 🔋 PIL OPTİMİZASYONU: Bekleyen resim yoksa timer'ı durdur
         if totalCount == 0 {
             uploadStatus = "Yüklenecek resim yok"
             uploadProgress = (0, 0)
             isUploading = false
+            
+            // Timer'ı durdur - gereksiz pil tüketimini önle
+            stopUploadService()
             return
         }
         
@@ -160,9 +162,10 @@ class UploadService: ObservableObject {
                 DispatchQueue.main.async {
                     NotificationCenter.default.post(name: .uploadCompleted, object: nil)
                 }
-            } else {
             }
             
+            // Timer'ı durdur - yetkisiz cihazda gereksiz işlem yapma
+            stopUploadService()
             return
         }
         
@@ -186,7 +189,6 @@ class UploadService: ObservableObject {
             // PATH KONTROL DETAYI
             if imageRecord.resimYolu.isEmpty {
                 continue
-            } else {
             }
             
             // Her resim için network kontrolü (WiFi kesilirse dursun)
@@ -202,32 +204,23 @@ class UploadService: ObservableObject {
             if success {
                 uploadedCount += 1
                 
-                
                 // Database'de yuklendi flag'ini güncelle
                 let updateResult = dbManager.updateUploadStatus(id: imageRecord.id, yuklendi: 1)
                 
                 if updateResult {
-                    
                     // Güncelleme sonrası doğrulama
                     let allPending = dbManager.getAllPendingImages()
                     let stillPending = allPending.first(where: { $0.id == imageRecord.id })
-                    
-                    if stillPending == nil {
-                    } else {
-                    }
-                } else {
                 }
                 
                 uploadProgress = (uploadedCount, totalCount)
                 uploadStatus = "Yüklendi: \(uploadedCount)/\(totalCount)"
-                
                 
                 // Her başarılı upload sonrasında UI'ı anında güncelle
                 DispatchQueue.main.async {
                     NotificationCenter.default.post(name: .uploadCompleted, object: nil)
                 }
             } else {
-                
                 // Hata durumunda kısa bekle
                 try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 saniye
             }
@@ -237,6 +230,8 @@ class UploadService: ObservableObject {
         
         if uploadedCount == totalCount {
             uploadStatus = "Tüm resimler yüklendi ✅"
+            // 🔋 PIL OPTİMİZASYONU: Tüm resimler yüklendiyse timer'ı durdur
+            stopUploadService()
         } else if uploadedCount > 0 {
             uploadStatus = "\(uploadedCount) resim yüklendi, \(totalCount - uploadedCount) bekliyor"
         }

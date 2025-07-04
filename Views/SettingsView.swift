@@ -225,7 +225,12 @@ struct SettingsView: View {
         UserDefaults.standard.removePersistentDomain(forName: domain)
         UserDefaults.standard.synchronize()
         
-        // Değerleri sıfırla
+        // Default değerleri UserDefaults'a kaydet
+        UserDefaults.standard.set(Constants.Network.defaultBaseURL, forKey: Constants.UserDefaults.baseURL)
+        UserDefaults.standard.set(true, forKey: Constants.UserDefaults.wifiOnly) // 🔥 DEFAULT: Sadece WiFi AÇIK
+        UserDefaults.standard.synchronize()
+        
+        // UI değerleri sıfırla
         deviceOwner = ""
         baseURL = Constants.Network.defaultBaseURL
         wifiOnlyUpload = true
