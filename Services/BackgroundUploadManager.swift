@@ -86,7 +86,7 @@ class BackgroundUploadManager {
         defer { Constants.UploadLock.unlockUpload() }
         
         // WiFi ayarını kontrol et
-        let wifiOnly = UserDefaults.standard.bool(forKey: "upload_wifi_only")
+        let wifiOnly = UserDefaults.standard.bool(forKey: Constants.UserDefaults.wifiOnly)
         
         // Network kontrolü
         let uploadCheck = NetworkUtils.canUploadWithSettings(wifiOnly: wifiOnly)
@@ -160,14 +160,12 @@ class BackgroundUploadManager {
     // MARK: - Network Monitoring (WiFi değişimlerini takip et)
     private func startNetworkMonitoring() {
         networkMonitor.pathUpdateHandler = { [weak self] path in
-            if path.status == .satisfied {
-                if path.usesInterfaceType(.wifi) {
-
-                    
-                    // WiFi bağlantısı geldiğinde upload'u tetikle
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                        self?.scheduleBackgroundUpload()
-                    }
+            // CRITICAL: Hem bağlantı hem de WiFi interface kontrolü birlikte
+            if path.status == .satisfied && path.usesInterfaceType(.wifi) {
+                
+                // Gerçek WiFi bağlantısı geldiğinde upload'u tetikle
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                    self?.scheduleBackgroundUpload()
                 }
             }
         }

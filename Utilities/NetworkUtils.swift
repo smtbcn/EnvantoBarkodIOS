@@ -76,7 +76,7 @@ class NetworkUtils: ObservableObject {
         // 1. İnternet bağlantısı geldi VEYA
         // 2. WiFi bağlantısı geldi ve WiFi-only ayarı açık
         
-        let wifiOnly = UserDefaults.standard.bool(forKey: "wifi_only")
+        let wifiOnly = UserDefaults.standard.bool(forKey: Constants.UserDefaults.wifiOnly)
         
         if wifiOnly && isWiFiConnected {
             UploadService.shared.startUploadService(wifiOnly: true)

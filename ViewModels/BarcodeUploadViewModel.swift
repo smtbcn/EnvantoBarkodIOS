@@ -134,7 +134,7 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
     
     // MARK: - Upload Service Management
     private func startUploadServiceIfNeeded() {
-        let wifiOnly = UserDefaults.standard.bool(forKey: "upload_wifi_only")
+        let wifiOnly = UserDefaults.standard.bool(forKey: Constants.UserDefaults.wifiOnly)
         
         // Upload service'i başlat
         UploadService.shared.startUploadService(wifiOnly: wifiOnly)
