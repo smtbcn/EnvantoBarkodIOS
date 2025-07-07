@@ -47,7 +47,7 @@ struct MainMenuView: View {
                 .padding(.bottom, 40)
                 
                 // Ana menü butonları
-                VStack(spacing: 20) {
+                VStack(spacing: 12) {
                     // Üst sıra butonları
                     HStack(spacing: 20) {
                         // Barkod Tara
@@ -97,9 +97,7 @@ struct MainMenuView: View {
                 }
                 .padding(.horizontal, 30)
                 
-                Spacer()
-                
-                // Uygulama Ayarları butonu
+                // Uygulama Ayarları butonu - Ana butonların hemen altına
                 NavigationLink(destination: SettingsView(viewModel: viewModel)) {
                     HStack(spacing: 12) {
                         Image(systemName: "gearshape.fill")
@@ -112,7 +110,7 @@ struct MainMenuView: View {
                             .foregroundColor(.white)
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 18)
+                    .padding(.vertical, 16)
                     .background(
                         RoundedRectangle(cornerRadius: 15)
                             .fill(
@@ -127,9 +125,11 @@ struct MainMenuView: View {
                 }
                 .buttonStyle(PlainButtonStyle())
                 .padding(.horizontal, 30)
-                .padding(.bottom, 20)
+                .padding(.top, 20)
                 
-                // Alt bilgiler
+                Spacer()
+                
+                // Alt bilgiler - Border içerisinde
                 VStack(spacing: 6) {
                     if !viewModel.deviceOwner.isEmpty {
                         HStack {
@@ -146,6 +146,18 @@ struct MainMenuView: View {
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .padding(.horizontal, 16)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color(.systemBackground))
+                        )
+                )
+                .padding(.horizontal, 30)
                 .padding(.bottom, 30)
             }
         }
@@ -198,7 +210,7 @@ struct GridButtonContent: View {
     let color: Color
     
     var body: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 12) {
             Image(systemName: icon)
                 .font(.system(size: 28, weight: .medium))
                 .foregroundColor(.white)
@@ -208,8 +220,8 @@ struct GridButtonContent: View {
                 .foregroundColor(.white)
                 .multilineTextAlignment(.center)
         }
-        .frame(maxWidth: .infinity, minHeight: 110)
-        .padding(.vertical, 16)
+        .frame(maxWidth: .infinity, minHeight: 90)
+        .padding(.vertical, 8)
         .background(
             RoundedRectangle(cornerRadius: 18)
                 .fill(
