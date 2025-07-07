@@ -10,21 +10,29 @@ struct MainMenuView: View {
     
     var body: some View {
         ZStack {
+            // Gradient arka plan
+            LinearGradient(
+                gradient: Gradient(colors: [Color(.systemGray6), Color(.systemBackground)]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+            
             // Ana içerik
-            VStack(spacing: 20) {
-                // Logo ve başlık
-                VStack(spacing: 16) {
-                    // App Logo - Özel EnvantoLogo image set
+            VStack(spacing: 0) {
+                // Logo ve başlık bölümü
+                VStack(spacing: 12) {
+                    // App Logo
                     Image("EnvantoLogo")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(width: 120, height: 120)
-                        .clipShape(RoundedRectangle(cornerRadius: 24))
-                        .shadow(color: Color.black.opacity(0.2), radius: 8, x: 0, y: 4)
+                        .frame(width: 100, height: 100)
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                        .shadow(color: Color.black.opacity(0.15), radius: 6, x: 0, y: 3)
                     
                     // Başlık
                     Text("Envanto Barkod")
-                        .font(.largeTitle)
+                        .font(.title)
                         .fontWeight(.bold)
                         .foregroundColor(.primary)
                     
@@ -33,98 +41,112 @@ struct MainMenuView: View {
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
-                        .padding(.horizontal, 40)
+                        .padding(.horizontal, 30)
                 }
-                .padding(.top, 20)
+                .padding(.top, 30)
+                .padding(.bottom, 40)
                 
-                Spacer()
-                
-                // Ana menü butonları - Main ve Barkod Tara için cihaz yetkilendirme muafiyeti
-                    VStack(spacing: 16) {
-                        HStack(spacing: 16) {
-                            // Barkod Tara - Sadece kamera izni gerekli
-                            GridButton(
-                                title: "Barkod Tara",
-                                icon: "qrcode.viewfinder",
-                                color: .blue
-                            ) {
-                                if viewModel.hasRequiredPermissions {
-                                    appState.showScanner = true
-                                } else {
-                                    showingPermissionAlert = true
-                                }
+                // Ana menü butonları
+                VStack(spacing: 20) {
+                    // Üst sıra butonları
+                    HStack(spacing: 20) {
+                        // Barkod Tara
+                        GridButton(
+                            title: "Barkod Tara",
+                            icon: "qrcode.viewfinder",
+                            color: Color(red: 0.2, green: 0.6, blue: 1.0)
+                        ) {
+                            if viewModel.hasRequiredPermissions {
+                                appState.showScanner = true
+                            } else {
+                                showingPermissionAlert = true
                             }
-                            
-                            // Barkod Yükle - NavigationLink ile tam sayfa açılır
-                            NavigationLink(destination: BarcodeUploadView()) {
-                                GridButtonContent(
-                                    title: "Barkod Yükle",
-                                    icon: "square.and.arrow.up",
-                                    color: .orange
-                                )
-                            }
-                            .buttonStyle(PlainButtonStyle())
                         }
                         
-                        HStack(spacing: 16) {
-                            // Müşteri Resimleri - Direkt açılır (cihaz yetki kontrolü kendi sayfasında)
-                            GridButton(
-                                title: "Müşteri Resimleri",
-                                icon: "photo.on.rectangle",
-                                color: .blue
-                            ) {
-                                // TODO: Customer images görünümüne git
-                            }
-                            
-                            // Araçtaki Ürünler - Direkt açılır (cihaz yetki kontrolü kendi sayfasında)
-                            GridButton(
-                                title: "Araçtaki Ürünler",
-                                icon: "car.fill",
-                                color: .green
-                            ) {
-                                // TODO: Vehicle products görünümüne git
-                            }
+                        // Barkod Yükle
+                        NavigationLink(destination: BarcodeUploadView()) {
+                            GridButtonContent(
+                                title: "Barkod Yükle",
+                                icon: "square.and.arrow.up",
+                                color: Color(red: 1.0, green: 0.4, blue: 0.2)
+                            )
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                    
+                    // Alt sıra butonları
+                    HStack(spacing: 20) {
+                        // Müşteri Resimleri
+                        GridButton(
+                            title: "Müşteri Resimleri",
+                            icon: "photo.on.rectangle",
+                            color: Color(red: 0.2, green: 0.6, blue: 1.0)
+                        ) {
+                            // TODO: Customer images görünümüne git
+                        }
+                        
+                        // Araçtaki Ürünler
+                        GridButton(
+                            title: "Araçtaki Ürünler",
+                            icon: "car.fill",
+                            color: Color(red: 0.3, green: 0.7, blue: 0.3)
+                        ) {
+                            // TODO: Vehicle products görünümüne git
                         }
                     }
-                    .padding(.horizontal, 20)
+                }
+                .padding(.horizontal, 30)
                 
                 Spacer()
                 
-                // Uygulama Ayarları butonu - NavigationLink ile tam sayfa açılır
+                // Uygulama Ayarları butonu
                 NavigationLink(destination: SettingsView(viewModel: viewModel)) {
-                    HStack {
+                    HStack(spacing: 12) {
                         Image(systemName: "gearshape.fill")
-                            .font(.title2)
+                            .font(.title3)
                             .foregroundColor(.white)
                         
                         Text("Uygulama Ayarları")
                             .font(.headline)
+                            .fontWeight(.medium)
                             .foregroundColor(.white)
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
+                    .padding(.vertical, 18)
                     .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.blue)
+                        RoundedRectangle(cornerRadius: 15)
+                            .fill(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [Color(red: 0.2, green: 0.6, blue: 1.0), Color(red: 0.1, green: 0.5, blue: 0.9)]),
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
                     )
+                    .shadow(color: Color(red: 0.2, green: 0.6, blue: 1.0).opacity(0.3), radius: 8, x: 0, y: 4)
                 }
                 .buttonStyle(PlainButtonStyle())
-                // Loading kaldırıldı - her zaman aktif
-                .padding(.horizontal, 40)
+                .padding(.horizontal, 30)
+                .padding(.bottom, 20)
                 
                 // Alt bilgiler
-                VStack(spacing: 4) {
+                VStack(spacing: 6) {
                     if !viewModel.deviceOwner.isEmpty {
-                        Text("Cihaz Sahibi: \(viewModel.deviceOwner)")
-                            .font(.footnote)
-                            .foregroundColor(.secondary)
+                        HStack {
+                            Image(systemName: "person.fill")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Text("Cihaz Sahibi: \(viewModel.deviceOwner)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
                     }
                     
                     Text("Versiyon: \(Bundle.main.appVersionLong)")
-                        .font(.footnote)
+                        .font(.caption)
                         .foregroundColor(.secondary)
                 }
-                .padding(.bottom, 20)
+                .padding(.bottom, 30)
             }
         }
         .navigationBarTitleDisplayMode(.inline)
@@ -153,8 +175,6 @@ struct MainMenuView: View {
         
         // Upload servisini başlat
         UploadService.shared.startUploadService(wifiOnly: wifiOnly)
-        
-
     }
 }
 
@@ -178,29 +198,29 @@ struct GridButtonContent: View {
     let color: Color
     
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 14) {
             Image(systemName: icon)
-                .font(.system(size: 32))
+                .font(.system(size: 28, weight: .medium))
                 .foregroundColor(.white)
             
             Text(title)
-                .font(.system(size: 16, weight: .medium))
+                .font(.system(size: 15, weight: .semibold))
                 .foregroundColor(.white)
                 .multilineTextAlignment(.center)
         }
-        .frame(maxWidth: .infinity, minHeight: 120)
-        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, minHeight: 110)
+        .padding(.vertical, 16)
         .background(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 18)
                 .fill(
                     LinearGradient(
-                        gradient: Gradient(colors: [color.opacity(0.9), color]),
+                        gradient: Gradient(colors: [color.opacity(0.95), color]),
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
                 )
         )
-        .shadow(color: color.opacity(0.3), radius: 8, x: 0, y: 4)
+        .shadow(color: color.opacity(0.4), radius: 10, x: 0, y: 5)
     }
 }
 
