@@ -129,8 +129,8 @@ struct MainMenuView: View {
                 
                 Spacer()
                 
-                // Alt bilgiler - Border içerisinde
-                VStack(spacing: 6) {
+                // Alt bilgiler - Border içerisinde sadece cihaz sahibi
+                VStack(spacing: 8) {
                     if !viewModel.deviceOwner.isEmpty {
                         HStack {
                             Image(systemName: "person.fill")
@@ -140,24 +140,26 @@ struct MainMenuView: View {
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .padding(.horizontal, 16)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(Color(.systemBackground))
+                                )
+                        )
+                        .padding(.horizontal, 30)
                     }
                     
+                    // Versiyon bilgisi border dışında
                     Text("Versiyon: \(Bundle.main.appVersionLong)")
                         .font(.caption)
                         .foregroundColor(.secondary)
+                        .padding(.top, 8)
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-                .padding(.horizontal, 16)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(Color(.systemBackground))
-                        )
-                )
-                .padding(.horizontal, 30)
                 .padding(.bottom, 30)
             }
         }
