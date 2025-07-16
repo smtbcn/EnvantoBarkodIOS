@@ -2,8 +2,6 @@ import SwiftUI
 import Foundation
 import PhotosUI
 
-
-
 // MARK: - CustomerImagesViewModel
 class CustomerImagesViewModel: ObservableObject, DeviceAuthCallback {
     
@@ -13,6 +11,9 @@ class CustomerImagesViewModel: ObservableObject, DeviceAuthCallback {
     @Published var searchText = ""
     @Published var customers: [Customer] = []
     @Published var selectedCustomer: Customer?
+    @Published var showingImagePicker = false
+    @Published var showingCamera = false
+    @Published var savedImages: [SavedCustomerImage] = []
     @Published var customerImageGroups: [CustomerImageGroup] = []
     
     // MARK: - Error Handling
@@ -25,7 +26,9 @@ class CustomerImagesViewModel: ObservableObject, DeviceAuthCallback {
     
     init() {
         checkDeviceAuthorization()
+        // Başlangıçta müşteri gruplarını yükle
         loadCustomerImageGroups()
+        // Database'i başlat
         initializeDatabase()
     }
     
@@ -35,13 +38,20 @@ class CustomerImagesViewModel: ObservableObject, DeviceAuthCallback {
         _ = DatabaseManager.getInstance()
     }
     
+    // MARK: - Device Info (Yukleyen bilgisi için)
+    private func getDeviceOwnerInfo() -> String {
+        // Sunucudan alınan cihaz sahibi bilgisini kullan (Android ile aynı mantık)
+        let deviceOwner = UserDefaults.standard.string(forKey: "device_owner") ?? 
+                         UserDefaults.standard.string(forKey: Constants.UserDefaults.deviceOwner) ?? ""
+        
+        return deviceOwner.isEmpty ? "Bilinmeyen Kullanıcı" : deviceOwner
+    }
+    
     // MARK: - Device Authorization (DeviceAuthCallback)
     func checkDeviceAuthorization() {
         isLoading = true
         DeviceAuthManager.checkDeviceAuthorization(callback: self)
     }
-    
-
     
     // MARK: - Customer Search
     func searchCustomers() {
@@ -144,48 +154,73 @@ class CustomerImagesViewModel: ObservableObject, DeviceAuthCallback {
     
     func clearSelectedCustomer() {
         selectedCustomer = nil
-        clearSearch()
     }
     
-    private func clearSearch() {
+    func clearSearch() {
         searchText = ""
         customers.removeAll()
         showDropdown = false
         isSearching = false
     }
     
-    // MARK: - Image Management
-    func saveImageLocally(_ image: UIImage, customerName: String) {
-        Task {
+    // MARK: - Image Handling (Müşteri Resimleri için özel)
+    func handleSelectedPhotos(_ photos: [PhotosPickerItem]) async {
+        guard let customer = selectedCustomer else {
+            await showError("Lütfen önce bir müşteri seçin")
+            return
+        }
+        
+        for photo in photos {
             do {
-                // ImageStorageManager kullanarak resmi kaydet
-                let imagePath = try ImageStorageManager.saveMusteriResmi(image, customerName: customerName)
-                
-                // Database'e kaydet
-                let dbManager = DatabaseManager.getInstance()
-                let deviceOwner = UserDefaults.standard.string(forKey: Constants.UserDefaults.deviceOwner) ?? "Bilinmeyen"
-                
-                try dbManager.insertMusteriResmi(
-                    customerName: customerName,
-                    imagePath: imagePath,
-                    uploadedBy: deviceOwner
-                )
-                
-                await MainActor.run {
-                    refreshSavedImages()
+                if let data = try await photo.loadTransferable(type: Data.self),
+                   let image = UIImage(data: data) {
+                    await saveImageLocally(image, customer: customer)
                 }
-                
             } catch {
-                await MainActor.run {
-                    errorMessage = "Resim kaydedilemedi: \(error.localizedDescription)"
-                    showingError = true
-                }
+                await showError("Resim yüklenirken hata: \(error.localizedDescription)")
             }
+        }
+        
+        await MainActor.run {
+            refreshSavedImages()
+        }
+    }
+    
+    func handleCapturedImage(_ image: UIImage, customer: Customer) async {
+        await saveImageLocally(image, customer: customer)
+        await MainActor.run {
+            showingCamera = false
+            refreshSavedImages()
+        }
+    }
+    
+    // MARK: - Image Storage (Local Only - Android mantığı)
+    private func saveImageLocally(_ image: UIImage, customer: Customer) async {
+        do {
+            // ImageStorageManager kullanarak müşteri resimleri klasörüne kaydet
+            let imagePath = try ImageStorageManager.saveMusteriResmi(image, customerName: customer.name)
+            
+            // Database'e kaydet
+            let dbManager = DatabaseManager.getInstance()
+            let deviceOwner = getDeviceOwnerInfo()
+            
+            try dbManager.insertMusteriResmi(
+                customerName: customer.name,
+                imagePath: imagePath,
+                uploadedBy: deviceOwner
+            )
+            
+        } catch {
+            await showError("Resim kaydedilemedi: \(error.localizedDescription)")
         }
     }
     
     // MARK: - Saved Images Management
     func refreshSavedImages() {
+        loadCustomerImageGroups()
+    }
+    
+    private func loadCustomerImageGroups() {
         Task {
             let groups = await loadCustomerImageGroupsFromDatabase()
             await MainActor.run {
@@ -216,22 +251,12 @@ class CustomerImagesViewModel: ObservableObject, DeviceAuthCallback {
         }
     }
     
-    private func loadCustomerImageGroups() {
-        Task {
-            let groups = await loadCustomerImageGroupsFromDatabase()
-            await MainActor.run {
-                customerImageGroups = groups
-            }
-        }
-    }
-    
-    // MARK: - Delete Operations
-    func deleteImage(imagePath: String) {
+    // MARK: - Image Deletion
+    func deleteImageByPath(_ imagePath: String) {
         Task {
             do {
+                // Database'den ilgili kaydı bul ve sil
                 let dbManager = DatabaseManager.getInstance()
-                
-                // Database'den sil
                 try dbManager.deleteMusteriResmiByPath(imagePath: imagePath)
                 
                 // Dosyayı sil
@@ -242,28 +267,18 @@ class CustomerImagesViewModel: ObservableObject, DeviceAuthCallback {
                 }
                 
             } catch {
-                await MainActor.run {
-                    errorMessage = "Resim silinemedi: \(error.localizedDescription)"
-                    showingError = true
-                }
+                await showError("Resim silinemedi: \(error.localizedDescription)")
             }
         }
     }
     
-    func deleteCustomerImages(customerName: String) {
+    // MARK: - Customer Folder Deletion
+    func deleteCustomerFolder(_ customerName: String) {
         Task {
             do {
                 let dbManager = DatabaseManager.getInstance()
                 
-                // Müşteriye ait tüm resimleri getir
-                let customerImages = try dbManager.getMusteriResimleriByCustomer(customerName: customerName)
-                
-                // Dosyaları sil
-                for image in customerImages {
-                    try? ImageStorageManager.deleteMusteriResmi(imagePath: image.imagePath)
-                }
-                
-                // Database'den sil
+                // Database'den müşteri resimleri sil
                 try dbManager.deleteMusteriResimleriByCustomer(customerName: customerName)
                 
                 await MainActor.run {
@@ -271,56 +286,47 @@ class CustomerImagesViewModel: ObservableObject, DeviceAuthCallback {
                 }
                 
             } catch {
-                await MainActor.run {
-                    errorMessage = "Müşteri resimleri silinemedi: \(error.localizedDescription)"
-                    showingError = true
-                }
+                await showError("Müşteri resimleri silinemedi: \(error.localizedDescription)")
             }
         }
     }
     
     // MARK: - WhatsApp Sharing
     func shareToWhatsApp(customerName: String, imagePaths: [String]) {
-        // WhatsApp paylaşım fonksiyonunu implement et
+        Task {
+            // WhatsApp cooldown kontrolü
+            let prefs = UserDefaults.standard
+            let key = "whatsapp_shared_time_\(customerName.replacingOccurrences(of: " ", with: "_"))"
+            let lastSharedTime = prefs.double(forKey: key)
+            let currentTime = Date().timeIntervalSince1970
+            let fiveMinutesInSeconds: Double = 5 * 60
+            
+            if (currentTime - lastSharedTime) < fiveMinutesInSeconds {
+                await showError("Bu müşteri için 5 dakika içinde tekrar paylaşım yapamazsınız")
+                return
+            }
+            
+            // Paylaşım zamanını kaydet
+            prefs.set(currentTime, forKey: key)
+            
+            await MainActor.run {
+                shareToWhatsAppInternal(customerName: customerName, imagePaths: imagePaths)
+            }
+        }
+    }
+    
+    private func shareToWhatsAppInternal(customerName: String, imagePaths: [String]) {
         let shareText = createShareText(customerName: customerName, imageCount: imagePaths.count)
         
-        // Metni panoya kopyala
-        UIPasteboard.general.string = shareText
-        
-        // Paylaşım zamanını kaydet
-        markCustomerAsShared(customerName: customerName)
-        
-        // Sistem paylaşım sayfasını aç
-        if let firstImagePath = imagePaths.first {
-            shareImageWithSystemChooser(imagePath: firstImagePath, text: shareText)
-        }
-        
-        // Listeyi yenile (paylaşım buton durumunu güncelle)
-        refreshSavedImages()
-    }
-    
-    private func createShareText(customerName: String, imageCount: Int) -> String {
-        return "\(customerName)\n"
-    }
-    
-    private func markCustomerAsShared(customerName: String) {
-        let normalizedCustomerName = customerName.replacingOccurrences(of: " ", with: "_")
-        let key = "whatsapp_shared_time_\(normalizedCustomerName)"
-        let currentTime = Date().timeIntervalSince1970
-        
-        UserDefaults.standard.set(currentTime, forKey: key)
-        UserDefaults.standard.synchronize()
-    }
-    
-    private func shareImageWithSystemChooser(imagePath: String, text: String) {
-        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let window = windowScene.windows.first,
+        guard let window = UIApplication.shared.windows.first,
               let rootViewController = window.rootViewController else {
             return
         }
         
-        let url = URL(fileURLWithPath: imagePath)
-        let activityViewController = UIActivityViewController(activityItems: [url, text], applicationActivities: nil)
+        // İlk resmi paylaş (WhatsApp tek seferde bir resim alır)
+        guard let firstImagePath = imagePaths.first else { return }
+        let url = URL(fileURLWithPath: firstImagePath)
+        let activityViewController = UIActivityViewController(activityItems: [url, shareText], applicationActivities: nil)
         
         // iPad için popover ayarları
         if let popover = activityViewController.popoverPresentationController {
@@ -332,11 +338,24 @@ class CustomerImagesViewModel: ObservableObject, DeviceAuthCallback {
         rootViewController.present(activityViewController, animated: true)
     }
     
+    private func createShareText(customerName: String, imageCount: Int) -> String {
+        return "\(customerName)\n"
+    }
+    
+    // MARK: - Error Handling
+    private func showError(_ message: String) async {
+        await MainActor.run {
+            errorMessage = message
+            showingError = true
+        }
+    }
+    
     // MARK: - DeviceAuthCallback Implementation
     func onAuthSuccess() {
         DispatchQueue.main.async {
             self.isDeviceAuthorized = true
             self.isLoading = false
+            self.refreshSavedImages()
         }
     }
     
