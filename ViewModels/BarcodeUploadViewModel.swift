@@ -749,7 +749,7 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
 }
 
 // MARK: - SavedImage Model
-struct SavedImage: Identifiable {
+struct SavedImage: Identifiable, Codable {
     let id = UUID()
     let customerName: String
     let imagePath: String
@@ -759,10 +759,15 @@ struct SavedImage: Identifiable {
     let yukleyen: String
     let databaseId: Int  // Database record ID'si
     let fileExists: Bool  // 📁 Dosya varlık durumu
+    
+    // Codable için custom keys
+    private enum CodingKeys: String, CodingKey {
+        case customerName, imagePath, localPath, uploadDate, isUploaded, yukleyen, databaseId, fileExists
+    }
 } 
 
 // MARK: - Barcode Image Group Model (Barkod resimleri için)
-struct BarcodeImageGroup: Codable, Identifiable {
+struct BarcodeImageGroup: Identifiable {
     let id = UUID()
     let customerName: String
     let images: [SavedImage]
