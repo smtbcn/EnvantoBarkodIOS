@@ -55,6 +55,12 @@ public struct VehicleProductsView: View {
             }
         }
         .navigationViewStyle(StackNavigationViewStyle())
+        .sheet(isPresented: $viewModel.showLoginSheet) {
+            LoginView(
+                onLoginSuccess: viewModel.onLoginSuccess,
+                onCancel: viewModel.onLoginCancel
+            )
+        }
     }
     
     // MARK: - Kullanıcı Bilgisi Header
@@ -103,6 +109,9 @@ public struct VehicleProductsView: View {
             } else if !viewModel.isDeviceAuthorized {
                 // Cihaz yetkisiz - uyarı göster
                 unauthorizedDeviceView
+            } else if !viewModel.isUserLoggedIn {
+                // Kullanıcı girişi bekleniyor
+                loginWaitingView
             } else if viewModel.isEmpty {
                 // Boş durum
                 emptyStateView
@@ -364,4 +373,34 @@ public struct VehicleProductsView: View {
         .listRowSeparator(.hidden)
         .listRowBackground(Color.clear)
     }
+    
+    // MARK: - Login Waiting View
+    private var loginWaitingView: some View {
+        VStack(spacing: 20) {
+            Spacer()
+            
+            Image(systemName: "person.circle")
+                .font(.system(size: 80))
+                .foregroundColor(.blue)
+            
+            Text("Kullanıcı Girişi Bekleniyor")
+                .font(.title)
+                .fontWeight(.bold)
+                .multilineTextAlignment(.center)
+            
+            Text("Araçtaki ürünleri görüntülemek için kullanıcı girişi yapmanız gerekmektedir.")
+                .font(.body)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+            
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(.systemBackground))
+    }
+}
+
+#Preview {
+    VehicleProductsView()
 } 

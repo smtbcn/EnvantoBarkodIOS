@@ -39,6 +39,9 @@
 		AB1234567890123400000078 /* VehicleProduct.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000079 /* VehicleProduct.swift */; };
 		AB123456789012340000007A /* VehicleProductsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB123456789012340000007B /* VehicleProductsViewModel.swift */; };
 		AB123456789012340000007C /* VehicleProductsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB123456789012340000007D /* VehicleProductsView.swift */; };
+		AB123456789012340000007E /* LoginResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB123456789012340000007F /* LoginResponse.swift */; };
+		AB1234567890123400000080 /* LoginManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000081 /* LoginManager.swift */; };
+		AB1234567890123400000082 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000083 /* LoginView.swift */; };
 
 /* End PBXBuildFile section */
 
@@ -76,6 +79,9 @@
 		AB1234567890123400000079 /* VehicleProduct.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VehicleProduct.swift; sourceTree = "<group>"; };
 		AB123456789012340000007B /* VehicleProductsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VehicleProductsViewModel.swift; sourceTree = "<group>"; };
 		AB123456789012340000007D /* VehicleProductsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VehicleProductsView.swift; sourceTree = "<group>"; };
+		AB123456789012340000007F /* LoginResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginResponse.swift; sourceTree = "<group>"; };
+		AB1234567890123400000081 /* LoginManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginManager.swift; sourceTree = "<group>"; };
+		AB1234567890123400000083 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 
 /* End PBXFileReference section */
 
@@ -126,6 +132,7 @@
 				AB123456789012340000000C /* BarcodeUploadView.swift */,
 				AB1234567890123400000071 /* CustomerImagesView.swift */,
 				AB1234567890123400000075 /* CustomerImageGroupCard.swift */,
+				AB1234567890123400000083 /* LoginView.swift */,
 				AB123456789012340000007D /* VehicleProductsView.swift */,
 			);
 			path = Views;
@@ -148,6 +155,7 @@
 			children = (
 				AB1234567890123400000014 /* BarcodeResult.swift */,
 				AB1234567890123400000076 /* Customer.swift */,
+				AB123456789012340000007F /* LoginResponse.swift */,
 				AB1234567890123400000079 /* VehicleProduct.swift */,
 			);
 			path = Models;
@@ -160,6 +168,7 @@
 				AB1234567890123400000018 /* BarcodeService.swift */,
 				AB123456789012340000001A /* DeviceAuthManager.swift */,
 				AB1234567890123400000051 /* ImageStorageManager.swift */,
+				AB1234567890123400000081 /* LoginManager.swift */,
 				AB1234567890123400000053 /* DatabaseManager.swift */,
 				AB123456789012340000005A /* UploadService.swift */,
 				AB123456789012340000005E /* BackgroundUploadManager.swift */,
@@ -278,6 +287,7 @@
 				AB123456789012340000000B /* BarcodeUploadView.swift in Sources */,
 				AB1234567890123400000070 /* CustomerImagesView.swift in Sources */,
 				AB1234567890123400000074 /* CustomerImageGroupCard.swift in Sources */,
+				AB1234567890123400000082 /* LoginView.swift in Sources */,
 				AB123456789012340000007C /* VehicleProductsView.swift in Sources */,
 				AB123456789012340000000D /* MainViewModel.swift in Sources */,
 				AB123456789012340000000F /* ScannerViewModel.swift in Sources */,
@@ -286,11 +296,13 @@
 				AB123456789012340000007A /* VehicleProductsViewModel.swift in Sources */,
 				AB1234567890123400000013 /* BarcodeResult.swift in Sources */,
 				AB1234567890123400000077 /* Customer.swift in Sources */,
+				AB123456789012340000007E /* LoginResponse.swift in Sources */,
 				AB1234567890123400000078 /* VehicleProduct.swift in Sources */,
 				AB1234567890123400000015 /* CameraService.swift in Sources */,
 				AB1234567890123400000017 /* BarcodeService.swift in Sources */,
 				AB1234567890123400000019 /* DeviceAuthManager.swift in Sources */,
 				AB1234567890123400000050 /* ImageStorageManager.swift in Sources */,
+				AB1234567890123400000080 /* LoginManager.swift in Sources */,
 				AB1234567890123400000052 /* DatabaseManager.swift in Sources */,
 				AB1234567890123400000057 /* NetworkUtils.swift in Sources */,
 				AB1234567890123400000059 /* UploadService.swift in Sources */,

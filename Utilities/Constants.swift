@@ -12,6 +12,7 @@ struct Constants {
     
     struct UserDefaults {
         static let baseURL = "base_url"
+        static let apiBaseURL = "api_base_url"
         static let deviceOwner = "device_owner"
         static let isFirstLaunch = "is_first_launch"
         static let wifiOnly = "upload_wifi_only"

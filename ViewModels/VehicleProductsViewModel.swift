@@ -6,6 +6,8 @@ public class VehicleProductsViewModel: ObservableObject, DeviceAuthCallback {
     @Published public var products: [VehicleProduct] = []
     @Published public var isLoading = false
     @Published public var isDeviceAuthorized = false
+    @Published public var isUserLoggedIn = false
+    @Published public var showLoginSheet = false
     @Published public var errorMessage: String?
     @Published public var showError = false
     @Published public var selectedCustomers: Set<String> = []
@@ -16,6 +18,7 @@ public class VehicleProductsViewModel: ObservableObject, DeviceAuthCallback {
     
     // Kullanıcı bilgileri
     @Published public var currentUserName: String = ""
+    @Published public var currentUser: User?
     
     public struct CustomerGroup: Identifiable {
         public let id = UUID()
@@ -109,6 +112,16 @@ public class VehicleProductsViewModel: ObservableObject, DeviceAuthCallback {
     }
     
     private func loadVehicleProducts() async {
+        // Kullanıcı ID'sini al
+        guard let currentUser = currentUser else {
+            showErrorMessage("Kullanıcı bilgisi bulunamadı")
+            return
+        }
+        
+        print("VehicleProducts: Kullanıcı ID: \(currentUser.userId) - \(currentUser.fullName)")
+        print("VehicleProducts: Kullanıcı Email: \(currentUser.email)")
+        print("VehicleProducts: Kullanıcı Permission: \(currentUser.permission)")
+        
         // Şimdilik mock veri kullanıyoruz - sonra API ile değiştirilecek
         await loadMockData()
     }
@@ -273,13 +286,54 @@ public class VehicleProductsViewModel: ObservableObject, DeviceAuthCallback {
     
     // MARK: - Device Auth Success/Failure Handlers
     private func onDeviceAuthSuccess() {
-        // Cihaz yetkilendirme başarılı, ürünleri yükle
+        // Cihaz yetkilendirme başarılı, şimdi kullanıcı girişi kontrol et
+        checkUserLogin()
+    }
+    
+    private func onDeviceAuthFailure() {
+        // Cihaz yetkisiz - UI'da uyarı gösterilecek
+    }
+    
+    // MARK: - User Login Methods
+    
+    /// Kullanıcı girişi kontrolü yapar
+    private func checkUserLogin() {
+        // Her zaman login dialog'u göster (kullanıcı seçimi için)
+        // Session varsa kayıtlı kullanıcı olarak gösterilecek
+        showLoginSheet = true
+    }
+    
+    /// Login başarılı olduğunda çağrılır
+    public func onLoginSuccess(user: User) {
+        currentUser = user
+        isUserLoggedIn = true
+        showLoginSheet = false
+        updateUserDisplay(user: user)
+        
+        // Login başarılı, ürünleri yükle
         Task {
             await loadVehicleProducts()
         }
     }
     
-    private func onDeviceAuthFailure() {
-        // Cihaz yetkisiz - UI'da uyarı gösterilecek
+    /// Login iptal edildiğinde çağrılır
+    public func onLoginCancel() {
+        showLoginSheet = false
+        // Login iptal edildi, sayfadan çık
+        isDeviceAuthorized = false
+    }
+    
+    /// Kullanıcı adını günceller
+    private func updateUserDisplay(user: User? = nil) {
+        if let user = user {
+            currentUserName = user.fullName
+            currentUser = user
+        } else if let currentUser = LoginManager.getCurrentUser() {
+            currentUserName = currentUser.fullName
+            self.currentUser = currentUser
+        } else {
+            currentUserName = ""
+            currentUser = nil
+        }
     }
 } 

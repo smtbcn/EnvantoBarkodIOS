@@ -182,6 +182,9 @@ struct MainMenuView: View {
             // Kamera izinlerini kontrol et
             viewModel.checkPermissions()
             
+            // API base URL'ini ayarla (test için)
+            setupAPIBaseURL()
+            
             // Upload servisini başlat (WiFi ayarı ile)
             startUploadService()
         }
@@ -194,6 +197,15 @@ struct MainMenuView: View {
         
         // Upload servisini başlat
         UploadService.shared.startUploadService(wifiOnly: wifiOnly)
+    }
+    
+    // MARK: - API Setup
+    private func setupAPIBaseURL() {
+        // Mevcut base URL'i login API için kullan
+        if UserDefaults.standard.string(forKey: Constants.UserDefaults.apiBaseURL) == nil {
+            UserDefaults.standard.set(Constants.Network.baseURL, forKey: Constants.UserDefaults.apiBaseURL)
+            print("API Base URL ayarlandı: \(Constants.Network.baseURL)")
+        }
     }
 }
 
