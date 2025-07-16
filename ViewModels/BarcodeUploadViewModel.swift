@@ -2,29 +2,7 @@ import SwiftUI
 import Foundation
 import PhotosUI
 
-// MARK: - Customer Model
-struct Customer: Codable, Identifiable, Equatable {
-    let id = UUID()
-    let name: String
-    let code: String?
-    let address: String?
-    
-    private enum CodingKeys: String, CodingKey {
-        case name
-        case code
-        case address
-    }
-    
-    // Equatable conformance
-    static func == (lhs: Customer, rhs: Customer) -> Bool {
-        return lhs.id == rhs.id && lhs.name == rhs.name && lhs.code == rhs.code
-    }
-}
 
-// MARK: - CustomerResponse (ASP API Response)
-struct CustomerResponse: Codable {
-    let musteri_adi: String
-}
 
 // MARK: - BarcodeUploadViewModel
 class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {

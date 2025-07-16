@@ -266,7 +266,7 @@ struct ImageThumbnailView: View {
         images: sampleImages
     )
     
-    return CustomerImageGroupCard(
+    CustomerImageGroupCard(
         group: sampleGroup,
         isExpanded: true,
         onExpand: {},

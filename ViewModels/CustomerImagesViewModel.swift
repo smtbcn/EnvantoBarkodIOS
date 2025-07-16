@@ -2,40 +2,7 @@ import SwiftUI
 import Foundation
 import PhotosUI
 
-// MARK: - CustomerImageGroup Model
-struct CustomerImageGroup: Codable, Identifiable {
-    let id = UUID()
-    let customerName: String
-    let images: [SavedCustomerImage]
-    let imageCount: Int
-    let lastImageDate: Date
-    let isSharedToday: Bool
-    
-    init(customerName: String, images: [SavedCustomerImage]) {
-        self.customerName = customerName
-        self.images = images
-        self.imageCount = images.count
-        self.lastImageDate = images.map(\.date).max() ?? Date()
-        
-        // WhatsApp paylaşım kontrolü (5 dakika geçerliliği)
-        let prefs = UserDefaults.standard
-        let key = "whatsapp_shared_time_\(customerName.replacingOccurrences(of: " ", with: "_"))"
-        let lastSharedTime = prefs.double(forKey: key)
-        let currentTime = Date().timeIntervalSince1970
-        let fiveMinutesInSeconds: Double = 5 * 60
-        
-        self.isSharedToday = (currentTime - lastSharedTime) < fiveMinutesInSeconds
-    }
-}
 
-// MARK: - SavedCustomerImage Model
-struct SavedCustomerImage: Codable, Identifiable {
-    let id: Int
-    let customerName: String
-    let imagePath: String
-    let date: Date
-    let uploadedBy: String
-}
 
 // MARK: - CustomerImagesViewModel
 class CustomerImagesViewModel: ObservableObject, DeviceAuthCallback {
@@ -394,9 +361,4 @@ class CustomerImagesViewModel: ObservableObject, DeviceAuthCallback {
     }
 }
 
-// MARK: - Network Error
-enum NetworkError: Error {
-    case invalidURL
-    case serverError
-    case noData
-} 
+ 
