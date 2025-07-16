@@ -36,6 +36,9 @@
 		AB123456789012340000005F /* AudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000060 /* AudioManager.swift */; };
 		AB1234567890123400000061 /* beep.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000062 /* beep.mp3 */; };
 		AB12345678901234ASSETS002 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AB12345678901234ASSETS001 /* Assets.xcassets */; };
+		AB1234567890123400000078 /* VehicleProduct.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000079 /* VehicleProduct.swift */; };
+		AB123456789012340000007A /* VehicleProductsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB123456789012340000007B /* VehicleProductsViewModel.swift */; };
+		AB123456789012340000007C /* VehicleProductsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB123456789012340000007D /* VehicleProductsView.swift */; };
 
 /* End PBXBuildFile section */
 
@@ -70,6 +73,9 @@
 		AB1234567890123400000060 /* AudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioManager.swift; sourceTree = "<group>"; };
 		AB1234567890123400000062 /* beep.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = beep.mp3; sourceTree = "<group>"; };
 		AB12345678901234ASSETS001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		AB1234567890123400000079 /* VehicleProduct.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VehicleProduct.swift; sourceTree = "<group>"; };
+		AB123456789012340000007B /* VehicleProductsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VehicleProductsViewModel.swift; sourceTree = "<group>"; };
+		AB123456789012340000007D /* VehicleProductsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VehicleProductsView.swift; sourceTree = "<group>"; };
 
 /* End PBXFileReference section */
 
@@ -120,6 +126,7 @@
 				AB123456789012340000000C /* BarcodeUploadView.swift */,
 				AB1234567890123400000071 /* CustomerImagesView.swift */,
 				AB1234567890123400000075 /* CustomerImageGroupCard.swift */,
+				AB123456789012340000007D /* VehicleProductsView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -131,6 +138,7 @@
 				AB1234567890123400000010 /* ScannerViewModel.swift */,
 				AB1234567890123400000012 /* BarcodeUploadViewModel.swift */,
 				AB1234567890123400000073 /* CustomerImagesViewModel.swift */,
+				AB123456789012340000007B /* VehicleProductsViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -140,6 +148,7 @@
 			children = (
 				AB1234567890123400000014 /* BarcodeResult.swift */,
 				AB1234567890123400000076 /* Customer.swift */,
+				AB1234567890123400000079 /* VehicleProduct.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -269,12 +278,15 @@
 				AB123456789012340000000B /* BarcodeUploadView.swift in Sources */,
 				AB1234567890123400000070 /* CustomerImagesView.swift in Sources */,
 				AB1234567890123400000074 /* CustomerImageGroupCard.swift in Sources */,
+				AB123456789012340000007C /* VehicleProductsView.swift in Sources */,
 				AB123456789012340000000D /* MainViewModel.swift in Sources */,
 				AB123456789012340000000F /* ScannerViewModel.swift in Sources */,
 				AB1234567890123400000011 /* BarcodeUploadViewModel.swift in Sources */,
 				AB1234567890123400000072 /* CustomerImagesViewModel.swift in Sources */,
+				AB123456789012340000007A /* VehicleProductsViewModel.swift in Sources */,
 				AB1234567890123400000013 /* BarcodeResult.swift in Sources */,
 				AB1234567890123400000077 /* Customer.swift in Sources */,
+				AB1234567890123400000078 /* VehicleProduct.swift in Sources */,
 				AB1234567890123400000015 /* CameraService.swift in Sources */,
 				AB1234567890123400000017 /* BarcodeService.swift in Sources */,
 				AB1234567890123400000019 /* DeviceAuthManager.swift in Sources */,
