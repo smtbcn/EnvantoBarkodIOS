@@ -364,16 +364,27 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
             }
             
             if !savedImages.isEmpty {
+                // SavedImage'ları SavedCustomerImage'a dönüştür
+                let customerImages = savedImages.map { savedImage in
+                    SavedCustomerImage(
+                        id: savedImage.databaseId,
+                        customerName: savedImage.customerName,
+                        imagePath: savedImage.imagePath,
+                        date: savedImage.uploadDate,
+                        uploadedBy: savedImage.yukleyen
+                    )
+                }
+                
                 let group = CustomerImageGroup(
                     customerName: customerName.replacingOccurrences(of: "_", with: " "),  // Display format
-                    images: savedImages.sorted { $0.uploadDate > $1.uploadDate }
+                    images: customerImages.sorted { $0.date > $1.date }
                 )
                 groups.append(group)
             }
         }
         
         // Gruplari tarih sırasına göre sırala (en yeni önce)
-        customerImageGroups = groups.sorted { $0.lastUpdated > $1.lastUpdated }
+        customerImageGroups = groups.sorted { $0.lastImageDate > $1.lastImageDate }
         
     }
     
@@ -631,15 +642,15 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
     }
     
     // MARK: - Delete Image
-    func deleteImage(_ image: SavedImage) {
+    func deleteImage(_ image: SavedCustomerImage) {
         Task {
             let dbManager = DatabaseManager.getInstance()
             
             // 1️⃣ Önce database kaydını sil
-            let dbDeleteSuccess = dbManager.deleteBarkodResim(id: image.databaseId)
+            let dbDeleteSuccess = dbManager.deleteBarkodResim(id: image.id)
             
             // 2️⃣ Sonra dosyayı sil (ImageStorageManager)
-            let fileDeleteSuccess = await ImageStorageManager.deleteImage(at: image.localPath)
+            let fileDeleteSuccess = await ImageStorageManager.deleteImage(at: image.imagePath)
             
             await MainActor.run {
                 if dbDeleteSuccess || fileDeleteSuccess {
@@ -760,19 +771,6 @@ struct SavedImage: Identifiable {
     let fileExists: Bool  // 📁 Dosya varlık durumu
 } 
 
-// MARK: - Customer Image Group Model (Müşteri bazlı resim gruplandırması)
-struct CustomerImageGroup: Identifiable {
-    let id = UUID()
-    let customerName: String
-    let images: [SavedImage]
-    
-    var imageCount: Int {
-        return images.count
-    }
-    
-    var lastUpdated: Date {
-        return images.map(\.uploadDate).max() ?? Date()
-    }
-}
+// CustomerImageGroup artık Models/Customer.swift'de tanımlı
 
 // NetworkError DeviceAuthManager'da tanımlı 

@@ -31,6 +31,20 @@ struct SavedCustomerImage: Codable, Identifiable {
     let imagePath: String
     let date: Date
     let uploadedBy: String
+    
+    // Computed properties for compatibility
+    var localPath: String {
+        return imagePath
+    }
+    
+    var fileExists: Bool {
+        return FileManager.default.fileExists(atPath: imagePath)
+    }
+    
+    var isUploaded: Bool {
+        // Müşteri resimleri local-only olduğu için her zaman false
+        return false
+    }
 }
 
 // MARK: - CustomerImageGroup Model

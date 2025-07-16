@@ -1020,7 +1020,7 @@ struct CustomerImageCard: View {
     let isExpanded: Bool
     let onToggle: () -> Void
     let onDeleteCustomer: () -> Void
-    let onDeleteImage: (SavedImage) -> Void
+    let onDeleteImage: (SavedCustomerImage) -> Void
     
     var body: some View {
         VStack(spacing: 0) {
@@ -1102,7 +1102,7 @@ struct CustomerImageCard: View {
 
 // MARK: - Android Image Row (Resim Yükleme'deki gibi)
 struct AndroidImageRow: View {
-    let image: SavedImage
+    let image: SavedCustomerImage
     let onDelete: () -> Void
     
     var body: some View {
@@ -1186,7 +1186,7 @@ struct AndroidImageRow: View {
                 
                 // Tarih ve yükleyen - 2 satır
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Tarih: \(formattedDate(image.uploadDate))")
+                    Text("Tarih: \(formattedDate(image.date))")
                         .font(.caption)
                     .foregroundColor(.secondary)
                         .lineLimit(1)
@@ -1225,7 +1225,7 @@ struct AndroidImageRow: View {
     
     private func getUploaderName() -> String {
         // 🗄️ Database'den yukleyen bilgisini kullan
-        return image.yukleyen.isEmpty ? "Bilinmeyen Kullanıcı" : image.yukleyen
+        return image.uploadedBy.isEmpty ? "Bilinmeyen Kullanıcı" : image.uploadedBy
     }
     
     private func getUploadStatusIcon() -> String {
