@@ -187,9 +187,11 @@ class CustomerImagesViewModel: ObservableObject, DeviceAuthCallback {
     }
     
     func handleCapturedImage(_ image: UIImage, customer: Customer) async {
+        // Kamerayı açık bırak, sadece background'da kaydet (BarcodeUploadView ile aynı mantık)
+        
         await saveImageLocally(image, customer: customer)
         await MainActor.run {
-            showingCamera = false
+            // Kamerayı KAPATMA - açık bırak (showingCamera = false YOK)
             refreshSavedImages()
         }
     }
@@ -324,10 +326,29 @@ class CustomerImagesViewModel: ObservableObject, DeviceAuthCallback {
             return
         }
         
-        // İlk resmi paylaş (WhatsApp tek seferde bir resim alır)
-        guard let firstImagePath = imagePaths.first else { return }
-        let url = URL(fileURLWithPath: firstImagePath)
-        let activityViewController = UIActivityViewController(activityItems: [url, shareText], applicationActivities: nil)
+        // TÜM resimleri paylaş (birden fazla resim desteği)
+        guard !imagePaths.isEmpty else { return }
+        
+        // Tüm resim yollarını URL listesine çevir
+        let imageURLs = imagePaths.compactMap { path in
+            // Dosya var mı kontrol et
+            guard FileManager.default.fileExists(atPath: path) else {
+                print("⚠️ Dosya bulunamadı: \(path)")
+                return nil
+            }
+            return URL(fileURLWithPath: path)
+        }
+        
+        guard !imageURLs.isEmpty else {
+            print("❌ Paylaşılacak geçerli resim bulunamadı")
+            return
+        }
+        
+        // Activity items: Text + Tüm resim URL'leri
+        var activityItems: [Any] = [shareText]
+        activityItems.append(contentsOf: imageURLs)
+        
+        let activityViewController = UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
         
         // iPad için popover ayarları
         if let popover = activityViewController.popoverPresentationController {
