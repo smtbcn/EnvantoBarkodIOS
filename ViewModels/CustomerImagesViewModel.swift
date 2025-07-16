@@ -5,7 +5,7 @@ import PhotosUI
 
 
 // MARK: - CustomerImagesViewModel
-class CustomerImagesViewModel: ObservableObject {
+class CustomerImagesViewModel: ObservableObject, DeviceAuthCallback {
     
     // MARK: - Published Properties
     @Published var isLoading = false
@@ -38,20 +38,7 @@ class CustomerImagesViewModel: ObservableObject {
     // MARK: - Device Authorization (DeviceAuthCallback)
     func checkDeviceAuthorization() {
         isLoading = true
-        
-        DeviceAuthManager.checkDeviceAuthorization { [weak self] result in
-            DispatchQueue.main.async {
-                guard let self = self else { return }
-                self.isLoading = false
-                
-                switch result {
-                case .success:
-                    self.onAuthSuccess()
-                case .failure:
-                    self.onAuthFailure()
-                }
-            }
-        }
+        DeviceAuthManager.checkDeviceAuthorization(callback: self)
     }
     
 
