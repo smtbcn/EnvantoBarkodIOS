@@ -87,13 +87,14 @@ struct MainMenuView: View {
                         .buttonStyle(PlainButtonStyle())
                         
                         // Araçtaki Ürünler
-                        GridButton(
-                            title: "Araçtaki Ürünler",
-                            icon: "car.fill",
-                            color: Color(red: 0.3, green: 0.7, blue: 0.3)
-                        ) {
-                            // TODO: Vehicle products görünümüne git
+                        NavigationLink(destination: VehicleProductsView()) {
+                            GridButtonContent(
+                                title: "Araçtaki Ürünler",
+                                icon: "car.fill",
+                                color: Color(red: 0.3, green: 0.7, blue: 0.3)
+                            )
                         }
+                        .buttonStyle(PlainButtonStyle())
                     }
                 }
                 .padding(.horizontal, 30)
