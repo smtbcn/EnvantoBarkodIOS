@@ -2,7 +2,7 @@ import Foundation
 import SwiftUI
 
 @MainActor
-class VehicleProductsViewModel: ObservableObject {
+public class VehicleProductsViewModel: ObservableObject {
     @Published var products: [VehicleProduct] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
@@ -18,7 +18,7 @@ class VehicleProductsViewModel: ObservableObject {
     
     private let deviceAuthManager = DeviceAuthManager.shared
     
-    struct CustomerGroup: Identifiable {
+    public struct CustomerGroup: Identifiable {
         let id = UUID()
         let customerName: String
         let products: [VehicleProduct]

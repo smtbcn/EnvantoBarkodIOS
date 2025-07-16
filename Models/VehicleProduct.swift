@@ -1,6 +1,6 @@
 import Foundation
 
-struct VehicleProduct: Codable, Identifiable {
+public struct VehicleProduct: Codable, Identifiable {
     let id: Int
     let musteriAdi: String
     let urunAdi: String
@@ -31,7 +31,7 @@ struct VehicleProduct: Codable, Identifiable {
 }
 
 // MARK: - Response Models
-struct DeliveryResponse: Codable {
+public struct DeliveryResponse: Codable {
     let success: Bool
     let message: String
     
@@ -41,7 +41,7 @@ struct DeliveryResponse: Codable {
     }
 }
 
-struct ReturnToDepotResponse: Codable {
+public struct ReturnToDepotResponse: Codable {
     let success: Bool
     let message: String
     

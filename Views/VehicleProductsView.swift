@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct VehicleProductsView: View {
+public struct VehicleProductsView: View {
     @StateObject private var viewModel = VehicleProductsViewModel()
     @Environment(\.dismiss) private var dismiss
     @State private var showDeliveryConfirmation = false

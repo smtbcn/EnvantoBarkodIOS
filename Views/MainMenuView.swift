@@ -1,4 +1,5 @@
 import SwiftUI
+import Foundation
 
 // AlertType artık sadece kamera izni için kullanılıyor
 
@@ -86,8 +87,10 @@ struct MainMenuView: View {
                         }
                         .buttonStyle(PlainButtonStyle())
                         
-                        // Araçtaki Ürünler
-                        NavigationLink(destination: VehicleProductsView()) {
+                        // Araçtaki Ürünler - Updated
+                        NavigationLink(destination: {
+                            VehicleProductsView()
+                        }()) {
                             GridButtonContent(
                                 title: "Araçtaki Ürünler",
                                 icon: "car.fill",
