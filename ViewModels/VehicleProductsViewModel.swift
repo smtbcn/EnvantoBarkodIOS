@@ -96,6 +96,10 @@ public class VehicleProductsViewModel: ObservableObject, DeviceAuthCallback {
         // Login iptal edildi, kullanıcı sayfayı kapatabilir
     }
     
+    public func showLoginForm() {
+        showLoginSheet = true
+    }
+    
     // MARK: - API Calls
     @MainActor
     private func loadVehicleProducts() async {

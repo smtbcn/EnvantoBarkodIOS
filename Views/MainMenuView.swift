@@ -143,7 +143,8 @@ struct MainMenuView: View {
                                 .foregroundColor(.secondary)
                             Text("Cihaz Sahibi: \(viewModel.deviceOwner)")
                                 .font(.caption)
-                                .foregroundColor(.secondary)
+                                .fontWeight(.bold)
+                                .foregroundColor(.primary)
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)

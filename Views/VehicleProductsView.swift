@@ -410,6 +410,22 @@ public struct VehicleProductsView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
             
+            // Giriş Yap Butonu
+            Button(action: {
+                viewModel.showLoginForm()
+            }) {
+                HStack {
+                    Image(systemName: "person.badge.key")
+                    Text("Giriş Yap")
+                }
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.white)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 12)
+                .background(Color.blue)
+                .cornerRadius(10)
+            }
+            
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
