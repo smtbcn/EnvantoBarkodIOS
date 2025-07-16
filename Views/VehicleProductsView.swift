@@ -14,7 +14,7 @@ public struct VehicleProductsView: View {
             // Ana içerik
             mainContent
         }
-                .navigationTitle("Araçtaki Ürünler")
+        .navigationTitle("Araçtaki Ürünler")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -26,30 +26,29 @@ public struct VehicleProductsView: View {
         .onAppear {
             viewModel.onAppear()
         }
-            .alert("Hata", isPresented: $viewModel.showError) {
-                Button("Tamam") { }
-            } message: {
-                Text(viewModel.errorMessage ?? "Bilinmeyen hata")
+        .alert("Hata", isPresented: $viewModel.showError) {
+            Button("Tamam") { }
+        } message: {
+            Text(viewModel.errorMessage ?? "Bilinmeyen hata")
+        }
+        .confirmationDialog("Teslim Onayı", isPresented: $showDeliveryConfirmation) {
+            Button("Evet, Teslim Et", role: .destructive) {
+                viewModel.deliverSelectedCustomers()
             }
-            .confirmationDialog("Teslim Onayı", isPresented: $showDeliveryConfirmation) {
-                Button("Evet, Teslim Et", role: .destructive) {
-                    viewModel.deliverSelectedCustomers()
-                }
-                Button("İptal", role: .cancel) { }
-            } message: {
-                Text("Seçili \(viewModel.selectedCustomerCount) müşterinin tüm ürünlerini teslim etmek istediğinizden emin misiniz?")
-            }
-            .confirmationDialog("Depoya Geri Bırak", isPresented: $showReturnConfirmation) {
-                Button("Evet, Geri Bırak", role: .destructive) {
-                    if let product = productToReturn {
-                        viewModel.returnProductToDepot(product)
-                    }
-                }
-                Button("İptal", role: .cancel) { }
-            } message: {
+            Button("İptal", role: .cancel) { }
+        } message: {
+            Text("Seçili \(viewModel.selectedCustomerCount) müşterinin tüm ürünlerini teslim etmek istediğinizden emin misiniz?")
+        }
+        .confirmationDialog("Depoya Geri Bırak", isPresented: $showReturnConfirmation) {
+            Button("Evet, Geri Bırak", role: .destructive) {
                 if let product = productToReturn {
-                    Text("\"\(product.urunAdi)\" ürününü depoya geri bırakmak istediğinizden emin misiniz?")
+                    viewModel.returnProductToDepot(product)
                 }
+            }
+            Button("İptal", role: .cancel) { }
+        } message: {
+            if let product = productToReturn {
+                Text("\"\(product.urunAdi)\" ürününü depoya geri bırakmak istediğinizden emin misiniz?")
             }
         }
         .sheet(isPresented: $viewModel.showLoginSheet) {

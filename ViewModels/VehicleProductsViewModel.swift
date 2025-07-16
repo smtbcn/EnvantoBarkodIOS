@@ -1,34 +1,30 @@
-import Foundation
 import SwiftUI
+import Foundation
 
-@MainActor
 public class VehicleProductsViewModel: ObservableObject, DeviceAuthCallback {
     @Published public var products: [VehicleProduct] = []
+    @Published public var customerGroups: [CustomerGroup] = []
     @Published public var isLoading = false
+    @Published public var showError = false
+    @Published public var errorMessage: String?
     @Published public var isDeviceAuthorized = false
     @Published public var isUserLoggedIn = false
     @Published public var showLoginSheet = false
-    @Published public var errorMessage: String?
-    @Published public var showError = false
-    @Published public var selectedCustomers: Set<String> = []
-    @Published public var expandedCustomers: Set<String> = []
     
-    // Gruplandırılmış veriler
-    @Published public var customerGroups: [CustomerGroup] = []
-    
-    // Kullanıcı bilgileri
-    @Published public var currentUserName: String = ""
-    @Published public var currentUser: User?
+    private var currentUser: LoginResponse.User?
     
     public struct CustomerGroup: Identifiable {
         public let id = UUID()
         public let customerName: String
         public let products: [VehicleProduct]
-        public var productCount: Int { products.count }
-        public var isExpanded: Bool
-        public var isSelected: Bool
+        public var isExpanded: Bool = false
+        public var isSelected: Bool = false
         
-        public init(customerName: String, products: [VehicleProduct], isExpanded: Bool, isSelected: Bool) {
+        public var productCount: Int {
+            return products.count
+        }
+        
+        public init(customerName: String, products: [VehicleProduct], isExpanded: Bool = false, isSelected: Bool = false) {
             self.customerName = customerName
             self.products = products
             self.isExpanded = isExpanded
@@ -36,304 +32,271 @@ public class VehicleProductsViewModel: ObservableObject, DeviceAuthCallback {
         }
     }
     
-    public init() {
-        // İlk yüklemede kullanıcı adını ayarla
-        updateUserDisplay()
-    }
+    public init() {}
     
-    // MARK: - Public Methods
-    
-    /// Sayfa yüklendiğinde çağrılır
     public func onAppear() {
-        checkDeviceAuthorizationAndLoad()
+        checkDeviceAuthorization()
     }
     
-    /// Pull-to-refresh için
     public func refresh() {
         Task {
             await loadVehicleProducts()
         }
     }
     
-    /// Müşteriyi seç/seçimi kaldır
-    public func toggleCustomerSelection(_ customerName: String) {
-        if selectedCustomers.contains(customerName) {
-            selectedCustomers.remove(customerName)
-        } else {
-            selectedCustomers.insert(customerName)
-        }
-        updateCustomerGroups()
+    // MARK: - Device Authorization
+    public func checkDeviceAuthorization() {
+        DeviceAuthManager.checkDeviceAuthorization(callback: self)
     }
     
-    /// Müşteri grubunu genişlet/daralt
-    public func toggleCustomerExpansion(_ customerName: String) {
-        if expandedCustomers.contains(customerName) {
-            expandedCustomers.remove(customerName)
-        } else {
-            expandedCustomers.insert(customerName)
+    // MARK: - DeviceAuthCallback
+    public func onAuthSuccess() {
+        DispatchQueue.main.async {
+            self.isDeviceAuthorized = true
+            self.checkUserLogin()
         }
-        updateCustomerGroups()
     }
     
-    /// Seçili müşterileri teslim et
-    public func deliverSelectedCustomers() {
-        guard !selectedCustomers.isEmpty else {
-            showErrorMessage("Lütfen teslim edilecek müşterileri seçin")
-            return
+    public func onAuthFailure() {
+        DispatchQueue.main.async {
+            self.isDeviceAuthorized = false
+        }
+    }
+    
+    public func onShowLoading() {
+        DispatchQueue.main.async {
+            self.isLoading = true
+        }
+    }
+    
+    public func onHideLoading() {
+        DispatchQueue.main.async {
+            self.isLoading = false
+        }
+    }
+    
+    // MARK: - User Login
+    private func checkUserLogin() {
+        if LoginManager.isLoggedIn() && !LoginManager.isSessionExpired() {
+            currentUser = LoginManager.getCurrentUser()
+            isUserLoggedIn = true
+            Task {
+                await loadVehicleProducts()
+            }
+        } else {
+            showLoginSheet = true
+        }
+    }
+    
+    public func onLoginSuccess(_ user: LoginResponse.User) {
+        currentUser = user
+        isUserLoggedIn = true
+        showLoginSheet = false
+        Task {
+            await loadVehicleProducts()
+        }
+    }
+    
+    public func onLoginCancel() {
+        showLoginSheet = false
+        // Login iptal edildi, kullanıcı sayfayı kapatabilir
+    }
+    
+    // MARK: - API Calls
+    @MainActor
+    private func loadVehicleProducts() async {
+        guard let user = currentUser else { return }
+        
+        isLoading = true
+        
+        do {
+            let baseURL = Constants.Network.baseURL
+            guard let url = URL(string: "\(baseURL)/vehicle_products.asp?user_id=\(user.userId)") else {
+                throw URLError(.badURL)
+            }
+            
+            let (data, response) = try await URLSession.shared.data(from: url)
+            
+            guard let httpResponse = response as? HTTPURLResponse,
+                  httpResponse.statusCode == 200 else {
+                throw URLError(.badServerResponse)
+            }
+            
+            let vehicleProducts = try JSONDecoder().decode([VehicleProduct].self, from: data)
+            
+            self.products = vehicleProducts
+            self.updateCustomerGroups()
+            
+        } catch {
+            self.showError(message: "Araçtaki ürünler yüklenemedi: \(error.localizedDescription)")
         }
         
+        isLoading = false
+    }
+    
+    private func updateCustomerGroups() {
+        let grouped = Dictionary(grouping: products) { $0.musteriAdi }
+        
+        customerGroups = grouped.map { (customerName, products) in
+            let existingGroup = customerGroups.first { $0.customerName == customerName }
+            return CustomerGroup(
+                customerName: customerName,
+                products: products,
+                isExpanded: existingGroup?.isExpanded ?? false,
+                isSelected: existingGroup?.isSelected ?? false
+            )
+        }.sorted { $0.customerName < $1.customerName }
+    }
+    
+    // MARK: - User Interface
+    public var currentUserName: String {
+        return currentUser?.fullName ?? "Kullanıcı"
+    }
+    
+    public var hasSelectedCustomers: Bool {
+        return customerGroups.contains { $0.isSelected }
+    }
+    
+    public var selectedCustomerCount: Int {
+        return customerGroups.filter { $0.isSelected }.count
+    }
+    
+    public var isEmpty: Bool {
+        return products.isEmpty
+    }
+    
+    // MARK: - Customer Selection & Expansion
+    public func toggleCustomerSelection(_ customerName: String) {
+        if let index = customerGroups.firstIndex(where: { $0.customerName == customerName }) {
+            customerGroups[index].isSelected.toggle()
+        }
+    }
+    
+    public func toggleCustomerExpansion(_ customerName: String) {
+        if let index = customerGroups.firstIndex(where: { $0.customerName == customerName }) {
+            customerGroups[index].isExpanded.toggle()
+        }
+    }
+    
+    // MARK: - Delivery & Return Operations
+    public func deliverSelectedCustomers() {
         Task {
             await performDelivery()
         }
     }
     
-    /// Ürünü depoya geri bırak
     public func returnProductToDepot(_ product: VehicleProduct) {
         Task {
             await performReturnToDepot(product)
         }
     }
     
-    /// Seçimleri temizle
-    public func clearSelections() {
-        selectedCustomers.removeAll()
-        updateCustomerGroups()
-    }
-    
-    /// Cihaz yetkilendirme kontrolü (manuel)
-    public func checkDeviceAuthorization() {
-        checkDeviceAuthorizationAndLoad()
-    }
-    
-    // MARK: - Private Methods
-    
-    private func checkDeviceAuthorizationAndLoad() {
-        DeviceAuthManager.checkDeviceAuthorization(callback: self)
-    }
-    
-    private func loadVehicleProducts() async {
-        // Kullanıcı ID'sini al
-        guard let currentUser = currentUser else {
-            showErrorMessage("Kullanıcı bilgisi bulunamadı")
-            return
-        }
-        
-        print("VehicleProducts: Kullanıcı ID: \(currentUser.userId) - \(currentUser.fullName)")
-        print("VehicleProducts: Kullanıcı Email: \(currentUser.email)")
-        print("VehicleProducts: Kullanıcı Permission: \(currentUser.permission)")
-        
-        // Şimdilik mock veri kullanıyoruz - sonra API ile değiştirilecek
-        await loadMockData()
-    }
-    
-    /// Mock veri yükleme (geliştirme aşamasında)
-    private func loadMockData() async {
-        isLoading = true
-        
-        // Simülasyon için delay
-        try? await Task.sleep(nanoseconds: 1_000_000_000)
-        
-        let mockProducts = [
-            VehicleProduct(
-                id: 1,
-                musteriAdi: "DOĞTAŞ Mobilya A.Ş.",
-                urunAdi: "Yatak Odası Takımı Classic",
-                urunAdet: 2,
-                depoAktaran: "Ahmet Yılmaz",
-                depoAktaranTarihi: "15.01.2024 14:30",
-                mevcutDepo: "DOĞTAŞ ARACI",
-                prosap: "PR001",
-                teslimEden: nil,
-                teslimatDurumu: 0,
-                sevkDurumu: 1,
-                urunNotuDurum: 0
-            ),
-            VehicleProduct(
-                id: 2,
-                musteriAdi: "DOĞTAŞ Mobilya A.Ş.",
-                urunAdi: "Yemek Odası Takımı Modern",
-                urunAdet: 1,
-                depoAktaran: "Ahmet Yılmaz",
-                depoAktaranTarihi: "15.01.2024 14:35",
-                mevcutDepo: "DOĞTAŞ ARACI",
-                prosap: "PR002",
-                teslimEden: nil,
-                teslimatDurumu: 0,
-                sevkDurumu: 1,
-                urunNotuDurum: 0
-            ),
-            VehicleProduct(
-                id: 3,
-                musteriAdi: "Lazzoni Mobilya Ltd.",
-                urunAdi: "Koltuk Takımı Premium",
-                urunAdet: 3,
-                depoAktaran: "Mehmet Demir",
-                depoAktaranTarihi: "15.01.2024 15:00",
-                mevcutDepo: "LAZZONI ARACI",
-                prosap: "PR003",
-                teslimEden: nil,
-                teslimatDurumu: 0,
-                sevkDurumu: 1,
-                urunNotuDurum: 0
-            )
-        ]
-        
-        products = mockProducts
-        groupProductsByCustomer()
-        isLoading = false
-    }
-    
-    private func groupProductsByCustomer() {
-        let grouped = Dictionary(grouping: products, by: { $0.customerName })
-        
-        customerGroups = grouped.map { customerName, products in
-            CustomerGroup(
-                customerName: customerName,
-                products: products,
-                isExpanded: expandedCustomers.contains(customerName),
-                isSelected: selectedCustomers.contains(customerName)
-            )
-        }
-        .sorted { $0.customerName < $1.customerName }
-    }
-    
-    private func updateCustomerGroups() {
-        customerGroups = customerGroups.map { group in
-            CustomerGroup(
-                customerName: group.customerName,
-                products: group.products,
-                isExpanded: expandedCustomers.contains(group.customerName),
-                isSelected: selectedCustomers.contains(group.customerName)
-            )
-        }
-    }
-    
-    private func updateUserDisplay() {
-        // LoginManager'dan kullanıcı bilgilerini al (sonra implement edilecek)
-        currentUserName = "Test Kullanıcı" // Şimdilik mock
-    }
-    
+    @MainActor
     private func performDelivery() async {
+        guard let user = currentUser else { return }
+        
+        let selectedCustomers = customerGroups.filter { $0.isSelected }.map { $0.customerName }
+        
+        guard !selectedCustomers.isEmpty else { return }
+        
         isLoading = true
         
-        // Mock delivery işlemi (sonra API ile değiştirilecek)
-        try? await Task.sleep(nanoseconds: 2_000_000_000)
-        
-        // Başarılı olduğunu varsay
-        clearSelections()
-        await loadVehicleProducts()
+        do {
+            let baseURL = Constants.Network.baseURL
+            guard let url = URL(string: "\(baseURL)/vehicle_delivery.asp") else {
+                throw URLError(.badURL)
+            }
+            
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+            
+            let selectedCustomersString = selectedCustomers.joined(separator: ",")
+            let bodyString = "selected_customers=\(selectedCustomersString)&user_id=\(user.userId)&user_name=\(user.fullName)"
+            request.httpBody = bodyString.data(using: .utf8)
+            
+            let (data, response) = try await URLSession.shared.data(for: request)
+            
+            guard let httpResponse = response as? HTTPURLResponse,
+                  httpResponse.statusCode == 200 else {
+                throw URLError(.badServerResponse)
+            }
+            
+            let deliveryResponse = try JSONDecoder().decode(DeliveryResponse.self, from: data)
+            
+            if deliveryResponse.success {
+                // Seçimleri temizle
+                clearSelections()
+                
+                // Listeyi yenile
+                await loadVehicleProducts()
+                
+                // Başarı mesajı (kullanıcı arayüzünde toast gösterilecek)
+                print("Teslim başarılı: \(deliveryResponse.message)")
+            } else {
+                throw NSError(domain: "DeliveryError", code: 0, userInfo: [NSLocalizedDescriptionKey: deliveryResponse.message])
+            }
+            
+        } catch {
+            showError(message: "Teslim işlemi başarısız: \(error.localizedDescription)")
+        }
         
         isLoading = false
-        showSuccessMessage("Seçili müşteriler başarıyla teslim edildi")
     }
     
+    @MainActor
     private func performReturnToDepot(_ product: VehicleProduct) async {
+        guard let user = currentUser else { return }
+        
         isLoading = true
         
-        // Mock return işlemi (sonra API ile değiştirilecek)
-        try? await Task.sleep(nanoseconds: 1_500_000_000)
+        do {
+            let baseURL = Constants.Network.baseURL
+            guard let url = URL(string: "\(baseURL)/vehicle_return_to_depot.asp") else {
+                throw URLError(.badURL)
+            }
+            
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+            
+            let bodyString = "product_id=\(product.id)&user_id=\(user.userId)&user_name=\(user.fullName)"
+            request.httpBody = bodyString.data(using: .utf8)
+            
+            let (data, response) = try await URLSession.shared.data(for: request)
+            
+            guard let httpResponse = response as? HTTPURLResponse,
+                  httpResponse.statusCode == 200 else {
+                throw URLError(.badServerResponse)
+            }
+            
+            let returnResponse = try JSONDecoder().decode(ReturnToDepotResponse.self, from: data)
+            
+            if returnResponse.success {
+                // Listeyi yenile
+                await loadVehicleProducts()
+                
+                // Başarı mesajı (kullanıcı arayüzünde toast gösterilecek)
+                print("Depoya iade başarılı: \(returnResponse.message)")
+            } else {
+                throw NSError(domain: "ReturnError", code: 0, userInfo: [NSLocalizedDescriptionKey: returnResponse.message])
+            }
+            
+        } catch {
+            showError(message: "Depoya iade işlemi başarısız: \(error.localizedDescription)")
+        }
         
-        // Başarılı olduğunu varsay
-        await loadVehicleProducts()
-        
-        isLoading = false
-        showSuccessMessage("\(product.urunAdi) başarıyla depoya geri bırakıldı")
-    }
-    
-    private func showErrorMessage(_ message: String) {
-        errorMessage = message
-        showError = true
-    }
-    
-    private func showSuccessMessage(_ message: String) {
-        // Geçici olarak error alert kullanıyoruz, sonra success alert ekleyeceğiz
-        errorMessage = message
-        showError = true
-    }
-    
-    // MARK: - Computed Properties
-    
-    public var selectedCustomerCount: Int {
-        selectedCustomers.count
-    }
-    
-    public var hasSelectedCustomers: Bool {
-        !selectedCustomers.isEmpty
-    }
-    
-    public var isEmpty: Bool {
-        products.isEmpty
-    }
-    
-    // MARK: - DeviceAuthCallback Implementation
-    public func onAuthSuccess() {
-        isDeviceAuthorized = true
-        onDeviceAuthSuccess()
-    }
-    
-    public func onAuthFailure() {
-        isDeviceAuthorized = false
-        onDeviceAuthFailure()
-    }
-    
-    public func onShowLoading() {
-        isLoading = true
-    }
-    
-    public func onHideLoading() {
         isLoading = false
     }
     
-    // MARK: - Device Auth Success/Failure Handlers
-    private func onDeviceAuthSuccess() {
-        // Cihaz yetkilendirme başarılı, şimdi kullanıcı girişi kontrol et
-        checkUserLogin()
-    }
-    
-    private func onDeviceAuthFailure() {
-        // Cihaz yetkisiz - UI'da uyarı gösterilecek
-    }
-    
-    // MARK: - User Login Methods
-    
-    /// Kullanıcı girişi kontrolü yapar
-    private func checkUserLogin() {
-        // Her zaman login dialog'u göster (kullanıcı seçimi için)
-        // Session varsa kayıtlı kullanıcı olarak gösterilecek
-        showLoginSheet = true
-    }
-    
-    /// Login başarılı olduğunda çağrılır
-    public func onLoginSuccess(user: User) {
-        currentUser = user
-        isUserLoggedIn = true
-        showLoginSheet = false
-        updateUserDisplay(user: user)
-        
-        // Login başarılı, ürünleri yükle
-        Task {
-            await loadVehicleProducts()
+    private func clearSelections() {
+        for index in customerGroups.indices {
+            customerGroups[index].isSelected = false
         }
     }
     
-    /// Login iptal edildiğinde çağrılır
-    public func onLoginCancel() {
-        showLoginSheet = false
-        // Login iptal edildi, sayfadan çık
-        isDeviceAuthorized = false
-    }
-    
-    /// Kullanıcı adını günceller
-    private func updateUserDisplay(user: User? = nil) {
-        if let user = user {
-            currentUserName = user.fullName
-            currentUser = user
-        } else if let currentUser = LoginManager.getCurrentUser() {
-            currentUserName = currentUser.fullName
-            self.currentUser = currentUser
-        } else {
-            currentUserName = ""
-            currentUser = nil
-        }
+    private func showError(message: String) {
+        errorMessage = message
+        showError = true
     }
 } 
