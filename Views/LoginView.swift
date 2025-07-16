@@ -9,6 +9,7 @@ public struct LoginView: View {
     @State private var savedUsers: [SavedUser] = []
     @State private var showAlert: Bool = false
     @State private var alertMessage: String = ""
+    @State private var isPasswordVisible: Bool = false
     
     // Callbacks
     let onLoginSuccess: (User) -> Void
@@ -27,18 +28,25 @@ public struct LoginView: View {
                     Text("Kullanıcı Seçimi")
                         .font(.title2)
                         .fontWeight(.bold)
-                        .foregroundColor(.black)
+                        .foregroundColor(.primary)
                     
                     Text("Mevcut kullanıcı ile devam edin veya farklı hesap ile giriş yapın")
                         .font(.body)
-                        .foregroundColor(.gray)
+                        .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
                 }
                 
                 // Email Input
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 8) {
                     TextField("E-posta", text: $email)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 16)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
+                        )
                         .keyboardType(.emailAddress)
                         .autocapitalization(.none)
                         .disableAutocorrection(true)
@@ -46,10 +54,33 @@ public struct LoginView: View {
                 }
                 
                 // Password Input
-                VStack(alignment: .leading, spacing: 4) {
-                    SecureField("Şifre", text: $password)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Group {
+                            if isPasswordVisible {
+                                TextField("Şifre", text: $password)
+                            } else {
+                                SecureField("Şifre", text: $password)
+                            }
+                        }
                         .font(.system(size: 16))
+                        
+                        Button(action: {
+                            isPasswordVisible.toggle()
+                        }) {
+                            Image(systemName: isPasswordVisible ? "eye.slash.fill" : "eye.fill")
+                                .foregroundColor(.secondary)
+                                .font(.system(size: 16))
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 16)
+                    .background(Color(.systemGray6))
+                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
+                    )
                 }
                 
                 // Remember Me Checkbox
@@ -58,13 +89,13 @@ public struct LoginView: View {
                         rememberMe.toggle()
                     }) {
                         Image(systemName: rememberMe ? "checkmark.square.fill" : "square")
-                            .foregroundColor(rememberMe ? .blue : .gray)
+                            .foregroundColor(rememberMe ? .accentColor : .secondary)
                             .font(.system(size: 18))
                     }
                     
                     Text("Beni hatırla")
                         .font(.system(size: 14))
-                        .foregroundColor(.black)
+                        .foregroundColor(.primary)
                     
                     Spacer()
                 }
@@ -75,7 +106,7 @@ public struct LoginView: View {
                         HStack {
                             Text("Kayıtlı Kullanıcılar:")
                                 .font(.system(size: 14, weight: .bold))
-                                .foregroundColor(.black)
+                                .foregroundColor(.primary)
                             Spacer()
                         }
                         
@@ -103,6 +134,7 @@ public struct LoginView: View {
                     ProgressView()
                         .progressViewStyle(CircularProgressViewStyle())
                         .scaleEffect(1.2)
+                        .tint(.accentColor)
                 }
                 
                 // Login Button
@@ -111,9 +143,9 @@ public struct LoginView: View {
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 50)
-                        .background(isLoading ? Color.gray : Color.blue)
-                        .cornerRadius(8)
+                        .frame(height: 52)
+                        .background(isLoading ? Color.secondary : Color.accentColor)
+                        .cornerRadius(12)
                 }
                 .disabled(isLoading)
                 
@@ -121,19 +153,21 @@ public struct LoginView: View {
                 Button(action: onCancel) {
                     Text("İptal")
                         .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.blue)
+                        .foregroundColor(.accentColor)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 50)
-                        .background(Color.clear)
+                        .frame(height: 52)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(12)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.blue, lineWidth: 1)
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.accentColor.opacity(0.5), lineWidth: 1)
                         )
                 }
                 .disabled(isLoading)
             }
             .padding(24)
         }
+        .background(Color(.systemBackground))
         .onAppear {
             loadInitialData()
         }
@@ -221,18 +255,18 @@ private struct SavedUserCard: View {
         HStack {
             // User Icon
             Image(systemName: "person.circle.fill")
-                .foregroundColor(.blue)
+                .foregroundColor(.accentColor)
                 .font(.system(size: 32))
             
             // User Info
             VStack(alignment: .leading, spacing: 2) {
                 Text(user.fullName)
                     .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(.black)
+                    .foregroundColor(.primary)
                 
                 Text(user.email)
                     .font(.system(size: 12))
-                    .foregroundColor(.gray)
+                    .foregroundColor(.secondary)
             }
             
             Spacer()
@@ -247,12 +281,12 @@ private struct SavedUserCard: View {
             }
         }
         .padding(12)
-        .background(Color.white)
+        .background(Color(.systemGray6))
         .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
         )
-        .cornerRadius(8)
+        .cornerRadius(12)
         .contentShape(Rectangle())
         .onTapGesture {
             onUserSelect(user)
