@@ -1,6 +1,14 @@
 import Foundation
 import UIKit
 
+// MARK: - Image Storage Errors
+enum ImageStorageError: Error {
+    case saveFailed
+    case deleteFailed
+    case fileNotFound
+    case directoryCreationFailed
+}
+
 class ImageStorageManager {
     
     // MARK: - Constants
@@ -33,6 +41,81 @@ class ImageStorageManager {
         }
         
         return nil
+    }
+    
+    // MARK: - Customer Images Support (Müşteri Resimleri)
+    
+    static func saveMusteriResmi(_ image: UIImage, customerName: String) throws -> String {
+        guard let documentsPath = saveToMusteriResimleriDocuments(image: image, customerName: customerName) else {
+            throw ImageStorageError.saveFailed
+        }
+        
+        // Dosya kontrol et
+        let fileExists = FileManager.default.fileExists(atPath: documentsPath)
+        if !fileExists {
+            throw ImageStorageError.fileNotFound
+        }
+        
+        return documentsPath
+    }
+    
+    static func deleteMusteriResmi(imagePath: String) throws {
+        let fileManager = FileManager.default
+        
+        guard fileManager.fileExists(atPath: imagePath) else {
+            // Dosya zaten yok, sessizce devam et
+            return
+        }
+        
+        do {
+            try fileManager.removeItem(atPath: imagePath)
+        } catch {
+            throw ImageStorageError.deleteFailed
+        }
+        
+        // Eğer müşteri klasörü boş kaldıyse onu da sil
+        let parentDir = URL(fileURLWithPath: imagePath).deletingLastPathComponent()
+        if let contents = try? fileManager.contentsOfDirectory(atPath: parentDir.path),
+           contents.isEmpty {
+            try? fileManager.removeItem(at: parentDir)
+        }
+    }
+    
+    private static func saveToMusteriResimleriDocuments(image: UIImage, customerName: String) -> String? {
+        guard let documentsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            return nil
+        }
+        
+        // musteriresimleri/CustomerName klasör yapısı oluştur
+        let musteriResimleriDir = documentsDir.appendingPathComponent("musteriresimleri")
+        let customerDir = musteriResimleriDir.appendingPathComponent(customerName)
+        
+        do {
+            try FileManager.default.createDirectory(at: customerDir, withIntermediateDirectories: true, attributes: nil)
+        } catch {
+            print("Müşteri klasörü oluşturulamadı: \(error)")
+            return nil
+        }
+        
+        // Resim dosya adı oluştur
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyyMMdd_HHmmss"
+        let timestamp = dateFormatter.string(from: Date())
+        let fileName = "IMG_\(timestamp).jpg"
+        let fileURL = customerDir.appendingPathComponent(fileName)
+        
+        // Resmi kaydet
+        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+            return nil
+        }
+        
+        do {
+            try imageData.write(to: fileURL)
+            return fileURL.path
+        } catch {
+            print("Müşteri resmi kaydedilemedi: \(error)")
+            return nil
+        }
     }
     
     // MARK: - Upload Trigger (Android mantığı)

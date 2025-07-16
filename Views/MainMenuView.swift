@@ -77,13 +77,14 @@ struct MainMenuView: View {
                     // Alt sıra butonları
                     HStack(spacing: 20) {
                         // Müşteri Resimleri
-                        GridButton(
-                            title: "Müşteri Resimleri",
-                            icon: "photo.on.rectangle",
-                            color: Color(red: 0.2, green: 0.6, blue: 1.0)
-                        ) {
-                            // TODO: Customer images görünümüne git
+                        NavigationLink(destination: CustomerImagesView()) {
+                            GridButtonContent(
+                                title: "Müşteri Resimleri",
+                                icon: "photo.on.rectangle",
+                                color: Color(red: 0.2, green: 0.6, blue: 1.0)
+                            )
                         }
+                        .buttonStyle(PlainButtonStyle())
                         
                         // Araçtaki Ürünler
                         GridButton(

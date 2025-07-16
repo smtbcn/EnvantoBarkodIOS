@@ -1,6 +1,15 @@
 import Foundation
 import SQLite3
 
+// MARK: - Database Errors
+enum DatabaseError: Error {
+    case prepareFailed
+    case insertFailed
+    case deleteFailed
+    case updateFailed
+    case queryFailed
+}
+
 // MARK: - Thread Safety Note
 // DatabaseManager tüm database işlemlerini serial queue (databaseQueue) üzerinden yapar.
 // Bu sayede SQLite multi-threaded access hatalarının önüne geçilir.
@@ -62,6 +71,218 @@ class DatabaseManager {
     
     deinit {
         closeDatabase()
+    }
+    
+    // MARK: - Customer Images Operations (Müşteri Resimleri)
+    
+    func insertMusteriResmi(customerName: String, imagePath: String, uploadedBy: String) throws {
+        return try withDatabaseQueue {
+            let insertSQL = """
+                INSERT INTO \(DatabaseManager.TABLE_BARKOD_RESIMLER) 
+                (\(DatabaseManager.COLUMN_MUSTERI_ADI), \(DatabaseManager.COLUMN_RESIM_YOLU), 
+                 \(DatabaseManager.COLUMN_TARIH), \(DatabaseManager.COLUMN_YUKLEYEN), 
+                 \(DatabaseManager.COLUMN_YUKLENDI)) 
+                VALUES (?, ?, ?, ?, 0)
+            """
+            
+            var statement: OpaquePointer?
+            defer { sqlite3_finalize(statement) }
+            
+            guard sqlite3_prepare_v2(db, insertSQL, -1, &statement, nil) == SQLITE_OK else {
+                throw DatabaseError.prepareFailed
+            }
+            
+            let dateFormatter = ISO8601DateFormatter()
+            let currentDateString = dateFormatter.string(from: Date())
+            
+            sqlite3_bind_text(statement, 1, customerName, -1, SQLITE_TRANSIENT)
+            sqlite3_bind_text(statement, 2, imagePath, -1, SQLITE_TRANSIENT)
+            sqlite3_bind_text(statement, 3, currentDateString, -1, SQLITE_TRANSIENT)
+            sqlite3_bind_text(statement, 4, uploadedBy, -1, SQLITE_TRANSIENT)
+            
+            guard sqlite3_step(statement) == SQLITE_DONE else {
+                throw DatabaseError.insertFailed
+            }
+        }
+    }
+    
+    func getAllMusteriResimleri() throws -> [SavedCustomerImage] {
+        return try withDatabaseQueue {
+            let selectSQL = """
+                SELECT \(DatabaseManager.COLUMN_ID), \(DatabaseManager.COLUMN_MUSTERI_ADI), 
+                       \(DatabaseManager.COLUMN_RESIM_YOLU), \(DatabaseManager.COLUMN_TARIH), 
+                       \(DatabaseManager.COLUMN_YUKLEYEN)
+                FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) 
+                ORDER BY \(DatabaseManager.COLUMN_TARIH) DESC
+            """
+            
+            var statement: OpaquePointer?
+            defer { sqlite3_finalize(statement) }
+            
+            guard sqlite3_prepare_v2(db, selectSQL, -1, &statement, nil) == SQLITE_OK else {
+                throw DatabaseError.prepareFailed
+            }
+            
+            var results: [SavedCustomerImage] = []
+            let dateFormatter = ISO8601DateFormatter()
+            
+            while sqlite3_step(statement) == SQLITE_ROW {
+                let id = Int(sqlite3_column_int(statement, 0))
+                let customerName = String(cString: sqlite3_column_text(statement, 1))
+                let imagePath = String(cString: sqlite3_column_text(statement, 2))
+                let dateString = String(cString: sqlite3_column_text(statement, 3))
+                let uploadedBy = String(cString: sqlite3_column_text(statement, 4))
+                
+                let date = dateFormatter.date(from: dateString) ?? Date()
+                
+                let image = SavedCustomerImage(
+                    id: id,
+                    customerName: customerName,
+                    imagePath: imagePath,
+                    date: date,
+                    uploadedBy: uploadedBy
+                )
+                
+                results.append(image)
+            }
+            
+            return results
+        }
+    }
+    
+    func getMusteriResimleriByCustomer(customerName: String) throws -> [SavedCustomerImage] {
+        return try withDatabaseQueue {
+            let selectSQL = """
+                SELECT \(DatabaseManager.COLUMN_ID), \(DatabaseManager.COLUMN_MUSTERI_ADI), 
+                       \(DatabaseManager.COLUMN_RESIM_YOLU), \(DatabaseManager.COLUMN_TARIH), 
+                       \(DatabaseManager.COLUMN_YUKLEYEN)
+                FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) 
+                WHERE \(DatabaseManager.COLUMN_MUSTERI_ADI) = ?
+                ORDER BY \(DatabaseManager.COLUMN_TARIH) DESC
+            """
+            
+            var statement: OpaquePointer?
+            defer { sqlite3_finalize(statement) }
+            
+            guard sqlite3_prepare_v2(db, selectSQL, -1, &statement, nil) == SQLITE_OK else {
+                throw DatabaseError.prepareFailed
+            }
+            
+            sqlite3_bind_text(statement, 1, customerName, -1, SQLITE_TRANSIENT)
+            
+            var results: [SavedCustomerImage] = []
+            let dateFormatter = ISO8601DateFormatter()
+            
+            while sqlite3_step(statement) == SQLITE_ROW {
+                let id = Int(sqlite3_column_int(statement, 0))
+                let customerName = String(cString: sqlite3_column_text(statement, 1))
+                let imagePath = String(cString: sqlite3_column_text(statement, 2))
+                let dateString = String(cString: sqlite3_column_text(statement, 3))
+                let uploadedBy = String(cString: sqlite3_column_text(statement, 4))
+                
+                let date = dateFormatter.date(from: dateString) ?? Date()
+                
+                let image = SavedCustomerImage(
+                    id: id,
+                    customerName: customerName,
+                    imagePath: imagePath,
+                    date: date,
+                    uploadedBy: uploadedBy
+                )
+                
+                results.append(image)
+            }
+            
+            return results
+        }
+    }
+    
+    func deleteMusteriResmiByPath(imagePath: String) throws {
+        return try withDatabaseQueue {
+            let deleteSQL = """
+                DELETE FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) 
+                WHERE \(DatabaseManager.COLUMN_RESIM_YOLU) = ?
+            """
+            
+            var statement: OpaquePointer?
+            defer { sqlite3_finalize(statement) }
+            
+            guard sqlite3_prepare_v2(db, deleteSQL, -1, &statement, nil) == SQLITE_OK else {
+                throw DatabaseError.prepareFailed
+            }
+            
+            sqlite3_bind_text(statement, 1, imagePath, -1, SQLITE_TRANSIENT)
+            
+            guard sqlite3_step(statement) == SQLITE_DONE else {
+                throw DatabaseError.deleteFailed
+            }
+        }
+    }
+    
+    func deleteMusteriResimleriByCustomer(customerName: String) throws {
+        return try withDatabaseQueue {
+            let deleteSQL = """
+                DELETE FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) 
+                WHERE \(DatabaseManager.COLUMN_MUSTERI_ADI) = ?
+            """
+            
+            var statement: OpaquePointer?
+            defer { sqlite3_finalize(statement) }
+            
+            guard sqlite3_prepare_v2(db, deleteSQL, -1, &statement, nil) == SQLITE_OK else {
+                throw DatabaseError.prepareFailed
+            }
+            
+            sqlite3_bind_text(statement, 1, customerName, -1, SQLITE_TRANSIENT)
+            
+            guard sqlite3_step(statement) == SQLITE_DONE else {
+                throw DatabaseError.deleteFailed
+            }
+        }
+    }
+    
+    func searchCachedCustomers(query: String) -> [Customer] {
+        do {
+            return try withDatabaseQueue {
+                // Önce barkod_resimler tablosundan müşteri isimlerini al
+                let selectSQL = """
+                    SELECT DISTINCT \(DatabaseManager.COLUMN_MUSTERI_ADI)
+                    FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) 
+                    WHERE \(DatabaseManager.COLUMN_MUSTERI_ADI) LIKE ?
+                    ORDER BY \(DatabaseManager.COLUMN_MUSTERI_ADI)
+                """
+                
+                var statement: OpaquePointer?
+                defer { sqlite3_finalize(statement) }
+                
+                guard sqlite3_prepare_v2(db, selectSQL, -1, &statement, nil) == SQLITE_OK else {
+                    return []
+                }
+                
+                let searchPattern = "%\(query)%"
+                sqlite3_bind_text(statement, 1, searchPattern, -1, SQLITE_TRANSIENT)
+                
+                var results: [Customer] = []
+                
+                while sqlite3_step(statement) == SQLITE_ROW {
+                    let customerName = String(cString: sqlite3_column_text(statement, 0))
+                    let customer = Customer(name: customerName, code: nil, address: nil)
+                    results.append(customer)
+                }
+                
+                return results
+            }
+        } catch {
+            print("Cached customer search error: \(error)")
+            return []
+        }
+    }
+    
+    // MARK: - Thread Safety Helper
+    private func withDatabaseQueue<T>(_ operation: () throws -> T) throws -> T {
+        return try databaseQueue.sync {
+            try operation()
+        }
     }
     
     // MARK: - Database Operations

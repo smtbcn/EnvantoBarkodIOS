@@ -28,6 +28,9 @@
 		AB1234567890123400000057 /* NetworkUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000058 /* NetworkUtils.swift */; };
 		AB1234567890123400000059 /* UploadService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB123456789012340000005A /* UploadService.swift */; };
 		AB123456789012340000005D /* BackgroundUploadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB123456789012340000005E /* BackgroundUploadManager.swift */; };
+		AB1234567890123400000070 /* CustomerImagesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000071 /* CustomerImagesView.swift */; };
+		AB1234567890123400000072 /* CustomerImagesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000073 /* CustomerImagesViewModel.swift */; };
+		AB1234567890123400000074 /* CustomerImageGroupCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000075 /* CustomerImageGroupCard.swift */; };
 		AB123456789012340000005B /* DeviceIdentifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB123456789012340000005C /* DeviceIdentifier.swift */; };
 		AB123456789012340000005F /* AudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000060 /* AudioManager.swift */; };
 		AB1234567890123400000061 /* beep.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000062 /* beep.mp3 */; };
@@ -44,9 +47,12 @@
 		AB1234567890123400000008 /* ScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerView.swift; sourceTree = "<group>"; };
 		AB123456789012340000000A /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		AB123456789012340000000C /* BarcodeUploadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeUploadView.swift; sourceTree = "<group>"; };
+		AB1234567890123400000071 /* CustomerImagesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomerImagesView.swift; sourceTree = "<group>"; };
+		AB1234567890123400000075 /* CustomerImageGroupCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomerImageGroupCard.swift; sourceTree = "<group>"; };
 		AB123456789012340000000E /* MainViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewModel.swift; sourceTree = "<group>"; };
 		AB1234567890123400000010 /* ScannerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerViewModel.swift; sourceTree = "<group>"; };
 		AB1234567890123400000012 /* BarcodeUploadViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeUploadViewModel.swift; sourceTree = "<group>"; };
+		AB1234567890123400000073 /* CustomerImagesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomerImagesViewModel.swift; sourceTree = "<group>"; };
 		AB1234567890123400000014 /* BarcodeResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeResult.swift; sourceTree = "<group>"; };
 		AB1234567890123400000016 /* CameraService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraService.swift; sourceTree = "<group>"; };
 		AB1234567890123400000018 /* BarcodeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeService.swift; sourceTree = "<group>"; };
@@ -110,6 +116,8 @@
 				AB1234567890123400000008 /* ScannerView.swift */,
 				AB123456789012340000000A /* SettingsView.swift */,
 				AB123456789012340000000C /* BarcodeUploadView.swift */,
+				AB1234567890123400000071 /* CustomerImagesView.swift */,
+				AB1234567890123400000075 /* CustomerImageGroupCard.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -120,6 +128,7 @@
 				AB123456789012340000000E /* MainViewModel.swift */,
 				AB1234567890123400000010 /* ScannerViewModel.swift */,
 				AB1234567890123400000012 /* BarcodeUploadViewModel.swift */,
+				AB1234567890123400000073 /* CustomerImagesViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -255,9 +264,12 @@
 				AB1234567890123400000007 /* ScannerView.swift in Sources */,
 				AB1234567890123400000009 /* SettingsView.swift in Sources */,
 				AB123456789012340000000B /* BarcodeUploadView.swift in Sources */,
+				AB1234567890123400000070 /* CustomerImagesView.swift in Sources */,
+				AB1234567890123400000074 /* CustomerImageGroupCard.swift in Sources */,
 				AB123456789012340000000D /* MainViewModel.swift in Sources */,
 				AB123456789012340000000F /* ScannerViewModel.swift in Sources */,
 				AB1234567890123400000011 /* BarcodeUploadViewModel.swift in Sources */,
+				AB1234567890123400000072 /* CustomerImagesViewModel.swift in Sources */,
 				AB1234567890123400000013 /* BarcodeResult.swift in Sources */,
 				AB1234567890123400000015 /* CameraService.swift in Sources */,
 				AB1234567890123400000017 /* BarcodeService.swift in Sources */,
