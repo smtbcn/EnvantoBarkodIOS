@@ -65,12 +65,12 @@ public struct VehicleProductsView: View {
             // Kullanıcı ikonu ve adı
             HStack(spacing: 8) {
                 Image(systemName: "person.circle.fill")
-                    .foregroundColor(.blue)
+                    .foregroundColor(.accentColor)
                     .font(.system(size: 20))
                 
                 Text(viewModel.currentUserName)
                     .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(.blue)
+                    .foregroundColor(.primary)
             }
             
             Spacer()
@@ -85,14 +85,14 @@ public struct VehicleProductsView: View {
                         .foregroundColor(.white)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
-                        .background(Color.blue)
+                        .background(Color.accentColor)
                         .cornerRadius(6)
                 }
             }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
-        .background(Color(UIColor.systemGray6))
+        .background(Color(.systemGray6))
     }
     
     // MARK: - Ana İçerik
@@ -130,6 +130,7 @@ public struct VehicleProductsView: View {
             Text("Yetkilendirme Gerekli")
                 .font(.title)
                 .fontWeight(.bold)
+                .foregroundColor(.primary)
                 .multilineTextAlignment(.center)
             
             Text("Bu cihaz araçtaki ürünleri görüntüleme işlemi için yetkilendirilmemiş. Lütfen sistem yöneticisine başvurun.")
@@ -147,6 +148,7 @@ public struct VehicleProductsView: View {
                 HStack {
                     Text(DeviceIdentifier.getUniqueDeviceId())
                         .font(.system(.body, design: .monospaced))
+                        .foregroundColor(.primary)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
                         .background(Color(.systemGray6))
@@ -161,6 +163,7 @@ public struct VehicleProductsView: View {
                     }) {
                         Image(systemName: "doc.on.doc")
                             .font(.title2)
+                            .foregroundColor(.accentColor)
                     }
                 }
             }
@@ -173,7 +176,7 @@ public struct VehicleProductsView: View {
                     Text("Yeniden Kontrol Et")
                 }
                 .padding()
-                .background(Color.blue)
+                .background(Color.accentColor)
                 .foregroundColor(.white)
                 .cornerRadius(10)
             }
@@ -182,6 +185,7 @@ public struct VehicleProductsView: View {
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(.systemBackground))
     }
     
     // MARK: - Boş Durum
@@ -189,13 +193,14 @@ public struct VehicleProductsView: View {
         VStack(spacing: 16) {
             Image(systemName: "shippingbox")
                 .font(.system(size: 60))
-                .foregroundColor(.gray)
+                .foregroundColor(.secondary)
             
             Text("Araçta ürün bulunamadı")
                 .font(.system(size: 16, weight: .medium))
-                .foregroundColor(.gray)
+                .foregroundColor(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(.systemBackground))
     }
     
     // MARK: - Ürünler Listesi
@@ -244,7 +249,7 @@ public struct VehicleProductsView: View {
                         .foregroundColor(.white)
                         .font(.system(size: 24))
                     
-                    VStack(alignment: .leading, spacing: 2) {
+                    VStack(alignment: .leading, spacing: 3) {
                         Text(group.customerName)
                             .font(.system(size: 15, weight: .bold))
                             .foregroundColor(.white)
@@ -284,7 +289,7 @@ public struct VehicleProductsView: View {
         .padding(.vertical, 12)
         .background(
             RoundedRectangle(cornerRadius: 10)
-                .fill(Color.blue)
+                .fill(Color.accentColor)
         )
         .padding(.horizontal, 8)
         .padding(.vertical, 3)
@@ -348,7 +353,7 @@ public struct VehicleProductsView: View {
                     
                     Text(product.mevcutDepo)
                         .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(.blue)
+                        .foregroundColor(.accentColor)
                         .multilineTextAlignment(.leading)
                 }
             }
@@ -380,9 +385,9 @@ public struct VehicleProductsView: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 8)
-        .background(Color.white)
+        .background(Color(.systemGray6))
         .cornerRadius(12)
-        .shadow(color: .black.opacity(0.1), radius: 3, x: 0, y: 2)
+        .shadow(color: Color.primary.opacity(0.1), radius: 3, x: 0, y: 2)
         .padding(.horizontal, 10)
         .padding(.vertical, 1)
         .listRowSeparator(.hidden)
@@ -397,11 +402,12 @@ public struct VehicleProductsView: View {
             
             Image(systemName: "person.circle")
                 .font(.system(size: 80))
-                .foregroundColor(.blue)
+                .foregroundColor(.accentColor)
             
             Text("Kullanıcı Girişi Bekleniyor")
                 .font(.title)
                 .fontWeight(.bold)
+                .foregroundColor(.primary)
                 .multilineTextAlignment(.center)
             
             Text("Araçtaki ürünleri görüntülemek için kullanıcı girişi yapmanız gerekmektedir.")
@@ -422,7 +428,7 @@ public struct VehicleProductsView: View {
                 .foregroundColor(.white)
                 .padding(.horizontal, 24)
                 .padding(.vertical, 12)
-                .background(Color.blue)
+                .background(Color.accentColor)
                 .cornerRadius(10)
             }
             
