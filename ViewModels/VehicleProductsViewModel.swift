@@ -11,7 +11,7 @@ public class VehicleProductsViewModel: ObservableObject, DeviceAuthCallback {
     @Published public var isUserLoggedIn = false
     @Published public var showLoginSheet = false
     
-    private var currentUser: LoginResponse.User?
+    private var currentUser: User?
     
     public struct CustomerGroup: Identifiable {
         public let id = UUID()
@@ -88,7 +88,7 @@ public class VehicleProductsViewModel: ObservableObject, DeviceAuthCallback {
         }
     }
     
-    public func onLoginSuccess(_ user: LoginResponse.User) {
+    public func onLoginSuccess(_ user: User) {
         currentUser = user
         isUserLoggedIn = true
         showLoginSheet = false
@@ -212,8 +212,13 @@ public class VehicleProductsViewModel: ObservableObject, DeviceAuthCallback {
             request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
             
             let selectedCustomersString = selectedCustomers.joined(separator: ",")
-            let bodyString = "selected_customers=\(selectedCustomersString)&user_id=\(user.userId)&user_name=\(user.fullName)"
-            request.httpBody = bodyString.data(using: .utf8)
+            
+            // URL encoding for form data
+            let encodedCustomers = selectedCustomersString.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? selectedCustomersString
+            let encodedUserName = user.fullName.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? user.fullName
+            
+            let bodyString = "selected_customers=\(encodedCustomers)&user_id=\(user.userId)&user_name=\(encodedUserName)"
+            request.httpBody = bodyString.data(using: String.Encoding.utf8)
             
             let (data, response) = try await URLSession.shared.data(for: request)
             
@@ -260,8 +265,11 @@ public class VehicleProductsViewModel: ObservableObject, DeviceAuthCallback {
             request.httpMethod = "POST"
             request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
             
-            let bodyString = "product_id=\(product.id)&user_id=\(user.userId)&user_name=\(user.fullName)"
-            request.httpBody = bodyString.data(using: .utf8)
+            // URL encoding for form data
+            let encodedUserName = user.fullName.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? user.fullName
+            
+            let bodyString = "product_id=\(product.id)&user_id=\(user.userId)&user_name=\(encodedUserName)"
+            request.httpBody = bodyString.data(using: String.Encoding.utf8)
             
             let (data, response) = try await URLSession.shared.data(for: request)
             
