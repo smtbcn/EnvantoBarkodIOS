@@ -213,16 +213,19 @@ public struct VehicleProductsView: View {
                         }
                     }
                 } header: {
-                    // Section header boşluğunu minimize et
+                    // Section header boşluğunu tamamen kaldır
                     EmptyView()
+                        .listRowInsets(EdgeInsets())
                 } footer: {
-                    // Section footer boşluğunu minimize et
+                    // Section footer boşluğunu tamamen kaldır
                     EmptyView()
+                        .listRowInsets(EdgeInsets())
                 }
             }
         }
         .listStyle(PlainListStyle())
         .listSectionSeparator(.hidden)
+        .listRowSpacing(0)
         .refreshable {
             viewModel.refresh()
         }
@@ -231,23 +234,31 @@ public struct VehicleProductsView: View {
     // MARK: - Müşteri Header View
     private func customerHeaderView(group: VehicleProductsViewModel.CustomerGroup) -> some View {
         HStack {
-            // Kişi ikonu
-            Image(systemName: "person.circle.fill")
-                .foregroundColor(.white)
-                .font(.system(size: 24))
-            
-            VStack(alignment: .leading, spacing: 2) {
-                Text(group.customerName)
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundColor(.white)
-                    .multilineTextAlignment(.leading)
-                
-                Text("\(group.productCount) ürün")
-                    .font(.system(size: 11))
-                    .foregroundColor(.white.opacity(0.8))
+            // Müşteri bilgileri - tıklanabilir alan (genişletme için)
+            Button(action: {
+                viewModel.toggleCustomerExpansion(group.customerName)
+            }) {
+                HStack {
+                    // Kişi ikonu
+                    Image(systemName: "person.circle.fill")
+                        .foregroundColor(.white)
+                        .font(.system(size: 24))
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(group.customerName)
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundColor(.white)
+                            .multilineTextAlignment(.leading)
+                        
+                        Text("\(group.productCount) ürün")
+                            .font(.system(size: 11))
+                            .foregroundColor(.white.opacity(0.8))
+                    }
+                    
+                    Spacer()
+                }
             }
-            
-            Spacer()
+            .buttonStyle(PlainButtonStyle())
             
             // Checkbox - sadece seçim yapar
             Button(action: {
@@ -270,15 +281,16 @@ public struct VehicleProductsView: View {
             .buttonStyle(PlainButtonStyle())
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 12)
+        .padding(.vertical, 8)
         .background(
             RoundedRectangle(cornerRadius: 10)
                 .fill(Color.blue)
         )
         .padding(.horizontal, 10)
-        .padding(.vertical, 1)
+        .padding(.vertical, 0)
         .listRowSeparator(.hidden)
         .listRowBackground(Color.clear)
+        .listRowInsets(EdgeInsets(top: 2, leading: 0, bottom: 2, trailing: 0))
     }
     
     // MARK: - Ürün Item View
@@ -372,9 +384,10 @@ public struct VehicleProductsView: View {
         .cornerRadius(12)
         .shadow(color: .black.opacity(0.1), radius: 3, x: 0, y: 2)
         .padding(.horizontal, 10)
-        .padding(.vertical, 1)
+        .padding(.vertical, 0)
         .listRowSeparator(.hidden)
         .listRowBackground(Color.clear)
+        .listRowInsets(EdgeInsets(top: 1, leading: 0, bottom: 1, trailing: 0))
     }
     
     // MARK: - Login Waiting View
