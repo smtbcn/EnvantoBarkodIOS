@@ -318,7 +318,8 @@ class CustomerImagesViewModel: ObservableObject, DeviceAuthCallback {
     private func shareToWhatsAppInternal(customerName: String, imagePaths: [String]) {
         let shareText = createShareText(customerName: customerName, imageCount: imagePaths.count)
         
-        guard let window = UIApplication.shared.windows.first,
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = windowScene.windows.first,
               let rootViewController = window.rootViewController else {
             return
         }
