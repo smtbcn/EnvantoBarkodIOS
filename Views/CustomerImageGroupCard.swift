@@ -11,270 +11,256 @@ struct CustomerImageGroupCard: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Başlık Kısmı (Her zaman görünür)
-            headerSection
-            
-            // İçerik Kısmı (Genişletildiğinde görünür)
-            if isExpanded {
-                imageGridSection
-            }
-        }
-        .background(Color(.systemBackground))
-        .cornerRadius(12)
-        .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
-    }
-    
-    // MARK: - Header Section
-    private var headerSection: some View {
-        Button(action: onExpand) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(group.customerName)
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                        .multilineTextAlignment(.leading)
+            // Müşteri header'ı (Android Material Design like - BarcodeUploadView ile birebir aynı)
+            Button(action: {
+                onExpand() // Direk toggle
+            }) {
+                HStack {
+                    // Müşteri ikonu
+                    Image(systemName: "person.crop.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(.blue)
                     
-                    HStack(spacing: 12) {
-                        Label("\(group.imageCount)", systemImage: "photo")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(group.customerName)
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.primary)
                         
-                        Label(formatDate(group.lastImageDate), systemImage: "calendar")
+                        Text("Kayıtlı Resimler (\(group.imageCount))")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
-                }
-                
-                Spacer()
-                
-                HStack(spacing: 8) {
-                    // WhatsApp Paylaş Butonu
+                    
+                    Spacer()
+                    
+                    // WhatsApp paylaş butonu (müşteri resimleri için)
                     Button(action: {
                         let imagePaths = group.images.map { $0.imagePath }
                         onShareWhatsApp(group.customerName, imagePaths)
                     }) {
-                        Image(systemName: group.isSharedToday ? "checkmark.circle.fill" : "square.and.arrow.up")
-                            .font(.title3)
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 16))
                             .foregroundColor(group.isSharedToday ? .green : .blue)
                     }
                     .buttonStyle(PlainButtonStyle())
                     
-                    // Müşteri Sil Butonu
-                    Button(action: onDeleteCustomer) {
+                    // Müşteri klasörü silme butonu
+                    Button(action: {
+                        onDeleteCustomer()
+                    }) {
                         Image(systemName: "trash")
-                            .font(.caption)
+                            .font(.system(size: 16))
                             .foregroundColor(.red)
                     }
                     .buttonStyle(PlainButtonStyle())
                     
-                    // Genişlet/Daralt İkonu
+                    // Expand/Collapse ikonu
                     Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                        .font(.caption)
+                        .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.secondary)
                 }
+                .padding()
             }
-            .padding()
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-    
-    // MARK: - Image Grid Section
-    private var imageGridSection: some View {
-        VStack(spacing: 12) {
-            Divider()
+            .buttonStyle(PlainButtonStyle())
             
-            // Resim Izgara
-            LazyVGrid(columns: [
-                GridItem(.flexible()),
-                GridItem(.flexible()),
-                GridItem(.flexible())
-            ], spacing: 8) {
-                ForEach(group.images, id: \.id) { image in
-                    ImageThumbnailView(
-                        image: image,
-                        onView: { onViewImage(image.imagePath) },
-                        onDelete: { onDeleteImage(image.imagePath) }
-                    )
-                }
-            }
-            .padding(.horizontal)
-            
-            // Alt Bilgiler
-            if let firstImage = group.images.first {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Ekleyen: \(firstImage.uploadedBy)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+            // Resim listesi (Android like - vertical list)
+            if isExpanded {
+                VStack(spacing: 0) {
+                    Divider()
+                        .padding(.horizontal)
                     
-                    if group.isSharedToday {
-                        HStack {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.green)
-                            Text("Bu müşteri bugün paylaşıldı")
-                                .font(.caption)
-                                .foregroundColor(.green)
+                    LazyVStack(spacing: 0) {
+                        ForEach(group.images, id: \.id) { image in
+                            CustomerAndroidImageRow(image: image) {
+                                onDeleteImage(image.imagePath)
+                            }
+                            
+                            // Son item değilse divider ekle
+                            if image.id != group.images.last?.id {
+                                Divider()
+                                    .padding(.horizontal)
+                            }
                         }
                     }
+                    .padding(.bottom, 8)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal)
             }
         }
-        .padding(.bottom)
-    }
-    
-    // MARK: - Helper Methods
-    private func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        
-        if Calendar.current.isDateInToday(date) {
-            formatter.timeStyle = .short
-            return "Bugün " + formatter.string(from: date)
-        } else if Calendar.current.isDateInYesterday(date) {
-            formatter.timeStyle = .short
-            return "Dün " + formatter.string(from: date)
-        } else {
-            formatter.dateStyle = .short
-            return formatter.string(from: date)
-        }
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(.systemBackground))
+                .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color(.systemGray4), lineWidth: 0.5)
+        )
     }
 }
 
-// MARK: - Image Thumbnail View
-struct ImageThumbnailView: View {
+// MARK: - Customer Android Image Row (Müşteri resimleri için - BarcodeUploadView AndroidImageRow benzeri)
+struct CustomerAndroidImageRow: View {
     let image: SavedCustomerImage
-    let onView: () -> Void
     let onDelete: () -> Void
     
-    @State private var uiImage: UIImage?
-    @State private var isLoading = true
-    
     var body: some View {
-        VStack(spacing: 4) {
-            // Resim Thumbnail
-            ZStack {
-                Rectangle()
-                    .fill(Color(.systemGray5))
-                    .aspectRatio(1, contentMode: .fit)
-                
-                if isLoading {
-                    ProgressView()
-                        .scaleEffect(0.8)
-                } else if let uiImage = uiImage {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                        .clipped()
-                } else {
-                    VStack {
-                        Image(systemName: "photo")
-                            .font(.title2)
-                            .foregroundColor(.secondary)
-                        Text("Yüklenemedi")
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-                    }
-                }
-                
-                // Aksiyon Butonları Overlay
-                VStack {
-                    HStack {
-                        Spacer()
-                        
-                        Button(action: onDelete) {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.title3)
-                                .foregroundColor(.white)
-                                .background(Color.red)
-                                .clipShape(Circle())
+        HStack(spacing: 12) {
+            // Sol: Resim preview (Android like)
+            Group {
+                if image.fileExists {
+                    // Dosya mevcut - normal AsyncImage
+                    AsyncImage(url: URL(fileURLWithPath: image.imagePath)) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: 50, height: 50)
+                                .clipped()
+                                .cornerRadius(6)
+                                
+                        case .failure(_):
+                            Image(systemName: "photo")
+                                .font(.system(size: 20))
+                                .foregroundColor(.secondary)
+                                .frame(width: 50, height: 50)
+                                .background(Color(.systemGray6))
+                                .cornerRadius(6)
+                                
+                        case .empty:
+                            ProgressView()
+                                .frame(width: 50, height: 50)
+                                .background(Color(.systemGray6))
+                                .cornerRadius(6)
+                                
+                        @unknown default:
+                            EmptyView()
                         }
-                        .buttonStyle(PlainButtonStyle())
                     }
+                } else {
+                    // Dosya yok - database kaydı mevcut ama dosya silinmiş
+                    Image(systemName: "doc.questionmark")
+                        .font(.system(size: 20))
+                        .foregroundColor(.orange)
+                        .frame(width: 50, height: 50)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(6)
+                        .overlay(
+                            // Dosya bulunamadı işareti
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.system(size: 12))
+                                .foregroundColor(.orange)
+                                .offset(x: 15, y: -15)
+                        )
+                }
+            }
+            
+            // Orta: Dosya bilgileri (Android like)
+            VStack(alignment: .leading, spacing: 4) {
+                // Dosya adı (sadece filename)
+                Text(extractFileName(from: image.imagePath))
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                
+                // Local kayıt durumu (Android tarzı)
+                HStack(spacing: 6) {
+                    Image(systemName: getLocalStatusIcon())
+                        .font(.system(size: 12))
+                        .foregroundColor(getLocalStatusColor())
+                    
+                    Text(getLocalStatusText())
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(getLocalStatusColor())
                     
                     Spacer()
                 }
-                .padding(4)
-            }
-            .cornerRadius(8)
-            .onTapGesture {
-                onView()
-            }
-            
-            // Tarih Bilgisi
-            Text(formatImageDate(image.date))
-                .font(.caption2)
-                .foregroundColor(.secondary)
-                .lineLimit(1)
-            
-            // Durum Bilgisi (Müşteri resimleri için LOCAL KAYIT)
-            HStack(spacing: 4) {
-                Image(systemName: "externaldrive.fill")
-                    .font(.system(size: 8))
-                    .foregroundColor(.green)
                 
-                Text("LOCAL KAYIT")
-                    .font(.system(size: 8, weight: .medium))
-                    .foregroundColor(.green)
-            }
-        }
-        .onAppear {
-            loadImage()
-        }
-    }
-    
-    private func loadImage() {
-        Task {
-            do {
-                let url = URL(fileURLWithPath: image.imagePath)
-                let data = try Data(contentsOf: url)
-                let loadedImage = UIImage(data: data)
+                // Müşteri bilgisi
+                Text("Müşteri: \(image.customerName)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
                 
-                await MainActor.run {
-                    self.uiImage = loadedImage
-                    self.isLoading = false
-                }
-            } catch {
-                await MainActor.run {
-                    self.isLoading = false
+                // Tarih ve yükleyen - 2 satır
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Tarih: \(formattedDate(image.date))")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                    
+                    Text("Yükleyen: \(image.uploadedBy)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
                 }
             }
+            
+            Spacer()
+            
+            // Sağ: Silme butonu (Android like)
+            Button(action: onDelete) {
+                Image(systemName: "trash")
+                    .font(.system(size: 18))
+                    .foregroundColor(.red)
+            }
+            .buttonStyle(PlainButtonStyle())
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(Color(.systemBackground))
     }
     
-    private func formatImageDate(_ date: Date) -> String {
+    private func extractFileName(from path: String) -> String {
+        return URL(fileURLWithPath: path).lastPathComponent
+    }
+    
+    private func formattedDate(_ date: Date) -> String {
         let formatter = DateFormatter()
-        
-        if Calendar.current.isDateInToday(date) {
-            formatter.timeStyle = .short
-            return formatter.string(from: date)
-        } else {
-            formatter.dateFormat = "dd/MM"
-            return formatter.string(from: date)
+        formatter.dateFormat = "dd.MM.yyyy HH:mm"
+        return formatter.string(from: date)
+    }
+    
+    private func getLocalStatusIcon() -> String {
+        // Dosya yoksa farklı ikon göster
+        if !image.fileExists {
+            return "doc.questionmark"
         }
+        // Müşteri resimleri için local kayıt ikonu
+        return "externaldrive.fill"
+    }
+    
+    private func getLocalStatusColor() -> Color {
+        // Dosya yoksa turuncu
+        if !image.fileExists {
+            return .orange
+        }
+        // Müşteri resimleri için yeşil (local kayıt)
+        return .green
+    }
+    
+    private func getLocalStatusText() -> String {
+        // Dosya yoksa farklı mesaj
+        if !image.fileExists {
+            return "DOSYA BULUNAMADI"
+        }
+        // Müşteri resimleri için local kayıt mesajı
+        return "LOCAL KAYIT"
     }
 }
 
 #Preview {
-    let sampleImages = [
-        SavedCustomerImage(
-            id: 1,
-            customerName: "Test Müşteri",
-            imagePath: "/path/to/image1.jpg",
-            date: Date(),
-            uploadedBy: "Test User"
-        ),
-        SavedCustomerImage(
-            id: 2,
-            customerName: "Test Müşteri",
-            imagePath: "/path/to/image2.jpg",
-            date: Date().addingTimeInterval(-3600),
-            uploadedBy: "Test User"
-        )
-    ]
+    let sampleImage = SavedCustomerImage(
+        id: 1,
+        customerName: "SAMET BELER",
+        imagePath: "/test/path/image.jpg",
+        date: Date(),
+        uploadedBy: "Test User"
+    )
     
     let sampleGroup = CustomerImageGroup(
-        customerName: "Test Müşteri",
-        images: sampleImages
+        customerName: "SAMET BELER",
+        images: [sampleImage]
     )
     
     CustomerImageGroupCard(
