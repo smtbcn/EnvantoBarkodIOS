@@ -392,20 +392,31 @@ struct CustomerImagesView: View {
         .transition(.opacity.combined(with: .move(edge: .top)))
     }
     
-    // MARK: - Kayıtlı Resimler Bölümü (Android Accordion design)
+    // MARK: - Kayıtlı Müşteri Resimleri Bölümü (Android Accordion design)
     private var savedImagesSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Text("Kayıtlı Resimler")
+                Text("Müşteri Resimleri")
                     .font(.headline)
                     .fontWeight(.semibold)
                 
                 Spacer()
                 
-                Text("(\(viewModel.customerImageGroups.count) müşteri)")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                // Toplam müşteri sayısı badge
+                if !viewModel.customerImageGroups.isEmpty {
+                    Text("\(viewModel.customerImageGroups.count) müşteri")
+                        .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.blue)
+                        .cornerRadius(10)
+                }
             }
+            
+            // Local Storage Status Card (Müşteri resimleri için)
+            localStorageStatusCard
             
             if viewModel.customerImageGroups.isEmpty {
                 // Boş durum (Android empty state)
@@ -462,6 +473,85 @@ struct CustomerImagesView: View {
                     }
                 }
             }
+        }
+    }
+    
+    // MARK: - Local Storage Status Card (Müşteri resimleri özel durumu)
+    private var localStorageStatusCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            // Ana Status Row
+            HStack {
+                // Status ikonu - Local kayıt
+                Image(systemName: "externaldrive.fill")
+                    .font(.title2)
+                    .foregroundColor(.green)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Local Kayıt")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.primary)
+                    
+                    Text("Resimler sadece cihazda saklanıyor")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.green)
+                }
+                
+                Spacer()
+                
+                // Toplam resim sayısı badge
+                VStack(spacing: 4) {
+                    Text("\(getTotalImageCount())")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                    
+                    Text("resim")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            // Local Storage Durumu
+            HStack(spacing: 8) {
+                Image(systemName: "internaldrive")
+                    .font(.caption)
+                    .foregroundColor(.green)
+                
+                Text("Cihaz Depolama Aktif")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                Spacer()
+                
+                // Sunucuya yükleme YOK göstergesi
+                HStack(spacing: 4) {
+                    Image(systemName: "icloud.slash")
+                        .font(.caption2)
+                    Text("Sunucu Yok")
+                        .font(.caption2)
+                }
+                .foregroundColor(.orange)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 2)
+                .background(Color.orange.opacity(0.1))
+                .cornerRadius(4)
+            }
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.green.opacity(0.1))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.green.opacity(0.3), lineWidth: 1)
+        )
+    }
+    
+    // Helper function - toplam resim sayısını hesapla
+    private func getTotalImageCount() -> Int {
+        return viewModel.customerImageGroups.reduce(0) { total, group in
+            total + group.images.count
         }
     }
 }

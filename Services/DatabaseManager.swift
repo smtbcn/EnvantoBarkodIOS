@@ -34,6 +34,10 @@ class DatabaseManager {
     public static let COLUMN_YUKLEYEN = "yukleyen"
     public static let COLUMN_YUKLENDI = "yuklendi"
     
+    // Müşteri resimleri tablosu (barkod resimlerinden BAĞIMSIZ)
+    public static let TABLE_MUSTERI_RESIMLER = "musteri_resimler"
+    // Aynı kolon yapısını kullanır ama farklı tablo
+    
     // Cihaz yetkilendirme tablosu (Android ile aynı)
     public static let TABLE_CIHAZ_YETKI = "cihaz_yetki"
     public static let COLUMN_CIHAZ_ID = "id"
@@ -78,7 +82,7 @@ class DatabaseManager {
     func insertMusteriResmi(customerName: String, imagePath: String, uploadedBy: String) throws {
         return try withDatabaseQueue {
             let insertSQL = """
-                INSERT INTO \(DatabaseManager.TABLE_BARKOD_RESIMLER) 
+                INSERT INTO \(DatabaseManager.TABLE_MUSTERI_RESIMLER) 
                 (\(DatabaseManager.COLUMN_MUSTERI_ADI), \(DatabaseManager.COLUMN_RESIM_YOLU), 
                  \(DatabaseManager.COLUMN_TARIH), \(DatabaseManager.COLUMN_YUKLEYEN), 
                  \(DatabaseManager.COLUMN_YUKLENDI)) 
@@ -112,7 +116,7 @@ class DatabaseManager {
                 SELECT \(DatabaseManager.COLUMN_ID), \(DatabaseManager.COLUMN_MUSTERI_ADI), 
                        \(DatabaseManager.COLUMN_RESIM_YOLU), \(DatabaseManager.COLUMN_TARIH), 
                        \(DatabaseManager.COLUMN_YUKLEYEN)
-                FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) 
+                FROM \(DatabaseManager.TABLE_MUSTERI_RESIMLER) 
                 ORDER BY \(DatabaseManager.COLUMN_TARIH) DESC
             """
             
@@ -156,7 +160,7 @@ class DatabaseManager {
                 SELECT \(DatabaseManager.COLUMN_ID), \(DatabaseManager.COLUMN_MUSTERI_ADI), 
                        \(DatabaseManager.COLUMN_RESIM_YOLU), \(DatabaseManager.COLUMN_TARIH), 
                        \(DatabaseManager.COLUMN_YUKLEYEN)
-                FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) 
+                FROM \(DatabaseManager.TABLE_MUSTERI_RESIMLER) 
                 WHERE \(DatabaseManager.COLUMN_MUSTERI_ADI) = ?
                 ORDER BY \(DatabaseManager.COLUMN_TARIH) DESC
             """
@@ -200,7 +204,7 @@ class DatabaseManager {
     func deleteMusteriResmiByPath(imagePath: String) throws {
         return try withDatabaseQueue {
             let deleteSQL = """
-                DELETE FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) 
+                DELETE FROM \(DatabaseManager.TABLE_MUSTERI_RESIMLER) 
                 WHERE \(DatabaseManager.COLUMN_RESIM_YOLU) = ?
             """
             
@@ -222,7 +226,7 @@ class DatabaseManager {
     func deleteMusteriResimleriByCustomer(customerName: String) throws {
         return try withDatabaseQueue {
             let deleteSQL = """
-                DELETE FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) 
+                DELETE FROM \(DatabaseManager.TABLE_MUSTERI_RESIMLER) 
                 WHERE \(DatabaseManager.COLUMN_MUSTERI_ADI) = ?
             """
             
@@ -244,10 +248,10 @@ class DatabaseManager {
     func searchCachedCustomers(query: String) -> [Customer] {
         do {
             return try withDatabaseQueue {
-                // Önce barkod_resimler tablosundan müşteri isimlerini al
+                // Önce musteri_resimler tablosundan müşteri isimlerini al
                 let selectSQL = """
                     SELECT DISTINCT \(DatabaseManager.COLUMN_MUSTERI_ADI)
-                    FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) 
+                    FROM \(DatabaseManager.TABLE_MUSTERI_RESIMLER) 
                     WHERE \(DatabaseManager.COLUMN_MUSTERI_ADI) LIKE ?
                     ORDER BY \(DatabaseManager.COLUMN_MUSTERI_ADI)
                 """
@@ -342,6 +346,7 @@ class DatabaseManager {
         
         
         createBarkodResimlerTable()
+        createMusteriResimleriTable() // Ayrı tablo!
         createCihazYetkiTable()
     }
     
@@ -367,6 +372,28 @@ class DatabaseManager {
         }
     }
     
+    private func createMusteriResimleriTable() {
+        
+        let createTableSQL = """
+            CREATE TABLE IF NOT EXISTS \(DatabaseManager.TABLE_MUSTERI_RESIMLER) (
+                \(DatabaseManager.COLUMN_ID) INTEGER PRIMARY KEY AUTOINCREMENT,
+                \(DatabaseManager.COLUMN_MUSTERI_ADI) TEXT NOT NULL,
+                \(DatabaseManager.COLUMN_RESIM_YOLU) TEXT NOT NULL,
+                \(DatabaseManager.COLUMN_TARIH) TEXT NOT NULL,
+                \(DatabaseManager.COLUMN_YUKLEYEN) TEXT NOT NULL,
+                \(DatabaseManager.COLUMN_YUKLENDI) INTEGER DEFAULT 0
+            )
+        """
+        
+        
+        let result = sqlite3_exec(db, createTableSQL, nil, nil, nil)
+        if result == SQLITE_OK {
+        } else {
+            if let errorMessage = sqlite3_errmsg(db) {
+            }
+        }
+    }
+
     private func createCihazYetkiTable() {
         
         let createTableSQL = """

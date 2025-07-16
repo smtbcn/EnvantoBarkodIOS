@@ -205,6 +205,17 @@ struct ImageThumbnailView: View {
                 .font(.caption2)
                 .foregroundColor(.secondary)
                 .lineLimit(1)
+            
+            // Durum Bilgisi (Müşteri resimleri için LOCAL KAYIT)
+            HStack(spacing: 4) {
+                Image(systemName: "externaldrive.fill")
+                    .font(.system(size: 8))
+                    .foregroundColor(.green)
+                
+                Text("LOCAL KAYIT")
+                    .font(.system(size: 8, weight: .medium))
+                    .foregroundColor(.green)
+            }
         }
         .onAppear {
             loadImage()
