@@ -191,184 +191,205 @@ struct CustomerImagesView: View {
         }
     }
     
-    // Seçilen müşteri card'ı (Material Design like)
+    // Seçilen müşteri card'ı (Material Design like - BarcodeUploadView ile birebir aynı)
     private func selectedCustomerCard(customer: Customer) -> some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
                 Text(customer.name)
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.primary)
-                
-                Text("Seçili Müşteri")
-                    .font(.system(size: 13))
-                    .foregroundColor(.secondary)
+                        
+                if let code = customer.code, !code.isEmpty {
+                    Text("Kod: \(code)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
             }
             
             Spacer()
+
+            Button(action: {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    viewModel.selectedCustomer = nil
+                    viewModel.searchText = ""
+                    viewModel.customers = []
+                    viewModel.showDropdown = false
+                }
+            }) {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.title2)
+                    .foregroundColor(.secondary)
+            }
+            .buttonStyle(PlainButtonStyle())
             
             Button("Değiştir") {
-                viewModel.clearSelectedCustomer()
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    viewModel.selectedCustomer = nil
+                    viewModel.searchText = ""
+                    viewModel.customers = []
+                    viewModel.showDropdown = false
+                }
             }
-            .font(.system(size: 14, weight: .medium))
+            .font(.subheadline)
             .foregroundColor(.blue)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding()
         .background(
             RoundedRectangle(cornerRadius: 12)
                 .fill(Color(.systemGray6))
+                .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.blue.opacity(0.3), lineWidth: 1)
-        )
+        .transition(.opacity.combined(with: .scale(scale: 0.95)))
     }
     
-    // Müşteri arama input'u (Android AutoCompleteTextView benzeri)
+    // Müşteri arama input'u (BarcodeUploadView ile birebir aynı)
     private var customerSearchInput: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
+            HStack(spacing: 12) {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(.secondary)
-                    .font(.system(size: 16))
+                    .font(.system(size: 16, weight: .medium))
                 
-                if #available(iOS 15.0, *) {
-                    TextField("Müşteri adı ile arama yapın...", text: $viewModel.searchText)
-                        .focused($isSearchFieldFocused)
-                        .textFieldStyle(PlainTextFieldStyle())
-                        .onSubmit {
-                            viewModel.searchCustomers()
-                        }
-                } else {
-                    TextField("Müşteri adı ile arama yapın...", text: $viewModel.searchText, onCommit: {
+                Group {
+                    if #available(iOS 15.0, *) {
+                        // iOS 15+ gelişmiş özellikler
+                        TextField("Müşteri ara...", text: $viewModel.searchText)
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 16))
+                            .autocorrectionDisabled()
+                            .textInputAutocapitalization(.words)
+                            .submitLabel(.search)
+                            .focused($isSearchFieldFocused)
+                            .onSubmit {
+                                if viewModel.searchText.count >= 2 {
+                                    viewModel.searchCustomers()
+                                }
+                            }
+                            .onTapGesture {
+                                // Manuel focus tetikle
+                                isSearchFieldFocused = true
+                            }
+                    } else {
+                        // iOS 14 fallback
+                        TextField("Müşteri ara...", text: $viewModel.searchText)
+                            .textFieldStyle(PlainTextFieldStyle())
+                            .font(.system(size: 16))
+                            .autocapitalization(.words)
+                            .disableAutocorrection(true)
+                    }
+                }
+                .onChange(of: viewModel.searchText) { newValue in
+                    if newValue.count >= 2 {
                         viewModel.searchCustomers()
-                    })
-                    .textFieldStyle(PlainTextFieldStyle())
+                    } else if newValue.isEmpty {
+                        viewModel.customers = []
+                        viewModel.showDropdown = false
+                    }
                 }
                 
                 if viewModel.isSearching {
-                    ProgressView()
-                        .scaleEffect(0.8)
-                } else if !viewModel.searchText.isEmpty {
-                    Button(action: {
-                        viewModel.clearSearch()
-                    }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(.secondary)
-                            .font(.system(size: 16))
+                    if #available(iOS 15.0, *) {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                            .progressViewStyle(CircularProgressViewStyle(tint: .blue))
+                    } else {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                            .progressViewStyle(CircularProgressViewStyle())
                     }
                 }
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+            .padding(.horizontal, 16)  // Horizontal padding artırıldı
+            .padding(.vertical, 16)    // Vertical padding artırıldı (yükseklik için)
             .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(Color(.systemGray6))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(viewModel.showDropdown ? Color.blue : Color.clear, lineWidth: 1)
+                RoundedRectangle(cornerRadius: 12)  // Corner radius artırıldı
+                    .fill(Color(.systemBackground))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color(.systemGray4), lineWidth: 1.5)
+                    )
+                    .shadow(color: .black.opacity(0.03), radius: 2, x: 0, y: 1)  // Subtle shadow
             )
             
-            // Dropdown arama sonuçları (Android Spinner benzeri)
+            // Dropdown müşteri listesi
             if viewModel.showDropdown && !viewModel.customers.isEmpty {
-                VStack(spacing: 0) {
-                    ForEach(viewModel.customers.prefix(5), id: \.name) { customer in
-                        customerDropdownItem(customer: customer)
+                customerDropdown
+            }
+        }
+    }
+    
+    // Müşteri dropdown listesi (BarcodeUploadView ile birebir aynı)
+    private var customerDropdown: some View {
+        VStack(spacing: 0) {
+            ForEach(viewModel.customers.prefix(5)) { customer in
+                CustomerRow(customer: customer) {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        viewModel.selectedCustomer = customer
+                        viewModel.showDropdown = false
+                        viewModel.searchText = ""
+                        viewModel.customers = []
+                        
+                        // 🎯 iOS 15+ için focus'u kaldır
+                        if #available(iOS 15.0, *) {
+                            isSearchFieldFocused = false
+                        }
                     }
                 }
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color(.systemBackground))
-                        .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
-                )
-                .animation(.easeInOut(duration: 0.2), value: viewModel.showDropdown)
             }
         }
-        .onChange(of: viewModel.searchText) { _ in
-            viewModel.searchCustomers()
-        }
+        .background(Color(.systemBackground))
+        .cornerRadius(8)
+        .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+        .transition(.opacity.combined(with: .move(edge: .top)))
     }
     
-    private func customerDropdownItem(customer: Customer) -> some View {
-        Button(action: {
-            viewModel.selectCustomer(customer)
-        }) {
-            HStack {
-                Text(customer.name)
-                    .font(.system(size: 15))
-                    .foregroundColor(.primary)
-                    .multilineTextAlignment(.leading)
-                
-                Spacer()
-                
-                Image(systemName: "checkmark")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(.blue)
-                    .opacity(0)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-            .background(Color(.systemBackground))
-        }
-        .buttonStyle(PlainButtonStyle())
-        .background(
-            Rectangle()
-                .fill(Color(.systemGray6).opacity(0.5))
-                .opacity(0)
-        )
-    }
-    
-    // MARK: - Resim Yükleme Bölümü (Android like)
+    // MARK: - Resim Yükleme Bölümü (BarcodeUploadView ile birebir aynı)
     private var imageUploadSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Resim Ekle")
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Müşteri Resmi Yükleme")
                 .font(.headline)
                 .fontWeight(.semibold)
             
-            // Resim seçme butonları (Android like)
+            // Android like button layout
             HStack(spacing: 12) {
-                // Galeri butonu
+                // Kamera butonu (birincil - Android like)
+                Button(action: {
+                    viewModel.showingCamera = true
+                }) {
+                    HStack {
+                        Image(systemName: "camera.fill")
+                            .font(.system(size: 16, weight: .medium))
+                        Text("Hızlı Çekim")
+                            .font(.system(size: 15, weight: .medium))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(8)
+                }
+                
+                // Galeri butonu (ikincil - Android like)
                 PhotosPicker(
                     selection: $selectedPhotos,
                     maxSelectionCount: 10,
                     matching: .images
                 ) {
                     HStack {
-                        Image(systemName: "photo.on.rectangle")
-                            .font(.system(size: 18))
-                        Text("Galeri")
+                        Image(systemName: "photo.fill")
+                            .font(.system(size: 16, weight: .medium))
+                        Text("Galeriden")
                             .font(.system(size: 15, weight: .medium))
                     }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 20)
+                    .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(Color.blue)
-                    )
-                }
-                
-                // Kamera butonu
-                Button(action: {
-                    viewModel.showingCamera = true
-                }) {
-                    HStack {
-                        Image(systemName: "camera")
-                            .font(.system(size: 18))
-                        Text("Kamera")
-                            .font(.system(size: 15, weight: .medium))
-                    }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(Color.green)
-                    )
+                    .background(Color(.systemGray5))
+                    .foregroundColor(.primary)
+                    .cornerRadius(8)
                 }
             }
         }
+        .transition(.opacity.combined(with: .move(edge: .top)))
     }
     
     // MARK: - Kayıtlı Resimler Bölümü (Android Accordion design)
