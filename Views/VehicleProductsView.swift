@@ -225,7 +225,7 @@ public struct VehicleProductsView: View {
         }
         .listStyle(PlainListStyle())
         .listSectionSeparator(.hidden)
-        .listRowSpacing(0)
+        .listRowSpacing(2)
         .refreshable {
             viewModel.refresh()
         }
@@ -287,10 +287,10 @@ public struct VehicleProductsView: View {
                 .fill(Color.blue)
         )
         .padding(.horizontal, 10)
-        .padding(.vertical, 0)
+        .padding(.vertical, 2)
         .listRowSeparator(.hidden)
         .listRowBackground(Color.clear)
-        .listRowInsets(EdgeInsets(top: 2, leading: 0, bottom: 2, trailing: 0))
+        .listRowInsets(EdgeInsets(top: 3, leading: 0, bottom: 3, trailing: 0))
     }
     
     // MARK: - Ürün Item View
@@ -384,10 +384,10 @@ public struct VehicleProductsView: View {
         .cornerRadius(12)
         .shadow(color: .black.opacity(0.1), radius: 3, x: 0, y: 2)
         .padding(.horizontal, 10)
-        .padding(.vertical, 0)
+        .padding(.vertical, 1)
         .listRowSeparator(.hidden)
         .listRowBackground(Color.clear)
-        .listRowInsets(EdgeInsets(top: 1, leading: 0, bottom: 1, trailing: 0))
+        .listRowInsets(EdgeInsets(top: 2, leading: 0, bottom: 2, trailing: 0))
     }
     
     // MARK: - Login Waiting View
