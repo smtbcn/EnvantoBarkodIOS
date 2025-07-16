@@ -654,8 +654,8 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
             
             await MainActor.run {
                 if dbDeleteSuccess || fileDeleteSuccess {
-                    // En az birisi başarılıysa UI'dan kaldır
-                    savedImages.removeAll { $0.id == image.id }
+                    // En az birisi başarılıysa UI'dan kaldır (database ID ile)
+                    savedImages.removeAll { $0.databaseId == image.id }
                     
                     // Müşteri gruplarını güncelle
                     loadCustomerImageGroups()

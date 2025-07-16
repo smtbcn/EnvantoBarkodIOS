@@ -5,7 +5,7 @@ import PhotosUI
 
 
 // MARK: - CustomerImagesViewModel
-class CustomerImagesViewModel: ObservableObject, DeviceAuthCallback {
+class CustomerImagesViewModel: ObservableObject {
     
     // MARK: - Published Properties
     @Published var isLoading = false
@@ -31,8 +31,8 @@ class CustomerImagesViewModel: ObservableObject, DeviceAuthCallback {
     
     // MARK: - Database Initialization
     private func initializeDatabase() {
-        let dbManager = DatabaseManager.getInstance()
         // Database'in müşteri resimleri için hazır olduğundan emin ol
+        _ = DatabaseManager.getInstance()
     }
     
     // MARK: - Device Authorization (DeviceAuthCallback)
