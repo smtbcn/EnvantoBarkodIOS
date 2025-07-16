@@ -212,10 +212,17 @@ public struct VehicleProductsView: View {
                             productItemView(product: product)
                         }
                     }
+                } header: {
+                    // Section header boşluğunu minimize et
+                    EmptyView()
+                } footer: {
+                    // Section footer boşluğunu minimize et
+                    EmptyView()
                 }
             }
         }
         .listStyle(PlainListStyle())
+        .listSectionSeparator(.hidden)
         .refreshable {
             viewModel.refresh()
         }
@@ -223,53 +230,53 @@ public struct VehicleProductsView: View {
     
     // MARK: - Müşteri Header View
     private func customerHeaderView(group: VehicleProductsViewModel.CustomerGroup) -> some View {
-        Button(action: {
-            viewModel.toggleCustomerExpansion(group.customerName)
-        }) {
-            HStack {
-                // Kişi ikonu
-                Image(systemName: "person.circle.fill")
+        HStack {
+            // Kişi ikonu
+            Image(systemName: "person.circle.fill")
+                .foregroundColor(.white)
+                .font(.system(size: 24))
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text(group.customerName)
+                    .font(.system(size: 15, weight: .bold))
                     .foregroundColor(.white)
-                    .font(.system(size: 24))
+                    .multilineTextAlignment(.leading)
                 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(group.customerName)
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundColor(.white)
-                        .multilineTextAlignment(.leading)
-                    
-                    Text("\(group.productCount) ürün")
-                        .font(.system(size: 11))
-                        .foregroundColor(.white.opacity(0.8))
-                }
-                
-                Spacer()
-                
-                // Checkbox
-                Button(action: {
-                    viewModel.toggleCustomerSelection(group.customerName)
-                }) {
-                    Image(systemName: group.isSelected ? "checkmark.square.fill" : "square")
-                        .foregroundColor(.white)
-                        .font(.system(size: 20))
-                }
-                
-                // Genişlet/daralt ikonu
+                Text("\(group.productCount) ürün")
+                    .font(.system(size: 11))
+                    .foregroundColor(.white.opacity(0.8))
+            }
+            
+            Spacer()
+            
+            // Checkbox - sadece seçim yapar
+            Button(action: {
+                viewModel.toggleCustomerSelection(group.customerName)
+            }) {
+                Image(systemName: group.isSelected ? "checkmark.square.fill" : "square")
+                    .foregroundColor(.white)
+                    .font(.system(size: 20))
+            }
+            .buttonStyle(PlainButtonStyle())
+            
+            // Genişlet/daralt butonu - sadece genişletme yapar
+            Button(action: {
+                viewModel.toggleCustomerExpansion(group.customerName)
+            }) {
                 Image(systemName: group.isExpanded ? "chevron.up" : "chevron.down")
                     .foregroundColor(.white)
                     .font(.system(size: 16, weight: .medium))
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 12)
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(Color.blue)
-            )
-            .contentShape(Rectangle())
+            .buttonStyle(PlainButtonStyle())
         }
-        .buttonStyle(PlainButtonStyle())
+        .padding(.horizontal, 12)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color.blue)
+        )
         .padding(.horizontal, 10)
-        .padding(.vertical, 3)
+        .padding(.vertical, 1)
         .listRowSeparator(.hidden)
         .listRowBackground(Color.clear)
     }
@@ -365,7 +372,7 @@ public struct VehicleProductsView: View {
         .cornerRadius(12)
         .shadow(color: .black.opacity(0.1), radius: 3, x: 0, y: 2)
         .padding(.horizontal, 10)
-        .padding(.vertical, 2)
+        .padding(.vertical, 1)
         .listRowSeparator(.hidden)
         .listRowBackground(Color.clear)
     }

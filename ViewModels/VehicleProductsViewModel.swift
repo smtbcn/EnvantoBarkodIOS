@@ -77,15 +77,9 @@ public class VehicleProductsViewModel: ObservableObject, DeviceAuthCallback {
     
     // MARK: - User Login
     private func checkUserLogin() {
-        if LoginManager.isLoggedIn() && !LoginManager.isSessionExpired() {
-            currentUser = LoginManager.getCurrentUser()
-            isUserLoggedIn = true
-            Task {
-                await loadVehicleProducts()
-            }
-        } else {
-            showLoginSheet = true
-        }
+        // Her zaman login dialog'u göster (kullanıcı seçimi için)
+        // Session varsa kayıtlı kullanıcı olarak gösterilecek
+        showLoginSheet = true
     }
     
     public func onLoginSuccess(_ user: User) {
