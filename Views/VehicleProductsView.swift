@@ -280,14 +280,14 @@ public struct VehicleProductsView: View {
             }
             .buttonStyle(PlainButtonStyle())
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
         .background(
             RoundedRectangle(cornerRadius: 10)
                 .fill(Color.blue)
         )
-        .padding(.horizontal, 10)
-        .padding(.vertical, 2)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 3)
         .listRowSeparator(.hidden)
         .listRowBackground(Color.clear)
         .listRowInsets(EdgeInsets(top: 3, leading: 0, bottom: 3, trailing: 0))

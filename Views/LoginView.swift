@@ -95,7 +95,7 @@ public struct LoginView: View {
                             }
                         }
                     }
-                    .frame(maxHeight: 120)
+                    .frame(maxHeight: min(CGFloat(savedUsers.count * 60 + 20), 300))
                 }
                 
                 // Loading Indicator
