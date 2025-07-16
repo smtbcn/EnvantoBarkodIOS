@@ -220,7 +220,7 @@ class CustomerImagesViewModel: ObservableObject, DeviceAuthCallback {
         loadCustomerImageGroups()
     }
     
-    private func loadCustomerImageGroups() {
+    func loadCustomerImageGroups() {
         Task {
             let groups = await loadCustomerImageGroupsFromDatabase()
             await MainActor.run {
