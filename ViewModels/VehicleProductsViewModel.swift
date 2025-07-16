@@ -2,7 +2,7 @@ import Foundation
 import SwiftUI
 
 @MainActor
-public class VehicleProductsViewModel: ObservableObject {
+public class VehicleProductsViewModel: ObservableObject, DeviceAuthCallback {
     @Published public var products: [VehicleProduct] = []
     @Published public var isLoading = false
     @Published public var errorMessage: String?
@@ -15,8 +15,6 @@ public class VehicleProductsViewModel: ObservableObject {
     
     // Kullanıcı bilgileri
     @Published public var currentUserName: String = ""
-    
-    private let deviceAuthManager = DeviceAuthManager.shared
     
     public struct CustomerGroup: Identifiable {
         public let id = UUID()
@@ -101,22 +99,7 @@ public class VehicleProductsViewModel: ObservableObject {
     // MARK: - Private Methods
     
     private func checkDeviceAuthorizationAndLoad() {
-        Task {
-            isLoading = true
-            
-            do {
-                let isAuthorized = try await deviceAuthManager.checkDeviceAuthorization()
-                if isAuthorized {
-                    await loadVehicleProducts()
-                } else {
-                    showErrorMessage("Cihaz yetkilendirmesi başarısız")
-                }
-            } catch {
-                showErrorMessage("Yetkilendirme hatası: \(error.localizedDescription)")
-            }
-            
-            isLoading = false
-        }
+        DeviceAuthManager.checkDeviceAuthorization(callback: self)
     }
     
     private func loadVehicleProducts() async {
@@ -261,5 +244,26 @@ public class VehicleProductsViewModel: ObservableObject {
     
     public var isEmpty: Bool {
         products.isEmpty
+    }
+    
+    // MARK: - DeviceAuthCallback Implementation
+    public func onAuthSuccess() {
+        isLoading = false
+        Task {
+            await loadVehicleProducts()
+        }
+    }
+    
+    public func onAuthFailure() {
+        isLoading = false
+        showErrorMessage("Cihaz yetkilendirme başarısız!")
+    }
+    
+    public func onShowLoading() {
+        isLoading = true
+    }
+    
+    public func onHideLoading() {
+        isLoading = false
     }
 } 
