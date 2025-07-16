@@ -54,22 +54,7 @@ class CustomerImagesViewModel: ObservableObject, DeviceAuthCallback {
         }
     }
     
-    func onAuthSuccess() {
-        isDeviceAuthorized = true
-        refreshSavedImages()
-    }
-    
-    func onAuthFailure() {
-        isDeviceAuthorized = false
-    }
-    
-    func onShowLoading() {
-        isLoading = true
-    }
-    
-    func onHideLoading() {
-        isLoading = false
-    }
+
     
     // MARK: - Customer Search
     func searchCustomers() {
@@ -96,8 +81,12 @@ class CustomerImagesViewModel: ObservableObject, DeviceAuthCallback {
                 if !offlineResults.isEmpty {
                     customers = offlineResults
                     isSearching = false
-                    return
                 }
+            }
+            
+            // Eğer offline sonuç varsa online aramaya gerek yok
+            if !offlineResults.isEmpty {
+                return
             }
             
             // Online arama
@@ -368,7 +357,8 @@ class CustomerImagesViewModel: ObservableObject, DeviceAuthCallback {
         DispatchQueue.main.async {
             self.isDeviceAuthorized = false
             self.isLoading = false
-            self.showError("Cihaz yetkilendirme başarısız!")
+            self.errorMessage = "Cihaz yetkilendirme başarısız!"
+            self.showingError = true
         }
     }
     
