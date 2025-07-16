@@ -183,16 +183,16 @@ public struct LoginView: View {
         savedUsers = LoginManager.getSavedUsers()
     }
     
-    private func showError(_ message: String) {
+    internal func showError(_ message: String) {
         alertMessage = message
         showAlert = true
     }
     
-    private func setLoading(_ loading: Bool) {
+    internal func setLoading(_ loading: Bool) {
         isLoading = loading
     }
     
-    private func handleLoginSuccess(_ user: User) {
+    internal func handleLoginSuccess(_ user: User) {
         // Beni hatırla seçiliyse kaydet
         if rememberMe {
             LoginManager.saveUserForRemembering(
