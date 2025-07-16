@@ -2,32 +2,30 @@ import SwiftUI
 
 public struct VehicleProductsView: View {
     @StateObject private var viewModel = VehicleProductsViewModel()
-    @Environment(\.dismiss) private var dismiss
     @State private var showDeliveryConfirmation = false
     @State private var showReturnConfirmation = false
     @State private var productToReturn: VehicleProduct?
     
     public var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                // Kullanıcı bilgisi ve teslim butonu
-                userInfoHeader
-                
-                // Ana içerik
-                mainContent
-            }
-            .navigationTitle("Araçtaki Ürünler")
-            .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Geri") {
-                        dismiss()
-                    }
+        VStack(spacing: 0) {
+            // Kullanıcı bilgisi ve teslim butonu
+            userInfoHeader
+            
+            // Ana içerik
+            mainContent
+        }
+                .navigationTitle("Araçtaki Ürünler")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button("Yenile") {
+                    viewModel.refresh()
                 }
             }
-            .onAppear {
-                viewModel.onAppear()
-            }
+        }
+        .onAppear {
+            viewModel.onAppear()
+        }
             .alert("Hata", isPresented: $viewModel.showError) {
                 Button("Tamam") { }
             } message: {
@@ -54,7 +52,6 @@ public struct VehicleProductsView: View {
                 }
             }
         }
-        .navigationViewStyle(StackNavigationViewStyle())
         .sheet(isPresented: $viewModel.showLoginSheet) {
             LoginView(
                 onLoginSuccess: viewModel.onLoginSuccess,
