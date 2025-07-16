@@ -324,10 +324,6 @@ class CustomerImagesViewModel: ObservableObject, DeviceAuthCallback {
     }
     
     private func createShareText(customerName: String, imageCount: Int) -> String {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "dd.MM.yyyy"
-        let currentDate = dateFormatter.string(from: Date())
-        
         return "\(customerName)\n"
     }
     
@@ -359,6 +355,32 @@ class CustomerImagesViewModel: ObservableObject, DeviceAuthCallback {
         
         rootViewController.present(activityViewController, animated: true)
     }
+    
+    // MARK: - DeviceAuthCallback Implementation
+    func onAuthSuccess() {
+        DispatchQueue.main.async {
+            self.isDeviceAuthorized = true
+            self.isLoading = false
+        }
+    }
+    
+    func onAuthFailure() {
+        DispatchQueue.main.async {
+            self.isDeviceAuthorized = false
+            self.isLoading = false
+            self.showError("Cihaz yetkilendirme başarısız!")
+        }
+    }
+    
+    func onShowLoading() {
+        DispatchQueue.main.async {
+            self.isLoading = true
+        }
+    }
+    
+    func onHideLoading() {
+        DispatchQueue.main.async {
+            self.isLoading = false
+        }
+    }
 }
-
- 

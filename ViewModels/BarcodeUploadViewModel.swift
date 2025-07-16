@@ -38,7 +38,7 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
     
     // MARK: - Database Initialization
     private func initializeDatabase() {
-        let dbManager = DatabaseManager.getInstance()
+        // Database başlatılması artık DatabaseManager.getInstance() çağrısında otomatik oluyor
     }
     
 
