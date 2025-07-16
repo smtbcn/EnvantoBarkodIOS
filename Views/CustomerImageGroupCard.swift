@@ -44,6 +44,10 @@ struct CustomerImageGroupCard: View {
                     }
                     .buttonStyle(PlainButtonStyle())
                     
+                    // Paylaş ve silme arasında ekstra boşluk (yanlışlıkla basılmasın)
+                    Spacer()
+                        .frame(width: 16)
+                    
                     // Müşteri klasörü silme butonu
                     Button(action: {
                         onDeleteCustomer()
