@@ -100,6 +100,9 @@ public struct VehicleProductsView: View {
                 // İlk yükleme
                 ProgressView("Ürünler yükleniyor...")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if !viewModel.isDeviceAuthorized {
+                // Cihaz yetkisiz - uyarı göster
+                unauthorizedDeviceView
             } else if viewModel.isEmpty {
                 // Boş durum
                 emptyStateView
@@ -108,6 +111,72 @@ public struct VehicleProductsView: View {
                 productsList
             }
         }
+    }
+    
+    // MARK: - Yetkisiz Cihaz Görünümü
+    private var unauthorizedDeviceView: some View {
+        VStack(spacing: 20) {
+            Spacer()
+            
+            Image(systemName: "exclamationmark.shield")
+                .font(.system(size: 80))
+                .foregroundColor(.orange)
+            
+            Text("Yetkilendirme Gerekli")
+                .font(.title)
+                .fontWeight(.bold)
+                .multilineTextAlignment(.center)
+            
+            Text("Bu cihaz araçtaki ürünleri görüntüleme işlemi için yetkilendirilmemiş. Lütfen sistem yöneticisine başvurun.")
+                .font(.body)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+            
+            // Cihaz ID göster
+            VStack(spacing: 10) {
+                Text("Cihaz Kimliği:")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                HStack {
+                    Text(DeviceIdentifier.getUniqueDeviceId())
+                        .font(.system(.body, design: .monospaced))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(8)
+                    
+                    Button(action: {
+                        UIPasteboard.general.string = DeviceIdentifier.getUniqueDeviceId()
+                        
+                        // Toast göster
+                        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                        impactFeedback.impactOccurred()
+                    }) {
+                        Image(systemName: "doc.on.doc")
+                            .font(.title2)
+                    }
+                }
+            }
+            
+            Button(action: {
+                viewModel.checkDeviceAuthorization()
+            }) {
+                HStack {
+                    Image(systemName: "arrow.clockwise")
+                    Text("Yeniden Kontrol Et")
+                }
+                .padding()
+                .background(Color.blue)
+                .foregroundColor(.white)
+                .cornerRadius(10)
+            }
+            
+            Spacer()
+        }
+        .padding()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     
     // MARK: - Boş Durum

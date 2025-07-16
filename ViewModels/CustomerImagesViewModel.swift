@@ -17,7 +17,6 @@ class CustomerImagesViewModel: ObservableObject, DeviceAuthCallback {
     @Published var customerImageGroups: [CustomerImageGroup] = []
     
     // MARK: - Error Handling
-    @Published var showingError = false
     @Published var errorMessage = ""
     
     // MARK: - Search State
@@ -368,7 +367,7 @@ class CustomerImagesViewModel: ObservableObject, DeviceAuthCallback {
     private func showError(_ message: String) async {
         await MainActor.run {
             errorMessage = message
-            showingError = true
+            // showingError kaldırıldı - sadece alert için kullanılıyor
         }
     }
     
@@ -385,8 +384,7 @@ class CustomerImagesViewModel: ObservableObject, DeviceAuthCallback {
         DispatchQueue.main.async {
             self.isDeviceAuthorized = false
             self.isLoading = false
-            self.errorMessage = "Cihaz yetkilendirme başarısız!"
-            self.showingError = true
+            // Sadece unauthorizedDeviceView göster, popup gösterme
         }
     }
     

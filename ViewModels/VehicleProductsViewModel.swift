@@ -5,6 +5,7 @@ import SwiftUI
 public class VehicleProductsViewModel: ObservableObject, DeviceAuthCallback {
     @Published public var products: [VehicleProduct] = []
     @Published public var isLoading = false
+    @Published public var isDeviceAuthorized = false
     @Published public var errorMessage: String?
     @Published public var showError = false
     @Published public var selectedCustomers: Set<String> = []
@@ -94,6 +95,11 @@ public class VehicleProductsViewModel: ObservableObject, DeviceAuthCallback {
     public func clearSelections() {
         selectedCustomers.removeAll()
         updateCustomerGroups()
+    }
+    
+    /// Cihaz yetkilendirme kontrolü (manuel)
+    public func checkDeviceAuthorization() {
+        checkDeviceAuthorizationAndLoad()
     }
     
     // MARK: - Private Methods
@@ -248,15 +254,13 @@ public class VehicleProductsViewModel: ObservableObject, DeviceAuthCallback {
     
     // MARK: - DeviceAuthCallback Implementation
     public func onAuthSuccess() {
-        isLoading = false
-        Task {
-            await loadVehicleProducts()
-        }
+        isDeviceAuthorized = true
+        onDeviceAuthSuccess()
     }
     
     public func onAuthFailure() {
-        isLoading = false
-        showErrorMessage("Cihaz yetkilendirme başarısız!")
+        isDeviceAuthorized = false
+        onDeviceAuthFailure()
     }
     
     public func onShowLoading() {
@@ -265,5 +269,17 @@ public class VehicleProductsViewModel: ObservableObject, DeviceAuthCallback {
     
     public func onHideLoading() {
         isLoading = false
+    }
+    
+    // MARK: - Device Auth Success/Failure Handlers
+    private func onDeviceAuthSuccess() {
+        // Cihaz yetkilendirme başarılı, ürünleri yükle
+        Task {
+            await loadVehicleProducts()
+        }
+    }
+    
+    private func onDeviceAuthFailure() {
+        // Cihaz yetkisiz - UI'da uyarı gösterilecek
     }
 } 
