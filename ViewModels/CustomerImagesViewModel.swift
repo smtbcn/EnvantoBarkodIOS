@@ -330,7 +330,7 @@ class CustomerImagesViewModel: ObservableObject, DeviceAuthCallback {
         guard !imagePaths.isEmpty else { return }
         
         // Tüm resim yollarını URL listesine çevir
-        let imageURLs = imagePaths.compactMap { path in
+        let imageURLs: [URL] = imagePaths.compactMap { path in
             // Dosya var mı kontrol et
             guard FileManager.default.fileExists(atPath: path) else {
                 print("⚠️ Dosya bulunamadı: \(path)")
