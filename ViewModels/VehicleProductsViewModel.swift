@@ -3,31 +3,38 @@ import SwiftUI
 
 @MainActor
 public class VehicleProductsViewModel: ObservableObject {
-    @Published var products: [VehicleProduct] = []
-    @Published var isLoading = false
-    @Published var errorMessage: String?
-    @Published var showError = false
-    @Published var selectedCustomers: Set<String> = []
-    @Published var expandedCustomers: Set<String> = []
+    @Published public var products: [VehicleProduct] = []
+    @Published public var isLoading = false
+    @Published public var errorMessage: String?
+    @Published public var showError = false
+    @Published public var selectedCustomers: Set<String> = []
+    @Published public var expandedCustomers: Set<String> = []
     
     // Gruplandırılmış veriler
-    @Published var customerGroups: [CustomerGroup] = []
+    @Published public var customerGroups: [CustomerGroup] = []
     
     // Kullanıcı bilgileri
-    @Published var currentUserName: String = ""
+    @Published public var currentUserName: String = ""
     
     private let deviceAuthManager = DeviceAuthManager.shared
     
     public struct CustomerGroup: Identifiable {
-        let id = UUID()
-        let customerName: String
-        let products: [VehicleProduct]
-        var productCount: Int { products.count }
-        var isExpanded: Bool
-        var isSelected: Bool
+        public let id = UUID()
+        public let customerName: String
+        public let products: [VehicleProduct]
+        public var productCount: Int { products.count }
+        public var isExpanded: Bool
+        public var isSelected: Bool
+        
+        public init(customerName: String, products: [VehicleProduct], isExpanded: Bool, isSelected: Bool) {
+            self.customerName = customerName
+            self.products = products
+            self.isExpanded = isExpanded
+            self.isSelected = isSelected
+        }
     }
     
-    init() {
+    public init() {
         // İlk yüklemede kullanıcı adını ayarla
         updateUserDisplay()
     }
@@ -35,19 +42,19 @@ public class VehicleProductsViewModel: ObservableObject {
     // MARK: - Public Methods
     
     /// Sayfa yüklendiğinde çağrılır
-    func onAppear() {
+    public func onAppear() {
         checkDeviceAuthorizationAndLoad()
     }
     
     /// Pull-to-refresh için
-    func refresh() {
+    public func refresh() {
         Task {
             await loadVehicleProducts()
         }
     }
     
     /// Müşteriyi seç/seçimi kaldır
-    func toggleCustomerSelection(_ customerName: String) {
+    public func toggleCustomerSelection(_ customerName: String) {
         if selectedCustomers.contains(customerName) {
             selectedCustomers.remove(customerName)
         } else {
@@ -57,7 +64,7 @@ public class VehicleProductsViewModel: ObservableObject {
     }
     
     /// Müşteri grubunu genişlet/daralt
-    func toggleCustomerExpansion(_ customerName: String) {
+    public func toggleCustomerExpansion(_ customerName: String) {
         if expandedCustomers.contains(customerName) {
             expandedCustomers.remove(customerName)
         } else {
@@ -67,7 +74,7 @@ public class VehicleProductsViewModel: ObservableObject {
     }
     
     /// Seçili müşterileri teslim et
-    func deliverSelectedCustomers() {
+    public func deliverSelectedCustomers() {
         guard !selectedCustomers.isEmpty else {
             showErrorMessage("Lütfen teslim edilecek müşterileri seçin")
             return
@@ -79,14 +86,14 @@ public class VehicleProductsViewModel: ObservableObject {
     }
     
     /// Ürünü depoya geri bırak
-    func returnProductToDepot(_ product: VehicleProduct) {
+    public func returnProductToDepot(_ product: VehicleProduct) {
         Task {
             await performReturnToDepot(product)
         }
     }
     
     /// Seçimleri temizle
-    func clearSelections() {
+    public func clearSelections() {
         selectedCustomers.removeAll()
         updateCustomerGroups()
     }
@@ -244,15 +251,15 @@ public class VehicleProductsViewModel: ObservableObject {
     
     // MARK: - Computed Properties
     
-    var selectedCustomerCount: Int {
+    public var selectedCustomerCount: Int {
         selectedCustomers.count
     }
     
-    var hasSelectedCustomers: Bool {
+    public var hasSelectedCustomers: Bool {
         !selectedCustomers.isEmpty
     }
     
-    var isEmpty: Bool {
+    public var isEmpty: Bool {
         products.isEmpty
     }
 } 

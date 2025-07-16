@@ -1,18 +1,33 @@
 import Foundation
 
 public struct VehicleProduct: Codable, Identifiable {
-    let id: Int
-    let musteriAdi: String
-    let urunAdi: String
-    let urunAdet: Int
-    let depoAktaran: String
-    let depoAktaranTarihi: String
-    let mevcutDepo: String
-    let prosap: String?
-    let teslimEden: String?
-    let teslimatDurumu: Int
-    let sevkDurumu: Int
-    let urunNotuDurum: Int
+    public let id: Int
+    public let musteriAdi: String
+    public let urunAdi: String
+    public let urunAdet: Int
+    public let depoAktaran: String
+    public let depoAktaranTarihi: String
+    public let mevcutDepo: String
+    public let prosap: String?
+    public let teslimEden: String?
+    public let teslimatDurumu: Int
+    public let sevkDurumu: Int
+    public let urunNotuDurum: Int
+    
+    public init(id: Int, musteriAdi: String, urunAdi: String, urunAdet: Int, depoAktaran: String, depoAktaranTarihi: String, mevcutDepo: String, prosap: String?, teslimEden: String?, teslimatDurumu: Int, sevkDurumu: Int, urunNotuDurum: Int) {
+        self.id = id
+        self.musteriAdi = musteriAdi
+        self.urunAdi = urunAdi
+        self.urunAdet = urunAdet
+        self.depoAktaran = depoAktaran
+        self.depoAktaranTarihi = depoAktaranTarihi
+        self.mevcutDepo = mevcutDepo
+        self.prosap = prosap
+        self.teslimEden = teslimEden
+        self.teslimatDurumu = teslimatDurumu
+        self.sevkDurumu = sevkDurumu
+        self.urunNotuDurum = urunNotuDurum
+    }
     
     enum CodingKeys: String, CodingKey {
         case id
@@ -32,8 +47,13 @@ public struct VehicleProduct: Codable, Identifiable {
 
 // MARK: - Response Models
 public struct DeliveryResponse: Codable {
-    let success: Bool
-    let message: String
+    public let success: Bool
+    public let message: String
+    
+    public init(success: Bool, message: String) {
+        self.success = success
+        self.message = message
+    }
     
     enum CodingKeys: String, CodingKey {
         case success
@@ -42,8 +62,13 @@ public struct DeliveryResponse: Codable {
 }
 
 public struct ReturnToDepotResponse: Codable {
-    let success: Bool
-    let message: String
+    public let success: Bool
+    public let message: String
+    
+    public init(success: Bool, message: String) {
+        self.success = success
+        self.message = message
+    }
     
     enum CodingKeys: String, CodingKey {
         case success
@@ -52,7 +77,7 @@ public struct ReturnToDepotResponse: Codable {
 }
 
 // MARK: - Helper Extensions
-extension VehicleProduct {
+public extension VehicleProduct {
     /// Müşteri adına göre gruplandırma için kullanılır
     var customerName: String {
         return musteriAdi

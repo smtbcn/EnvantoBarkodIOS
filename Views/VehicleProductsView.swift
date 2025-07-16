@@ -7,7 +7,7 @@ public struct VehicleProductsView: View {
     @State private var showReturnConfirmation = false
     @State private var productToReturn: VehicleProduct?
     
-    var body: some View {
+    public var body: some View {
         NavigationView {
             VStack(spacing: 0) {
                 // Kullanıcı bilgisi ve teslim butonu
