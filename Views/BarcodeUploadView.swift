@@ -1016,11 +1016,11 @@ struct CustomerRow: View {
 
 // MARK: - Customer Image Card (Android Resim Yükleme tasarımı)
 struct CustomerImageCard: View {
-    let group: CustomerImageGroup
+    let group: BarcodeImageGroup
     let isExpanded: Bool
     let onToggle: () -> Void
     let onDeleteCustomer: () -> Void
-    let onDeleteImage: (SavedCustomerImage) -> Void
+    let onDeleteImage: (SavedImage) -> Void
     
     var body: some View {
         VStack(spacing: 0) {
@@ -1102,7 +1102,7 @@ struct CustomerImageCard: View {
 
 // MARK: - Android Image Row (Resim Yükleme'deki gibi)
 struct AndroidImageRow: View {
-    let image: SavedCustomerImage
+    let image: SavedImage
     let onDelete: () -> Void
     
     var body: some View {
@@ -1111,7 +1111,7 @@ struct AndroidImageRow: View {
             Group {
                 if image.fileExists {
                     // Dosya mevcut - normal AsyncImage
-                    AsyncImage(url: URL(fileURLWithPath: image.localPath)) { phase in
+                    AsyncImage(url: URL(fileURLWithPath: image.imagePath)) { phase in
                         switch phase {
                         case .success(let image):
                             image
@@ -1160,7 +1160,7 @@ struct AndroidImageRow: View {
             // Orta: Dosya bilgileri (Android like)
             VStack(alignment: .leading, spacing: 4) {
                 // Dosya adı (sadece filename)
-                Text(extractFileName(from: image.localPath))
+                Text(extractFileName(from: image.imagePath))
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(.primary)
                     .lineLimit(1)
@@ -1186,12 +1186,12 @@ struct AndroidImageRow: View {
                 
                 // Tarih ve yükleyen - 2 satır
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Tarih: \(formattedDate(image.date))")
+                    Text("Tarih: \(formattedDate(image.uploadDate))")
                         .font(.caption)
                     .foregroundColor(.secondary)
                         .lineLimit(1)
                     
-                    Text("Yükleyen: \(getUploaderName())")
+                    Text("Yükleyen: \(image.yukleyen)")
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .lineLimit(1)
@@ -1223,10 +1223,7 @@ struct AndroidImageRow: View {
         return formatter.string(from: date)
     }
     
-    private func getUploaderName() -> String {
-        // 🗄️ Database'den yukleyen bilgisini kullan
-        return image.uploadedBy.isEmpty ? "Bilinmeyen Kullanıcı" : image.uploadedBy
-    }
+
     
     private func getUploadStatusIcon() -> String {
         // Dosya yoksa farklı ikon göster

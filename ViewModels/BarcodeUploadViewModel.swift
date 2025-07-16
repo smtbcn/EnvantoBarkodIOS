@@ -18,7 +18,7 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
     @Published var uploadProgress: Float = 0.0
     @Published var isUploading = false
     @Published var savedImages: [SavedImage] = []
-    @Published var customerImageGroups: [CustomerImageGroup] = []
+    @Published var customerImageGroups: [BarcodeImageGroup] = []
     
     // MARK: - Error Handling
     @Published var showingError = false
@@ -331,7 +331,7 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         }
         
         let dbManager = DatabaseManager.getInstance()
-        var groups: [CustomerImageGroup] = []
+        var groups: [BarcodeImageGroup] = []
         
         // 🗄️ DATABASE-FIRST YAKLAŞIM: Database'deki tüm resimleri al
         let allDatabaseImages = dbManager.getAllImages()  // Tüm resimler (pending + uploaded)
@@ -364,20 +364,10 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
             }
             
             if !savedImages.isEmpty {
-                // SavedImage'ları SavedCustomerImage'a dönüştür
-                let customerImages = savedImages.map { savedImage in
-                    SavedCustomerImage(
-                        id: savedImage.databaseId,
-                        customerName: savedImage.customerName,
-                        imagePath: savedImage.imagePath,
-                        date: savedImage.uploadDate,
-                        uploadedBy: savedImage.yukleyen
-                    )
-                }
-                
-                let group = CustomerImageGroup(
+                // SavedImage'ları direk kullan (upload durumu korunur)
+                let group = BarcodeImageGroup(
                     customerName: customerName.replacingOccurrences(of: "_", with: " "),  // Display format
-                    images: customerImages.sorted { $0.date > $1.date }
+                    images: savedImages.sorted { $0.uploadDate > $1.uploadDate }
                 )
                 groups.append(group)
             }
@@ -642,12 +632,12 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
     }
     
     // MARK: - Delete Image
-    func deleteImage(_ image: SavedCustomerImage) {
+    func deleteImage(_ image: SavedImage) {
         Task {
             let dbManager = DatabaseManager.getInstance()
             
             // 1️⃣ Önce database kaydını sil
-            let dbDeleteSuccess = dbManager.deleteBarkodResim(id: image.id)
+            let dbDeleteSuccess = dbManager.deleteBarkodResim(id: image.databaseId)
             
             // 2️⃣ Sonra dosyayı sil (ImageStorageManager)
             let fileDeleteSuccess = await ImageStorageManager.deleteImage(at: image.imagePath)
@@ -655,7 +645,7 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
             await MainActor.run {
                 if dbDeleteSuccess || fileDeleteSuccess {
                     // En az birisi başarılıysa UI'dan kaldır (database ID ile)
-                    savedImages.removeAll { $0.databaseId == image.id }
+                    savedImages.removeAll { $0.databaseId == image.databaseId }
                     
                     // Müşteri gruplarını güncelle
                     loadCustomerImageGroups()
@@ -770,6 +760,22 @@ struct SavedImage: Identifiable {
     let databaseId: Int  // Database record ID'si
     let fileExists: Bool  // 📁 Dosya varlık durumu
 } 
+
+// MARK: - Barcode Image Group Model (Barkod resimleri için)
+struct BarcodeImageGroup: Codable, Identifiable {
+    let id = UUID()
+    let customerName: String
+    let images: [SavedImage]
+    let imageCount: Int
+    let lastImageDate: Date
+    
+    init(customerName: String, images: [SavedImage]) {
+        self.customerName = customerName
+        self.images = images
+        self.imageCount = images.count
+        self.lastImageDate = images.map(\.uploadDate).max() ?? Date()
+    }
+}
 
 // CustomerImageGroup artık Models/Customer.swift'de tanımlı
 
