@@ -300,7 +300,8 @@ class CustomerImagesViewModel: ObservableObject, DeviceAuthCallback {
             let key = "whatsapp_shared_time_\(customerName.replacingOccurrences(of: " ", with: "_"))"
             let lastSharedTime = prefs.double(forKey: key)
             let currentTime = Date().timeIntervalSince1970
-            let fiveMinutesInSeconds: Double = 5 * 60
+            let fiveMinutesInSeconds: Double = 0
+            //let fiveMinutesInSeconds: Double = 5 * 60 5 dakika bekleme süresi kaldırıldı
             
             if (currentTime - lastSharedTime) < fiveMinutesInSeconds {
                 await showError("Bu müşteri için 5 dakika içinde tekrar paylaşım yapamazsınız")
