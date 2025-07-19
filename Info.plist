@@ -42,6 +42,12 @@
     <key>NSCameraUsageDescription</key>
     <string>Bu uygulama barkod taramak için kamera kullanır.</string>
     
+    <!-- Files App Erişimi -->
+    <key>UIFileSharingEnabled</key>
+    <true/>
+    <key>LSSupportsOpeningDocumentsInPlace</key>
+    <true/>
+    
     <!-- API Ayarları -->
     <key>API_BASE_URL</key>
     <string>https://your-api-server.com/api</string>

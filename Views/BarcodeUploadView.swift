@@ -2,7 +2,6 @@ import SwiftUI
 import PhotosUI
 import AVFoundation
 import Combine
-import QuickLook
 
 // Gerçek kamera view implementasyonu (Android design benzeri)
 struct CameraView: View {
@@ -1106,20 +1105,24 @@ struct CustomerImageCard: View {
         )
     }
     
-    // 🎯 Basit resim önizleme - iOS QuickLook
+    // 🎯 Basit resim önizleme - Sheet ile
     private func previewImage(imagePath: String) {
-        guard FileManager.default.fileExists(atPath: imagePath) else { return }
+        guard FileManager.default.fileExists(atPath: imagePath) else {
+            print("⚠️ Resim dosyası bulunamadı: \(imagePath)")
+            return
+        }
         
+        print("📁 Resim yolu: \(imagePath)")
+        
+        // Basit sheet ile resim göster
         let url = URL(fileURLWithPath: imagePath)
-        
-        // iOS'un yerleşik QuickLook önizlemesi
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
            let window = windowScene.windows.first,
            let rootVC = window.rootViewController {
             
-            let previewController = QLPreviewController()
-            previewController.dataSource = QuickLookDataSource(fileURL: url)
-            rootVC.present(previewController, animated: true)
+            let imageViewController = SimpleImageViewController(imageURL: url)
+            let navController = UINavigationController(rootViewController: imageViewController)
+            rootVC.present(navController, animated: true)
         }
     }
 }
@@ -1349,20 +1352,98 @@ struct LoadingOverlay: View {
     }
 }
 
-// MARK: - QuickLook Data Source (Resim önizleme için)
-class QuickLookDataSource: NSObject, QLPreviewControllerDataSource {
-    private let fileURL: URL
+// MARK: - Simple Image View Controller (Resim önizleme için)
+class SimpleImageViewController: UIViewController {
+    private let imageURL: URL
+    private var scrollView: UIScrollView!
+    private var imageView: UIImageView!
     
-    init(fileURL: URL) {
-        self.fileURL = fileURL
+    init(imageURL: URL) {
+        self.imageURL = imageURL
+        super.init(nibName: nil, bundle: nil)
     }
     
-    func numberOfPreviewItems(in controller: QLPreviewController) -> Int {
-        return 1
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
     }
     
-    func previewController(_ controller: QLPreviewController, previewItemAt index: Int) -> QLPreviewItem {
-        return fileURL as QLPreviewItem
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        view.backgroundColor = .black
+        title = "Resim Önizleme"
+        
+        // Navigation items
+        navigationItem.leftBarButtonItem = UIBarButtonItem(
+            title: "Kapat", 
+            style: .done, 
+            target: self, 
+            action: #selector(closePressed)
+        )
+        
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            barButtonSystemItem: .action, 
+            target: self, 
+            action: #selector(sharePressed)
+        )
+        
+        setupScrollView()
+        loadImage()
+    }
+    
+    private func setupScrollView() {
+        scrollView = UIScrollView()
+        scrollView.delegate = self
+        scrollView.minimumZoomScale = 0.5
+        scrollView.maximumZoomScale = 3.0
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(scrollView)
+        
+        NSLayoutConstraint.activate([
+            scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+        ])
+        
+        imageView = UIImageView()
+        imageView.contentMode = .scaleAspectFit
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.addSubview(imageView)
+        
+        NSLayoutConstraint.activate([
+            imageView.topAnchor.constraint(equalTo: scrollView.topAnchor),
+            imageView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
+            imageView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
+            imageView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
+            imageView.centerXAnchor.constraint(equalTo: scrollView.centerXAnchor),
+            imageView.centerYAnchor.constraint(equalTo: scrollView.centerYAnchor)
+        ])
+    }
+    
+    private func loadImage() {
+        if let imageData = try? Data(contentsOf: imageURL),
+           let image = UIImage(data: imageData) {
+            imageView.image = image
+        }
+    }
+    
+    @objc private func closePressed() {
+        dismiss(animated: true)
+    }
+    
+    @objc private func sharePressed() {
+        let activityVC = UIActivityViewController(activityItems: [imageURL], applicationActivities: nil)
+        if let popover = activityVC.popoverPresentationController {
+            popover.barButtonItem = navigationItem.rightBarButtonItem
+        }
+        present(activityVC, animated: true)
+    }
+}
+
+extension SimpleImageViewController: UIScrollViewDelegate {
+    func viewForZooming(in scrollView: UIScrollView) -> UIView? {
+        return imageView
     }
 }
 
