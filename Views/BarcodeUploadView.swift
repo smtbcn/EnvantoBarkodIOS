@@ -349,6 +349,11 @@ struct BarcodeUploadView: View {
     @State private var showingDeleteCustomerAlert = false
     @State private var customerToDelete: String = ""
     
+    // 🎯 Resim önizleme modal state
+    @State private var showingImagePreview = false
+    @State private var previewImagePath = ""
+    @State private var previewCustomerName = ""
+    
     // 🎯 iOS 15+ Focus State for TextField
     @available(iOS 15.0, *)
     @FocusState private var isSearchFieldFocused: Bool
@@ -375,11 +380,19 @@ struct BarcodeUploadView: View {
                 }
             }
         }
-            .alert("Uyarı", isPresented: $showingAlert) {
-                Button("Tamam") { }
-            } message: {
-                Text(alertMessage)
-            }
+                    .alert("Uyarı", isPresented: $showingAlert) {
+            Button("Tamam") { }
+        } message: {
+            Text(alertMessage)
+        }
+        // 🎯 Resim önizleme modal
+        .fullScreenCover(isPresented: $showingImagePreview) {
+            ImagePreviewModal(
+                imagePath: previewImagePath,
+                customerName: previewCustomerName,
+                isPresented: $showingImagePreview
+            )
+        }
             .alert("Toplu Resim Silme", isPresented: $showingDeleteCustomerAlert) {
                 Button("İptal", role: .cancel) { }
                 Button("Sil", role: .destructive) {
@@ -1073,9 +1086,14 @@ struct CustomerImageCard: View {
                     
                     LazyVStack(spacing: 0) {
                         ForEach(group.images) { image in
-                            AndroidImageRow(image: image) {
+                            AndroidImageRow(image: image, onDelete: {
                                 onDeleteImage(image)
-                            }
+                            }, onViewImage: {
+                                // 🎯 Resim önizleme modal'ını aç
+                                previewImagePath = image.imagePath
+                                previewCustomerName = image.customerName
+                                showingImagePreview = true
+                            })
                             
                             // Son item değilse divider ekle
                             if image.id != group.images.last?.id {
@@ -1104,58 +1122,57 @@ struct CustomerImageCard: View {
 struct AndroidImageRow: View {
     let image: SavedImage
     let onDelete: () -> Void
+    let onViewImage: () -> Void // 🎯 Resim önizleme callback'i
     
     var body: some View {
         HStack(spacing: 12) {
-            // Sol: Resim preview (Android like)
-            Group {
-                if image.fileExists {
-                    // Dosya mevcut - normal AsyncImage
-                    AsyncImage(url: URL(fileURLWithPath: image.imagePath)) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: 50, height: 50)
-                                .clipped()
-                                .cornerRadius(6)
-                                
-                        case .failure(_):
-                    Image(systemName: "photo")
-                                .font(.system(size: 20))
-                                .foregroundColor(.secondary)
-                                .frame(width: 50, height: 50)
-                                .background(Color(.systemGray6))
-                                .cornerRadius(6)
-                                
-                        case .empty:
-                            ProgressView()
-                                .frame(width: 50, height: 50)
-                                .background(Color(.systemGray6))
-                                .cornerRadius(6)
-                                
-                        @unknown default:
-                            EmptyView()
+            // Sol: Resim preview (Android like) - TIKLANABILIR
+            Button(action: {
+                onViewImage() // 🎯 Resim önizleme aç
+            }) {
+                Group {
+                    if image.fileExists {
+                        // Dosya mevcut - normal AsyncImage
+                        AsyncImage(url: URL(fileURLWithPath: image.imagePath)) { phase in
+                            switch phase {
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 50, height: 50)
+                                    .clipped()
+                                    .cornerRadius(6)
+                                    
+                            case .failure(_):
+                        Image(systemName: "photo")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(.secondary)
+                                    .frame(width: 50, height: 50)
+                                    .background(Color(.systemGray6))
+                                    .cornerRadius(6)
+                                    
+                            case .empty:
+                                ProgressView()
+                                    .frame(width: 50, height: 50)
+                                    .background(Color(.systemGray6))
+                                    .cornerRadius(6)
+                                    
+                            @unknown default:
+                                EmptyView()
+                            }
                         }
+                    } else {
+                        // Dosya mevcut değil - error göster
+                        Image(systemName: "exclamationmark.triangle")
+                            .font(.system(size: 20))
+                            .foregroundColor(.orange)
+                            .frame(width: 50, height: 50)
+                            .background(Color(.systemGray6))
+                            .cornerRadius(6)
                     }
-                } else {
-                    // Dosya yok - database kaydı mevcut ama dosya silinmiş
-                    Image(systemName: "doc.questionmark")
-                        .font(.system(size: 20))
-                        .foregroundColor(.orange)
-                        .frame(width: 50, height: 50)
-                        .background(Color(.systemGray6))
-                        .cornerRadius(6)
-                        .overlay(
-                            // Dosya bulunamadı işareti
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .font(.system(size: 12))
-                                .foregroundColor(.orange)
-                                .offset(x: 15, y: -15)
-                        )
                 }
             }
+            .buttonStyle(PlainButtonStyle())
             
             // Orta: Dosya bilgileri (Android like)
             VStack(alignment: .leading, spacing: 4) {

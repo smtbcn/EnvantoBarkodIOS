@@ -12,6 +12,11 @@ struct CustomerImagesView: View {
     @State private var showingDeleteCustomerAlert = false
     @State private var customerToDelete: String = ""
     
+    // 🎯 Resim önizleme modal state
+    @State private var showingImagePreview = false
+    @State private var previewImagePath = ""
+    @State private var previewCustomerName = ""
+    
     // 🎯 iOS 15+ Focus State for TextField
     @available(iOS 15.0, *)
     @FocusState private var isSearchFieldFocused: Bool
@@ -42,6 +47,14 @@ struct CustomerImagesView: View {
             Button("Tamam") { }
         } message: {
             Text(alertMessage)
+        }
+        // 🎯 Resim önizleme modal
+        .fullScreenCover(isPresented: $showingImagePreview) {
+            ImagePreviewModal(
+                imagePath: previewImagePath,
+                customerName: previewCustomerName,
+                isPresented: $showingImagePreview
+            )
         }
         .alert("Toplu Resim Silme", isPresented: $showingDeleteCustomerAlert) {
             Button("İptal", role: .cancel) { }
@@ -463,7 +476,10 @@ struct CustomerImagesView: View {
                                 viewModel.deleteImageByPath(imagePath)
                             },
                             onViewImage: { imagePath in
-                                // Resim görüntüleme işlemi (opsiyonel)
+                                // 🎯 Resim önizleme modal'ını aç
+                                previewImagePath = imagePath
+                                previewCustomerName = group.customerName
+                                showingImagePreview = true
                             },
                             onShareWhatsApp: { customerName, imagePaths in
                                 viewModel.shareToWhatsApp(customerName: customerName, imagePaths: imagePaths)

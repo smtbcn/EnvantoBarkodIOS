@@ -77,6 +77,8 @@ struct CustomerImageGroupCard: View {
                         ForEach(group.images, id: \.id) { image in
                             CustomerAndroidImageRow(image: image) {
                                 onDeleteImage(image.imagePath)
+                            } onViewImage: {
+                                onViewImage(image.imagePath)
                             }
                             
                             // Son item değilse divider ekle
@@ -106,58 +108,57 @@ struct CustomerImageGroupCard: View {
 struct CustomerAndroidImageRow: View {
     let image: SavedCustomerImage
     let onDelete: () -> Void
+    let onViewImage: () -> Void // 🎯 Resim önizleme callback'i
     
     var body: some View {
         HStack(spacing: 12) {
-            // Sol: Resim preview (Android like)
-            Group {
-                if image.fileExists {
-                    // Dosya mevcut - normal AsyncImage
-                    AsyncImage(url: URL(fileURLWithPath: image.imagePath)) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: 50, height: 50)
-                                .clipped()
-                                .cornerRadius(6)
-                                
-                        case .failure(_):
-                            Image(systemName: "photo")
-                                .font(.system(size: 20))
-                                .foregroundColor(.secondary)
-                                .frame(width: 50, height: 50)
-                                .background(Color(.systemGray6))
-                                .cornerRadius(6)
-                                
-                        case .empty:
-                            ProgressView()
-                                .frame(width: 50, height: 50)
-                                .background(Color(.systemGray6))
-                                .cornerRadius(6)
-                                
-                        @unknown default:
-                            EmptyView()
+            // Sol: Resim preview (Android like) - TIKLANABILIR
+            Button(action: {
+                onViewImage() // 🎯 Resim önizleme aç
+            }) {
+                Group {
+                    if image.fileExists {
+                        // Dosya mevcut - normal AsyncImage
+                        AsyncImage(url: URL(fileURLWithPath: image.imagePath)) { phase in
+                            switch phase {
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 50, height: 50)
+                                    .clipped()
+                                    .cornerRadius(6)
+                                    
+                            case .failure(_):
+                                Image(systemName: "photo")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(.secondary)
+                                    .frame(width: 50, height: 50)
+                                    .background(Color(.systemGray6))
+                                    .cornerRadius(6)
+                                    
+                            case .empty:
+                                ProgressView()
+                                    .frame(width: 50, height: 50)
+                                    .background(Color(.systemGray6))
+                                    .cornerRadius(6)
+                                    
+                            @unknown default:
+                                EmptyView()
+                            }
                         }
+                    } else {
+                        // Dosya mevcut değil - error göster
+                        Image(systemName: "exclamationmark.triangle")
+                            .font(.system(size: 20))
+                            .foregroundColor(.orange)
+                            .frame(width: 50, height: 50)
+                            .background(Color(.systemGray6))
+                            .cornerRadius(6)
                     }
-                } else {
-                    // Dosya yok - database kaydı mevcut ama dosya silinmiş
-                    Image(systemName: "doc.questionmark")
-                        .font(.system(size: 20))
-                        .foregroundColor(.orange)
-                        .frame(width: 50, height: 50)
-                        .background(Color(.systemGray6))
-                        .cornerRadius(6)
-                        .overlay(
-                            // Dosya bulunamadı işareti
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .font(.system(size: 12))
-                                .foregroundColor(.orange)
-                                .offset(x: 15, y: -15)
-                        )
                 }
             }
+            .buttonStyle(PlainButtonStyle())
             
             // Orta: Dosya bilgileri (Android like)
             VStack(alignment: .leading, spacing: 4) {
