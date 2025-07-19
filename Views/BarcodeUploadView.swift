@@ -32,25 +32,38 @@ struct CameraView: View {
                 Spacer()
                 
                 HStack {
-                    // Sol Grid - Flash Button (48dp equivalent)
-                    Group {
+                    // Sol Grid - Flash & Lens Buttons
+                    HStack(spacing: 8) {
+                        // Flash Button
                         if cameraModel.captureDevice?.hasTorch == true {
                             Button(action: {
                                 cameraModel.toggleFlash()
                             }) {
                                 Image(systemName: cameraModel.isFlashOn ? "bolt.fill" : "bolt.slash.fill")
-                                    .font(.system(size: 20, weight: .medium))
+                                    .font(.system(size: 18, weight: .medium))
                                     .foregroundColor(cameraModel.isFlashOn ? .yellow : .white)
-                                    .frame(width: 48, height: 48)
+                                    .frame(width: 44, height: 44)
                                     .background(
                                         Circle()
                                             .fill(Color.black.opacity(0.5))
                                     )
                             }
-                        } else {
-                            // Flash yoksa boş alan (layout dengesini koru)
-                            Spacer()
-                                .frame(width: 48, height: 48)
+                        }
+                        
+                        // Lens Switch Button (Ultra-wide available ise)
+                        if cameraModel.isUltraWideAvailable {
+                            Button(action: {
+                                cameraModel.toggleCameraLens()
+                            }) {
+                                Text(cameraModel.isUsingUltraWide ? "1×" : "0.5×")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .frame(width: 44, height: 44)
+                                    .background(
+                                        Circle()
+                                            .fill(Color.black.opacity(0.5))
+                                    )
+                            }
                         }
                     }
                     .frame(maxWidth: .infinity) // Equal grid weight
@@ -140,14 +153,19 @@ struct CameraView: View {
     }
 }
 
-// MARK: - Camera Model
+// MARK: - Enhanced Camera Model (Simple + Wide-Angle + Stabilization)
 class CameraModel: NSObject, ObservableObject {
     @Published var session = AVCaptureSession()
     @Published var isCapturing = false
     @Published var isFlashOn = false
+    @Published var isUltraWideAvailable = false
+    @Published var isUsingUltraWide = false
     
     private var photoOutput = AVCapturePhotoOutput()
     var captureDevice: AVCaptureDevice?
+    private var wideAngleDevice: AVCaptureDevice?
+    private var ultraWideDevice: AVCaptureDevice?
+    private var currentInput: AVCaptureDeviceInput?
     private var photoCompletion: ((UIImage?) -> Void)?
     
     override init() {
@@ -158,8 +176,17 @@ class CameraModel: NSObject, ObservableObject {
     private func setupCamera() {
         session.beginConfiguration()
         
-        // Kamera cihazını seç
-        guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else {
+        // Wide-angle camera (her iPhone'da var)
+        wideAngleDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
+        
+        // Ultra-wide camera (iPhone 11+ models)
+        if #available(iOS 13.0, *) {
+            ultraWideDevice = AVCaptureDevice.default(.builtInUltraWideCamera, for: .video, position: .back)
+            isUltraWideAvailable = ultraWideDevice != nil
+        }
+        
+        // Default olarak wide-angle başlat
+        guard let device = wideAngleDevice else {
             session.commitConfiguration()
             return
         }
@@ -174,6 +201,7 @@ class CameraModel: NSObject, ObservableObject {
             let input = try AVCaptureDeviceInput(device: device)
             if session.canAddInput(input) {
                 session.addInput(input)
+                currentInput = input
             }
             
             // Photo output
@@ -181,21 +209,33 @@ class CameraModel: NSObject, ObservableObject {
                 session.addOutput(photoOutput)
             }
             
-            // Kamera ayarları
+            // Enhanced kamera ayarları
             try device.lockForConfiguration()
             
+            // Continuous autofocus
             if device.isFocusModeSupported(.continuousAutoFocus) {
                 device.focusMode = .continuousAutoFocus
             }
             
+            // Auto exposure
             if device.isExposureModeSupported(.continuousAutoExposure) {
                 device.exposureMode = .continuousAutoExposure
+            }
+            
+            // Auto white balance
+            if device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) {
+                device.whiteBalanceMode = .continuousAutoWhiteBalance
+            }
+            
+            // Low light boost (iPhone 6s+)
+            if device.isLowLightBoostSupported {
+                device.automaticallyEnablesLowLightBoostWhenAvailable = true
             }
             
             device.unlockForConfiguration()
             
         } catch {
-            // Kamera ayarlama hatası
+            print("❌ Kamera ayarlama hatası: \(error)")
         }
         
         session.commitConfiguration()
@@ -221,12 +261,19 @@ class CameraModel: NSObject, ObservableObject {
         
         let settings = AVCapturePhotoSettings()
         
+        // High quality settings
+        settings.isHighResolutionPhotoEnabled = true
+        
+        // Image stabilization (iOS 14+)
+        if #available(iOS 14.0, *) {
+            settings.isAutoStillImageStabilizationEnabled = true
+        }
+        
         // Flash ayarı - hem photo flash hem torch kontrol et
         if let device = captureDevice {
             // Photo flash varsa onu kullan
             if device.hasFlash {
                 settings.flashMode = isFlashOn ? .on : .off
-    
             } 
             // Torch açıksa ve photo flash yoksa, torch'u geçici olarak güçlendir
             else if device.hasTorch && isFlashOn {
@@ -234,14 +281,41 @@ class CameraModel: NSObject, ObservableObject {
                     try device.lockForConfiguration()
                     device.torchMode = .on
                     device.unlockForConfiguration()
-    
                 } catch {
-    
+                    print("❌ Torch error: \(error)")
                 }
             }
         }
         
+        // Proper orientation handling
+        if let connection = photoOutput.connection(with: .video) {
+            updatePhotoOrientation(connection)
+        }
+        
         photoOutput.capturePhoto(with: settings, delegate: self)
+    }
+    
+    // 🎯 Proper Photo Orientation Handling
+    private func updatePhotoOrientation(_ connection: AVCaptureConnection) {
+        let deviceOrientation = UIDevice.current.orientation
+        let videoOrientation: AVCaptureVideoOrientation
+        
+        switch deviceOrientation {
+        case .portrait:
+            videoOrientation = .portrait
+        case .portraitUpsideDown:
+            videoOrientation = .portraitUpsideDown
+        case .landscapeLeft:
+            videoOrientation = .landscapeRight // Counter-intuitive but correct
+        case .landscapeRight:
+            videoOrientation = .landscapeLeft  // Counter-intuitive but correct
+        default:
+            videoOrientation = .portrait // Default fallback
+        }
+        
+        if connection.isVideoOrientationSupported {
+            connection.videoOrientation = videoOrientation
+        }
     }
     
     func toggleFlash() {
@@ -294,6 +368,71 @@ class CameraModel: NSObject, ObservableObject {
             device.unlockForConfiguration()
         } catch {
         }
+    }
+    
+    // 🎯 Lens Switching (Wide ↔ Ultra-Wide)
+    func toggleCameraLens() {
+        guard isUltraWideAvailable else { return }
+        
+        session.beginConfiguration()
+        
+        // Mevcut input'u kaldır
+        if let input = currentInput {
+            session.removeInput(input)
+        }
+        
+        // Yeni device seç
+        let targetDevice: AVCaptureDevice?
+        if isUsingUltraWide {
+            targetDevice = wideAngleDevice
+        } else {
+            targetDevice = ultraWideDevice
+        }
+        
+        guard let device = targetDevice else {
+            session.commitConfiguration()
+            return
+        }
+        
+        do {
+            // Yeni input oluştur
+            let newInput = try AVCaptureDeviceInput(device: device)
+            if session.canAddInput(newInput) {
+                session.addInput(newInput)
+                currentInput = newInput
+                captureDevice = device
+                
+                // Device ayarlarını yeniden yap
+                try device.lockForConfiguration()
+                
+                if device.isFocusModeSupported(.continuousAutoFocus) {
+                    device.focusMode = .continuousAutoFocus
+                }
+                
+                if device.isExposureModeSupported(.continuousAutoExposure) {
+                    device.exposureMode = .continuousAutoExposure
+                }
+                
+                if device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) {
+                    device.whiteBalanceMode = .continuousAutoWhiteBalance
+                }
+                
+                if device.isLowLightBoostSupported {
+                    device.automaticallyEnablesLowLightBoostWhenAvailable = true
+                }
+                
+                device.unlockForConfiguration()
+                
+                // UI state güncelle
+                DispatchQueue.main.async {
+                    self.isUsingUltraWide.toggle()
+                }
+            }
+        } catch {
+            print("❌ Lens switching error: \(error)")
+        }
+        
+        session.commitConfiguration()
     }
 }
 
@@ -410,7 +549,7 @@ struct BarcodeUploadView: View {
                 }
             }
             .sheet(isPresented: $viewModel.showingCamera) {
-                AdvancedCameraView { capturedImage in
+                CameraView { capturedImage in
                     // Çekilen resmi işle
                     if let customer = viewModel.selectedCustomer {
                         Task {

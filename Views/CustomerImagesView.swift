@@ -73,7 +73,7 @@ struct CustomerImagesView: View {
             }
         }
         .sheet(isPresented: $viewModel.showingCamera) {
-            AdvancedCameraView { capturedImage in
+            CameraView { capturedImage in
                 // Çekilen resmi işle
                 if let customer = viewModel.selectedCustomer {
                     Task {
