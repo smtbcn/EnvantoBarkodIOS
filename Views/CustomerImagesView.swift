@@ -2,6 +2,7 @@ import SwiftUI
 import PhotosUI
 import AVFoundation
 import Combine
+import QuickLook
 
 struct CustomerImagesView: View {
     @StateObject private var viewModel = CustomerImagesViewModel()
@@ -466,8 +467,8 @@ struct CustomerImagesView: View {
                                 viewModel.deleteImageByPath(imagePath)
                             },
                             onViewImage: { imagePath in
-                                // 🎯 Basit paylaşım menüsü
-                                shareImage(imagePath: imagePath)
+                                // 🎯 Resim önizleme - QuickLook ile
+                                previewImage(imagePath: imagePath)
                             },
                             onShareWhatsApp: { customerName, imagePaths in
                                 viewModel.shareToWhatsApp(customerName: customerName, imagePaths: imagePaths)
@@ -479,22 +480,20 @@ struct CustomerImagesView: View {
         }
     }
     
-    // 🎯 Basit resim paylaşımı
-    private func shareImage(imagePath: String) {
+    // 🎯 Basit resim önizleme - iOS QuickLook
+    private func previewImage(imagePath: String) {
         guard FileManager.default.fileExists(atPath: imagePath) else { return }
         
         let url = URL(fileURLWithPath: imagePath)
-        let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
         
-        // iPad için popover ayarları
+        // iOS'un yerleşik QuickLook önizlemesi
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-           let window = windowScene.windows.first {
-            if let popover = activityVC.popoverPresentationController {
-                popover.sourceView = window.rootViewController?.view
-                popover.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
-                popover.permittedArrowDirections = []
-            }
-            window.rootViewController?.present(activityVC, animated: true)
+           let window = windowScene.windows.first,
+           let rootVC = window.rootViewController {
+            
+            let previewController = QLPreviewController()
+            previewController.dataSource = QuickLookDataSource(fileURL: url)
+            rootVC.present(previewController, animated: true)
         }
     }
 

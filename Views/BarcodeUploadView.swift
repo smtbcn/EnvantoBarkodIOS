@@ -2,6 +2,7 @@ import SwiftUI
 import PhotosUI
 import AVFoundation
 import Combine
+import QuickLook
 
 // Gerçek kamera view implementasyonu (Android design benzeri)
 struct CameraView: View {
@@ -1079,8 +1080,8 @@ struct CustomerImageCard: View {
                             AndroidImageRow(image: image, onDelete: {
                                 onDeleteImage(image)
                             }, onViewImage: {
-                                // 🎯 Basit paylaşım menüsü
-                                shareImage(imagePath: image.imagePath)
+                                // 🎯 Resim önizleme - QuickLook ile
+                                previewImage(imagePath: image.imagePath)
                             })
                             
                             // Son item değilse divider ekle
@@ -1105,22 +1106,20 @@ struct CustomerImageCard: View {
         )
     }
     
-    // 🎯 Basit resim paylaşımı
-    private func shareImage(imagePath: String) {
+    // 🎯 Basit resim önizleme - iOS QuickLook
+    private func previewImage(imagePath: String) {
         guard FileManager.default.fileExists(atPath: imagePath) else { return }
         
         let url = URL(fileURLWithPath: imagePath)
-        let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
         
-        // iPad için popover ayarları
+        // iOS'un yerleşik QuickLook önizlemesi
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-           let window = windowScene.windows.first {
-            if let popover = activityVC.popoverPresentationController {
-                popover.sourceView = window.rootViewController?.view
-                popover.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
-                popover.permittedArrowDirections = []
-            }
-            window.rootViewController?.present(activityVC, animated: true)
+           let window = windowScene.windows.first,
+           let rootVC = window.rootViewController {
+            
+            let previewController = QLPreviewController()
+            previewController.dataSource = QuickLookDataSource(fileURL: url)
+            rootVC.present(previewController, animated: true)
         }
     }
 }
@@ -1347,6 +1346,23 @@ struct LoadingOverlay: View {
                     .fill(Color.black.opacity(0.8))
             )
         }
+    }
+}
+
+// MARK: - QuickLook Data Source (Resim önizleme için)
+class QuickLookDataSource: NSObject, QLPreviewControllerDataSource {
+    private let fileURL: URL
+    
+    init(fileURL: URL) {
+        self.fileURL = fileURL
+    }
+    
+    func numberOfPreviewItems(in controller: QLPreviewController) -> Int {
+        return 1
+    }
+    
+    func previewController(_ controller: QLPreviewController, previewItemAt index: Int) -> QLPreviewItem {
+        return fileURL as QLPreviewItem
     }
 }
 
