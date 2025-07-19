@@ -304,7 +304,7 @@ extension CameraModel: AVCapturePhotoCaptureDelegate {
             isCapturing = false 
         }
         
-        if let error = error {
+        if error != nil {
             photoCompletion?(nil)
             return
         }

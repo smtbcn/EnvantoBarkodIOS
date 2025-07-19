@@ -42,6 +42,7 @@
 		AB123456789012340000007E /* LoginResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB123456789012340000007F /* LoginResponse.swift */; };
 		AB1234567890123400000080 /* LoginManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000081 /* LoginManager.swift */; };
 		AB1234567890123400000082 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000083 /* LoginView.swift */; };
+		AB1234567890123400000084 /* ImagePreviewModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000085 /* ImagePreviewModal.swift */; };
 
 /* End PBXBuildFile section */
 
@@ -82,6 +83,7 @@
 		AB123456789012340000007F /* LoginResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginResponse.swift; sourceTree = "<group>"; };
 		AB1234567890123400000081 /* LoginManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginManager.swift; sourceTree = "<group>"; };
 		AB1234567890123400000083 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		AB1234567890123400000085 /* ImagePreviewModal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagePreviewModal.swift; sourceTree = "<group>"; };
 
 /* End PBXFileReference section */
 
@@ -132,6 +134,7 @@
 				AB123456789012340000000C /* BarcodeUploadView.swift */,
 				AB1234567890123400000071 /* CustomerImagesView.swift */,
 				AB1234567890123400000075 /* CustomerImageGroupCard.swift */,
+				AB1234567890123400000085 /* ImagePreviewModal.swift */,
 				AB1234567890123400000083 /* LoginView.swift */,
 				AB123456789012340000007D /* VehicleProductsView.swift */,
 			);
@@ -287,6 +290,7 @@
 				AB123456789012340000000B /* BarcodeUploadView.swift in Sources */,
 				AB1234567890123400000070 /* CustomerImagesView.swift in Sources */,
 				AB1234567890123400000074 /* CustomerImageGroupCard.swift in Sources */,
+				AB1234567890123400000084 /* ImagePreviewModal.swift in Sources */,
 				AB1234567890123400000082 /* LoginView.swift in Sources */,
 				AB123456789012340000007C /* VehicleProductsView.swift in Sources */,
 				AB123456789012340000000D /* MainViewModel.swift in Sources */,
