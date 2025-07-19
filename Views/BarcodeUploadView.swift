@@ -349,10 +349,7 @@ struct BarcodeUploadView: View {
     @State private var showingDeleteCustomerAlert = false
     @State private var customerToDelete: String = ""
     
-    // 🎯 Resim önizleme modal state
-    @State private var showingImagePreview = false
-    @State private var previewImagePath = ""
-    @State private var previewCustomerName = ""
+
     
     // 🎯 iOS 15+ Focus State for TextField
     @available(iOS 15.0, *)
@@ -385,14 +382,7 @@ struct BarcodeUploadView: View {
         } message: {
             Text(alertMessage)
         }
-        // 🎯 Resim önizleme modal
-        .fullScreenCover(isPresented: $showingImagePreview) {
-            ImagePreviewModal(
-                imagePath: previewImagePath,
-                customerName: previewCustomerName,
-                isPresented: $showingImagePreview
-            )
-        }
+
             .alert("Toplu Resim Silme", isPresented: $showingDeleteCustomerAlert) {
                 Button("İptal", role: .cancel) { }
                 Button("Sil", role: .destructive) {
@@ -1089,10 +1079,8 @@ struct CustomerImageCard: View {
                             AndroidImageRow(image: image, onDelete: {
                                 onDeleteImage(image)
                             }, onViewImage: {
-                                // 🎯 Resim önizleme modal'ını aç
-                                previewImagePath = image.imagePath
-                                previewCustomerName = image.customerName
-                                showingImagePreview = true
+                                // 🎯 Basit paylaşım menüsü
+                                shareImage(imagePath: image.imagePath)
                             })
                             
                             // Son item değilse divider ekle
@@ -1238,6 +1226,25 @@ struct AndroidImageRow: View {
         let formatter = DateFormatter()
         formatter.dateFormat = "dd.MM.yyyy HH:mm"
         return formatter.string(from: date)
+    }
+    
+    // 🎯 Basit resim paylaşımı
+    private func shareImage(imagePath: String) {
+        guard FileManager.default.fileExists(atPath: imagePath) else { return }
+        
+        let url = URL(fileURLWithPath: imagePath)
+        let activityVC = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+        
+        // iPad için popover ayarları
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let window = windowScene.windows.first {
+            if let popover = activityVC.popoverPresentationController {
+                popover.sourceView = window.rootViewController?.view
+                popover.sourceRect = CGRect(x: window.bounds.midX, y: window.bounds.midY, width: 0, height: 0)
+                popover.permittedArrowDirections = []
+            }
+            window.rootViewController?.present(activityVC, animated: true)
+        }
     }
     
 
