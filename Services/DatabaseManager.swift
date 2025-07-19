@@ -393,7 +393,7 @@ class DatabaseManager {
             }
         }
     }
-
+    
     private func createCihazYetkiTable() {
         
         let createTableSQL = """
