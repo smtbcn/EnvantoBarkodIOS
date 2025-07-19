@@ -1353,7 +1353,7 @@ struct LoadingOverlay: View {
 }
 
 // MARK: - Simple Image View Controller (Resim önizleme için)
-class SimpleImageViewController: UIViewController {
+class SimpleImageViewController: UIViewController, UIScrollViewDelegate {
     private let imageURL: URL
     private var scrollView: UIScrollView!
     private var imageView: UIImageView!
@@ -1439,9 +1439,8 @@ class SimpleImageViewController: UIViewController {
         }
         present(activityVC, animated: true)
     }
-}
-
-extension SimpleImageViewController: UIScrollViewDelegate {
+    
+    // MARK: - UIScrollViewDelegate
     func viewForZooming(in scrollView: UIScrollView) -> UIView? {
         return imageView
     }
