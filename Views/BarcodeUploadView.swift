@@ -410,7 +410,7 @@ struct BarcodeUploadView: View {
                 }
             }
             .sheet(isPresented: $viewModel.showingCamera) {
-                CameraView { capturedImage in
+                AdvancedCameraView { capturedImage in
                     // Çekilen resmi işle
                     if let customer = viewModel.selectedCustomer {
                         Task {
