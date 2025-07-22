@@ -149,9 +149,6 @@ struct CameraView: View {
         cameraModel.capturePhoto { image in
             if let image = image {
                 DispatchQueue.main.async {
-                    // Beep sesi çal (barkod tarama ile aynı)
-                    AudioManager.shared.playBeepSound()
-                    
                     // Titreşim
                     AudioManager.shared.playVibration()
                     
@@ -313,14 +310,7 @@ class CameraModel: NSObject, ObservableObject {
         photoCompletion = completion
         isCapturing = true
         
-        // Sistem kamera sesini tamamen devre dışı bırak
-        do {
-            // Ses kategorisini ambient olarak ayarla (sistem sesleri çalmaz)
-            try AVAudioSession.sharedInstance().setCategory(.ambient, options: [])
-            try AVAudioSession.sharedInstance().setActive(true)
-        } catch {
-            print("Audio session ayarlanamadı: \(error)")
-        }
+
         
         let settings = AVCapturePhotoSettings()
         

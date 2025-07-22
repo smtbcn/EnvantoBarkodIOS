@@ -27,8 +27,8 @@ struct MainMenuView: View {
                     Image("EnvantoLogo")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(width: 100, height: 100)
-                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                        .frame(width: 120, height: 120)
+                        .clipShape(RoundedRectangle(cornerRadius: 28))
                         .shadow(color: Color.black.opacity(0.15), radius: 6, x: 3, y: 3)
                     
                     // Başlık
