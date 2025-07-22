@@ -29,7 +29,7 @@ struct MainMenuView: View {
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 100, height: 100)
                         .clipShape(RoundedRectangle(cornerRadius: 20))
-                        .shadow(color: Color.black.opacity(0.15), radius: 6, x: 0, y: 3)
+                        .shadow(color: Color.black.opacity(0.15), radius: 6, x: 3, y: 3)
                     
                     // Başlık
                     Text("Envanto Barkod")

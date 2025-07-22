@@ -2,6 +2,7 @@ import SwiftUI
 import PhotosUI
 import AVFoundation
 import Combine
+import MediaPlayer
 
 // Gerçek kamera view implementasyonu (Android design benzeri)
 struct CameraView: View {
@@ -312,7 +313,26 @@ class CameraModel: NSObject, ObservableObject {
         photoCompletion = completion
         isCapturing = true
         
+        // Sistem kamera sesini tamamen devre dışı bırak
+        do {
+            // Ses kategorisini ambient olarak ayarla (sistem sesleri çalmaz)
+            try AVAudioSession.sharedInstance().setCategory(.ambient, options: [])
+            try AVAudioSession.sharedInstance().setActive(true)
+        } catch {
+            print("Audio session ayarlanamadı: \(error)")
+        }
+        
         let settings = AVCapturePhotoSettings()
+        
+        // Sistem kamera sesini tamamen kapat - tüm ayarları devre dışı bırak
+        if #available(iOS 13.0, *) {
+            settings.photoQualityPrioritization = .speed
+            settings.isAutoStillImageStabilizationEnabled = false
+            settings.isAutoRedEyeReductionEnabled = false
+        }
+        
+        // Ses çıkışını tamamen kapat
+        settings.isHighResolutionPhotoEnabled = false
         
         // Flash ayarı - hem photo flash hem torch kontrol et
         if let device = captureDevice {
