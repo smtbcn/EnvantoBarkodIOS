@@ -148,11 +148,17 @@ struct CameraView: View {
         cameraModel.capturePhoto { image in
             if let image = image {
                 DispatchQueue.main.async {
-                    onImageCaptured(image)
+                    // Beep sesi çal (barkod tarama ile aynı)
+                    AudioManager.shared.playBeepSound()
+                    
+                    // Titreşim
+                    AudioManager.shared.playVibration()
                     
                     // Haptic feedback (iOS native)
                     let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
                     impactFeedback.impactOccurred()
+                    
+                    onImageCaptured(image)
                 }
             }
         }
