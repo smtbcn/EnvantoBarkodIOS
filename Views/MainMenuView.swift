@@ -28,8 +28,8 @@ struct MainMenuView: View {
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 120, height: 120)
-                        .clipShape(RoundedRectangle(cornerRadius: 28))
-                        .shadow(color: Color.black.opacity(0.15), radius: 6, x: 3, y: 3)
+                        .clipShape(RoundedRectangle(cornerRadius: 30))
+                        .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
                     
                     // Başlık
                     Text("Envanto Barkod")
@@ -82,7 +82,7 @@ struct MainMenuView: View {
                             GridButtonContent(
                                 title: "Müşteri Resimleri",
                                 icon: "photo.on.rectangle",
-                                color: Color(red: 0.2, green: 0.6, blue: 1.0)
+                                color: Color(red: 0.2, green: 0.5, blue: 1.0)
                             )
                         }
                         .buttonStyle(PlainButtonStyle())

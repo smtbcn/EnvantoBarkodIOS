@@ -20,71 +20,67 @@
 		AB1234567890123400000015 /* CameraService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000016 /* CameraService.swift */; };
 		AB1234567890123400000017 /* BarcodeService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000018 /* BarcodeService.swift */; };
 		AB1234567890123400000019 /* DeviceAuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB123456789012340000001A /* DeviceAuthManager.swift */; };
-		AB1234567890123400000050 /* ImageStorageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000051 /* ImageStorageManager.swift */; };
 		AB123456789012340000001B /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB123456789012340000001C /* Constants.swift */; };
 		AB123456789012340000001D /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB123456789012340000001E /* Extensions.swift */; };
+		AB1234567890123400000050 /* ImageStorageManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000051 /* ImageStorageManager.swift */; };
 		AB1234567890123400000052 /* DatabaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000053 /* DatabaseManager.swift */; };
 		AB1234567890123400000054 /* libsqlite3.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000055 /* libsqlite3.tbd */; };
 		AB1234567890123400000057 /* NetworkUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000058 /* NetworkUtils.swift */; };
 		AB1234567890123400000059 /* UploadService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB123456789012340000005A /* UploadService.swift */; };
+		AB123456789012340000005B /* DeviceIdentifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB123456789012340000005C /* DeviceIdentifier.swift */; };
 		AB123456789012340000005D /* BackgroundUploadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB123456789012340000005E /* BackgroundUploadManager.swift */; };
+		AB123456789012340000005F /* AudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000060 /* AudioManager.swift */; };
+		AB1234567890123400000061 /* beep.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000062 /* beep.mp3 */; };
 		AB1234567890123400000070 /* CustomerImagesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000071 /* CustomerImagesView.swift */; };
 		AB1234567890123400000072 /* CustomerImagesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000073 /* CustomerImagesViewModel.swift */; };
 		AB1234567890123400000074 /* CustomerImageGroupCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000075 /* CustomerImageGroupCard.swift */; };
 		AB1234567890123400000077 /* Customer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000076 /* Customer.swift */; };
-		AB123456789012340000005B /* DeviceIdentifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB123456789012340000005C /* DeviceIdentifier.swift */; };
-		AB123456789012340000005F /* AudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000060 /* AudioManager.swift */; };
-		AB1234567890123400000061 /* beep.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000062 /* beep.mp3 */; };
-		AB12345678901234ASSETS002 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AB12345678901234ASSETS001 /* Assets.xcassets */; };
 		AB1234567890123400000078 /* VehicleProduct.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000079 /* VehicleProduct.swift */; };
 		AB123456789012340000007A /* VehicleProductsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB123456789012340000007B /* VehicleProductsViewModel.swift */; };
 		AB123456789012340000007C /* VehicleProductsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB123456789012340000007D /* VehicleProductsView.swift */; };
 		AB123456789012340000007E /* LoginResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB123456789012340000007F /* LoginResponse.swift */; };
 		AB1234567890123400000080 /* LoginManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000081 /* LoginManager.swift */; };
 		AB1234567890123400000082 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000083 /* LoginView.swift */; };
-
-
+		AB12345678901234ASSETS002 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AB12345678901234ASSETS001 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		AB1234567890123400000021 /* EnvantoBarkod.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EnvantoBarkod.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AB1234567890123400000002 /* EnvantoBarkodApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnvantoBarkodApp.swift; sourceTree = "<group>"; };
-		AB1234567890123400000051 /* ImageStorageManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageStorageManager.swift; sourceTree = "<group>"; };
 		AB1234567890123400000004 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		AB1234567890123400000006 /* MainMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainMenuView.swift; sourceTree = "<group>"; };
 		AB1234567890123400000008 /* ScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerView.swift; sourceTree = "<group>"; };
 		AB123456789012340000000A /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		AB123456789012340000000C /* BarcodeUploadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeUploadView.swift; sourceTree = "<group>"; };
-		AB1234567890123400000071 /* CustomerImagesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomerImagesView.swift; sourceTree = "<group>"; };
-		AB1234567890123400000075 /* CustomerImageGroupCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomerImageGroupCard.swift; sourceTree = "<group>"; };
 		AB123456789012340000000E /* MainViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewModel.swift; sourceTree = "<group>"; };
 		AB1234567890123400000010 /* ScannerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerViewModel.swift; sourceTree = "<group>"; };
 		AB1234567890123400000012 /* BarcodeUploadViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeUploadViewModel.swift; sourceTree = "<group>"; };
-		AB1234567890123400000073 /* CustomerImagesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomerImagesViewModel.swift; sourceTree = "<group>"; };
 		AB1234567890123400000014 /* BarcodeResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeResult.swift; sourceTree = "<group>"; };
-		AB1234567890123400000076 /* Customer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Customer.swift; sourceTree = "<group>"; };
 		AB1234567890123400000016 /* CameraService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraService.swift; sourceTree = "<group>"; };
 		AB1234567890123400000018 /* BarcodeService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarcodeService.swift; sourceTree = "<group>"; };
 		AB123456789012340000001A /* DeviceAuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceAuthManager.swift; sourceTree = "<group>"; };
 		AB123456789012340000001C /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		AB123456789012340000001E /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
+		AB1234567890123400000021 /* EnvantoBarkod.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EnvantoBarkod.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AB1234567890123400000051 /* ImageStorageManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageStorageManager.swift; sourceTree = "<group>"; };
 		AB1234567890123400000053 /* DatabaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseManager.swift; sourceTree = "<group>"; };
 		AB1234567890123400000055 /* libsqlite3.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libsqlite3.tbd; path = usr/lib/libsqlite3.tbd; sourceTree = SDKROOT; };
 		AB1234567890123400000058 /* NetworkUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkUtils.swift; sourceTree = "<group>"; };
 		AB123456789012340000005A /* UploadService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadService.swift; sourceTree = "<group>"; };
-		AB123456789012340000005E /* BackgroundUploadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundUploadManager.swift; sourceTree = "<group>"; };
 		AB123456789012340000005C /* DeviceIdentifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceIdentifier.swift; sourceTree = "<group>"; };
+		AB123456789012340000005E /* BackgroundUploadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundUploadManager.swift; sourceTree = "<group>"; };
 		AB1234567890123400000060 /* AudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioManager.swift; sourceTree = "<group>"; };
 		AB1234567890123400000062 /* beep.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = beep.mp3; sourceTree = "<group>"; };
-		AB12345678901234ASSETS001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		AB1234567890123400000071 /* CustomerImagesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomerImagesView.swift; sourceTree = "<group>"; };
+		AB1234567890123400000073 /* CustomerImagesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomerImagesViewModel.swift; sourceTree = "<group>"; };
+		AB1234567890123400000075 /* CustomerImageGroupCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomerImageGroupCard.swift; sourceTree = "<group>"; };
+		AB1234567890123400000076 /* Customer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Customer.swift; sourceTree = "<group>"; };
 		AB1234567890123400000079 /* VehicleProduct.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VehicleProduct.swift; sourceTree = "<group>"; };
 		AB123456789012340000007B /* VehicleProductsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VehicleProductsViewModel.swift; sourceTree = "<group>"; };
 		AB123456789012340000007D /* VehicleProductsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VehicleProductsView.swift; sourceTree = "<group>"; };
 		AB123456789012340000007F /* LoginResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginResponse.swift; sourceTree = "<group>"; };
 		AB1234567890123400000081 /* LoginManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginManager.swift; sourceTree = "<group>"; };
 		AB1234567890123400000083 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
-
-
+		AB12345678901234ASSETS001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -99,7 +95,7 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		AB1234567890123400000023 /* EnvantoBarkodIOS */ = {
+		AB1234567890123400000023 = {
 			isa = PBXGroup;
 			children = (
 				AB1234567890123400000002 /* EnvantoBarkodApp.swift */,
@@ -134,7 +130,6 @@
 				AB123456789012340000000C /* BarcodeUploadView.swift */,
 				AB1234567890123400000071 /* CustomerImagesView.swift */,
 				AB1234567890123400000075 /* CustomerImageGroupCard.swift */,
-
 				AB1234567890123400000083 /* LoginView.swift */,
 				AB123456789012340000007D /* VehicleProductsView.swift */,
 			);
@@ -235,13 +230,13 @@
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1500;
 				LastUpgradeCheck = 1500;
-				ORGANIZATIONNAME = "Envanto";
+				ORGANIZATIONNAME = Envanto;
 				TargetAttributes = {
 					AB123456789012340000002B = {
 						CreatedOnToolsVersion = 15.0;
 						DevelopmentTeam = 6F974S63AX;
-						ProvisioningStyle = Automatic;
 						LastSwiftMigration = 1500;
+						ProvisioningStyle = Automatic;
 						TestTargetID = "";
 					};
 				};
@@ -255,7 +250,7 @@
 				en,
 				Base,
 			);
-			mainGroup = AB1234567890123400000023 /* EnvantoBarkodIOS */;
+			mainGroup = AB1234567890123400000023;
 			productRefGroup = AB1234567890123400000024 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -290,7 +285,6 @@
 				AB123456789012340000000B /* BarcodeUploadView.swift in Sources */,
 				AB1234567890123400000070 /* CustomerImagesView.swift in Sources */,
 				AB1234567890123400000074 /* CustomerImageGroupCard.swift in Sources */,
-
 				AB1234567890123400000082 /* LoginView.swift in Sources */,
 				AB123456789012340000007C /* VehicleProductsView.swift in Sources */,
 				AB123456789012340000000D /* MainViewModel.swift in Sources */,
@@ -330,6 +324,7 @@
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_MODULE_DEBUGGING = NO;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				CLANG_ENABLE_OBJC_WEAK = YES;
 				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
@@ -354,8 +349,12 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COMPILER_INDEX_STORE_ENABLE = NO;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_BITCODE = NO;
+				ENABLE_BUILD_SYSTEM_CACHING = YES;
+				ENABLE_MODULE_VERIFIER = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -375,30 +374,20 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
+				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
-				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_COMPILATION_MODE = incremental;
-				SWIFT_WHOLE_MODULE_OPTIMIZATION = NO;
-				COMPILER_INDEX_STORE_ENABLE = NO;
-				ENABLE_BITCODE = NO;
-				SWIFT_INSTALL_OBJC_HEADER = NO;
-				CLANG_ENABLE_MODULE_DEBUGGING = NO;
 				SUPPORTS_MACCATALYST = NO;
-				ENABLE_BUILD_SYSTEM_CACHING = YES;
-				VALIDATE_PRODUCT = NO;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_TESTABILITY = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu17;
-				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MTL_FAST_MATH = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_INSTALL_OBJC_HEADER = NO;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
-				ENABLE_MODULE_VERIFIER = YES;
-				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
-				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
+				SWIFT_WHOLE_MODULE_OPTIMIZATION = NO;
+				VALIDATE_PRODUCT = NO;
 			};
 			name = Debug;
 		};
@@ -435,8 +424,11 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COMPILER_INDEX_STORE_ENABLE = NO;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_BITCODE = NO;
+				ENABLE_MODULE_VERIFIER = YES;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -450,22 +442,15 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
+				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
-				SWIFT_COMPILATION_MODE = wholemodule;
-				VALIDATE_PRODUCT = YES;
-				ENABLE_BITCODE = NO;
-				COMPILER_INDEX_STORE_ENABLE = NO;
 				SUPPORTS_MACCATALYST = NO;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu17;
-				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MTL_FAST_MATH = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_VERSION = 5.0;
-				ENABLE_MODULE_VERIFIER = YES;
-				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
-				MODULE_VERIFIER_SUPPORTED_LANGUAGE_STANDARDS = "gnu17 gnu++20";
+				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
 		};
@@ -474,11 +459,15 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_STYLE = Automatic;
+				CLANG_ENABLE_MODULE_DEBUGGING = NO;
 				CODE_SIGN_IDENTITY = "Apple Development";
-				PROVISIONING_PROFILE_SPECIFIER = "";
+				CODE_SIGN_STYLE = Automatic;
+				COMPILER_INDEX_STORE_ENABLE = NO;
+				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 01;
+				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 6F974S63AX;
+				ENABLE_BITCODE = NO;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Envanto Barkod";
@@ -496,19 +485,16 @@
 				MARKETING_VERSION = 2025.07.03;
 				PRODUCT_BUNDLE_IDENTIFIER = com.envanto.barcode.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SKIP_INSTALL = NO;
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_COMPILATION_MODE = singlefile;
+				"SWIFT_COMPILATION_MODE[arch=*]" = singlefile;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_INSTALL_OBJC_HEADER = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				SWIFT_COMPILATION_MODE = incremental;
-				COMPILER_INDEX_STORE_ENABLE = NO;
-				DEBUG_INFORMATION_FORMAT = dwarf;
-				ENABLE_BITCODE = NO;
-				SWIFT_INSTALL_OBJC_HEADER = NO;
-				CLANG_ENABLE_MODULE_DEBUGGING = NO;
-				SUPPORTS_MACCATALYST = NO;
 				VALIDATE_PRODUCT = NO;
-				SKIP_INSTALL = NO;
-				COPY_PHASE_STRIP = NO;
 			};
 			name = Debug;
 		};
@@ -517,11 +503,12 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_STYLE = Automatic;
 				CODE_SIGN_IDENTITY = "Apple Development";
-				PROVISIONING_PROFILE_SPECIFIER = "";
+				CODE_SIGN_STYLE = Automatic;
+				COMPILER_INDEX_STORE_ENABLE = NO;
 				CURRENT_PROJECT_VERSION = 01;
 				DEVELOPMENT_TEAM = 6F974S63AX;
+				ENABLE_BITCODE = NO;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Envanto Barkod";
@@ -539,14 +526,13 @@
 				MARKETING_VERSION = 2025.07.03;
 				PRODUCT_BUNDLE_IDENTIFIER = com.envanto.barcode.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
-				ENABLE_BITCODE = NO;
-				COMPILER_INDEX_STORE_ENABLE = NO;
-				SUPPORTS_MACCATALYST = NO;
 			};
 			name = Release;
 		};
@@ -574,4 +560,4 @@
 /* End XCConfigurationList section */
 	};
 	rootObject = AB123456789012340000002F /* Project object */;
-} 
+}

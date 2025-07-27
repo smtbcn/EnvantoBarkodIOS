@@ -62,13 +62,12 @@ struct CustomerImageGroup: Codable, Identifiable {
         self.imageCount = images.count
         self.lastImageDate = images.map(\.date).max() ?? Date()
         
-        // WhatsApp paylaşım kontrolü (5 dakika geçerliliği)
+        // WhatsApp paylaşım kontrolü (sınır kaldırıldı - her zaman yeşil kalacak)
         let prefs = UserDefaults.standard
         let key = "whatsapp_shared_time_\(customerName.replacingOccurrences(of: " ", with: "_"))"
         let lastSharedTime = prefs.double(forKey: key)
-        let currentTime = Date().timeIntervalSince1970
-        let fiveMinutesInSeconds: Double = 5 * 60
         
-        self.isSharedToday = (currentTime - lastSharedTime) < fiveMinutesInSeconds
+        // Eğer daha önce paylaşım yapılmışsa her zaman yeşil göster
+        self.isSharedToday = lastSharedTime > 0
     }
 } 

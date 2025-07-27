@@ -295,24 +295,18 @@ class CustomerImagesViewModel: ObservableObject, DeviceAuthCallback {
     // MARK: - WhatsApp Sharing
     func shareToWhatsApp(customerName: String, imagePaths: [String]) {
         Task {
-            // WhatsApp cooldown kontrolü
+            // WhatsApp paylaşım zamanını kaydet (5 dakikalık sınır kaldırıldı)
             let prefs = UserDefaults.standard
             let key = "whatsapp_shared_time_\(customerName.replacingOccurrences(of: " ", with: "_"))"
-            let lastSharedTime = prefs.double(forKey: key)
             let currentTime = Date().timeIntervalSince1970
-            let fiveMinutesInSeconds: Double = 0
-            //let fiveMinutesInSeconds: Double = 5 * 60 5 dakika bekleme süresi kaldırıldı
             
-            if (currentTime - lastSharedTime) < fiveMinutesInSeconds {
-                await showError("Bu müşteri için 5 dakika içinde tekrar paylaşım yapamazsınız")
-                return
-            }
-            
-            // Paylaşım zamanını kaydet
+            // Paylaşım zamanını kaydet (buton yeşil kalması için)
             prefs.set(currentTime, forKey: key)
             
             await MainActor.run {
                 shareToWhatsAppInternal(customerName: customerName, imagePaths: imagePaths)
+                // Paylaşım sonrası grupları yenile (buton rengini güncellemek için)
+                refreshSavedImages()
             }
         }
     }
