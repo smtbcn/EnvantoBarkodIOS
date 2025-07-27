@@ -20,6 +20,9 @@ class ImageStorageManager {
         // App Documents'a kaydet (Files uygulamasından erişilebilir)
         if let documentsPath = saveToAppDocuments(image: image, customerName: customerName, isGallery: isGallery) {
             
+            // NOT: Orientation düzeltmesi artık CameraModel'da yapılıyor
+            // let _ = ImageOrientationUtils.fixImageOrientation(imagePath: documentsPath)
+            
             // Dosya kontrol et
             let fileExists = FileManager.default.fileExists(atPath: documentsPath)
             
@@ -49,6 +52,9 @@ class ImageStorageManager {
         guard let documentsPath = saveToMusteriResimleriDocuments(image: image, customerName: customerName) else {
             throw ImageStorageError.saveFailed
         }
+        
+        // NOT: Orientation düzeltmesi artık CameraModel'da yapılıyor
+        // let _ = ImageOrientationUtils.fixImageOrientation(imagePath: documentsPath)
         
         // Dosya kontrol et
         let fileExists = FileManager.default.fileExists(atPath: documentsPath)
@@ -163,6 +169,42 @@ class ImageStorageManager {
     
     // MARK: - PhotosPicker için URL'den kaydetme
     static func saveImageFromURL(sourceURL: URL, customerName: String, yukleyen: String) async -> String? {
+        // Hedef dosya yolu oluştur
+        guard let customerDir = getAppDocumentsCustomerDir(for: customerName) else {
+            return nil
+        }
+        
+        let fileName = generateFileName(customerName: customerName, isGallery: true)
+        let filePath = customerDir.appendingPathComponent(fileName)
+        let finalPath = getUniqueFilePath(basePath: filePath)
+        
+        // YENİ: ImageOrientationUtils kullanarak kopyala ve orientation düzelt
+        let success = ImageOrientationUtils.copyAndFixOrientation(
+            sourceURL: sourceURL,
+            destinationPath: finalPath.path
+        )
+        
+        if success {
+            // Database'e kaydet
+            let dbManager = DatabaseManager.getInstance()
+            let dbSaved = dbManager.insertBarkodResim(
+                musteriAdi: customerName,
+                resimYolu: finalPath.path,
+                yukleyen: yukleyen
+            )
+            
+            if dbSaved {
+                triggerUploadAfterSave()
+            }
+            
+            return finalPath.path
+        } else {
+            // Fallback: Normal kopyalama yöntemi
+            return await fallbackSaveFromURL(sourceURL: sourceURL, customerName: customerName, yukleyen: yukleyen)
+        }
+    }
+    
+    private static func fallbackSaveFromURL(sourceURL: URL, customerName: String, yukleyen: String) async -> String? {
         guard let imageData = try? Data(contentsOf: sourceURL),
               let image = UIImage(data: imageData) else {
             return nil

@@ -3,6 +3,7 @@ import PhotosUI
 import AVFoundation
 import Combine
 import MediaPlayer
+import Foundation
 
 // Gerçek kamera view implementasyonu (Android design benzeri)
 struct CameraView: View {
@@ -174,6 +175,10 @@ class CameraModel: NSObject, ObservableObject {
     var captureDevice: AVCaptureDevice?
     private var photoCompletion: ((UIImage?) -> Void)?
     
+    // YENİ: Orientation tracking için
+    private var deviceOrientation: UIDeviceOrientation = .portrait
+    private var orientationObserver: NSObjectProtocol?
+    
     // 🎯 Lens tipleri
     enum LensType {
         case ultraWide  // 0.5x
@@ -219,6 +224,17 @@ class CameraModel: NSObject, ObservableObject {
             currentLensType = .wide
         }
         setupCamera()
+        setupOrientationTracking()
+    }
+    
+    deinit {
+        // Orientation observer'ı temizle
+        if let observer = orientationObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
+        
+        // Device orientation notifications'ı durdur
+        UIDevice.current.endGeneratingDeviceOrientationNotifications()
     }
     
     private func setupCamera() {
@@ -290,6 +306,9 @@ class CameraModel: NSObject, ObservableObject {
         }
         
         session.commitConfiguration()
+        
+        // YENİ: Kamera kurulumu sonrası orientation'ı güncelle
+        updateCameraOrientation()
     }
     
     func startSession() {
@@ -310,9 +329,13 @@ class CameraModel: NSObject, ObservableObject {
         photoCompletion = completion
         isCapturing = true
         
-
-        
         let settings = AVCapturePhotoSettings()
+        
+        // YENİ: Device orientation'a göre video orientation ayarla
+        if let connection = photoOutput.connection(with: .video) {
+            connection.videoOrientation = getVideoOrientation(from: deviceOrientation)
+            print("📷 [CameraModel] Photo capture orientation: \(connection.videoOrientation) (device: \(getOrientationName(deviceOrientation)))")
+        }
         
         // Sistem kamera sesini tamamen kapat - tüm ayarları devre dışı bırak
         if #available(iOS 13.0, *) {
@@ -345,6 +368,87 @@ class CameraModel: NSObject, ObservableObject {
         }
         
         photoOutput.capturePhoto(with: settings, delegate: self)
+    }
+    
+    // MARK: - Orientation Tracking
+    
+    private func setupOrientationTracking() {
+        // Device orientation notifications'ı etkinleştir
+        UIDevice.current.beginGeneratingDeviceOrientationNotifications()
+        
+        // Device orientation değişikliklerini dinle
+        orientationObserver = NotificationCenter.default.addObserver(
+            forName: UIDevice.orientationDidChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.handleOrientationChange()
+        }
+        
+        // İlk orientation değerini al
+        updateDeviceOrientation()
+    }
+    
+    private func handleOrientationChange() {
+        updateDeviceOrientation()
+        updateCameraOrientation()
+    }
+    
+    private func updateDeviceOrientation() {
+        let newOrientation = UIDevice.current.orientation
+        
+        print("🔍 [CameraModel] Raw device orientation: \(getOrientationName(newOrientation))")
+        
+        // Sadece valid orientation'ları kabul et
+        if newOrientation != .unknown && newOrientation != .faceUp && newOrientation != .faceDown {
+            deviceOrientation = newOrientation
+            print("📱 [CameraModel] Device orientation güncellendi: \(getOrientationName(deviceOrientation))")
+        } else {
+            print("⚠️ [CameraModel] Invalid orientation ignored, keeping: \(getOrientationName(deviceOrientation))")
+        }
+    }
+    
+    private func updateCameraOrientation() {
+        guard let connection = photoOutput.connection(with: .video) else { return }
+        
+        // Video orientation'ı güncelle
+        if connection.isVideoOrientationSupported {
+            connection.videoOrientation = getVideoOrientation(from: deviceOrientation)
+            print("📷 [CameraModel] Camera orientation güncellendi: \(connection.videoOrientation)")
+        }
+    }
+    
+    private func getOrientationName(_ orientation: UIDeviceOrientation) -> String {
+        switch orientation {
+        case .portrait: return "PORTRAIT (0°)"
+        case .landscapeLeft: return "LANDSCAPE_LEFT (90°)"
+        case .portraitUpsideDown: return "PORTRAIT_UPSIDE_DOWN (180°)"
+        case .landscapeRight: return "LANDSCAPE_RIGHT (270°)"
+        default: return "UNKNOWN"
+        }
+    }
+    
+    // Android mantığı: Device orientation'a göre target format belirle
+    private func shouldTargetBePortrait(deviceOrientation: UIDeviceOrientation) -> Bool {
+        switch deviceOrientation {
+        case .portrait, .portraitUpsideDown:
+            return true  // Portrait orientations → Portrait resim
+        case .landscapeLeft, .landscapeRight:
+            return false // Landscape orientations → Landscape resim
+        default:
+            return true  // Unknown → Default portrait
+        }
+    }
+
+    // YENİ: Device orientation'dan video orientation'a çevirme
+    private func getVideoOrientation(from deviceOrientation: UIDeviceOrientation) -> AVCaptureVideoOrientation {
+        switch deviceOrientation {
+        case .portrait: return .portrait
+        case .portraitUpsideDown: return .portraitUpsideDown
+        case .landscapeLeft: return .landscapeRight
+        case .landscapeRight: return .landscapeLeft
+        default: return .portrait
+        }
     }
     
     func toggleFlash() {
@@ -412,13 +516,181 @@ extension CameraModel: AVCapturePhotoCaptureDelegate {
             return
         }
         
-        guard let imageData = photo.fileDataRepresentation(),
-              let image = UIImage(data: imageData) else {
+        guard let imageData = photo.fileDataRepresentation() else {
             photoCompletion?(nil)
             return
         }
         
-        photoCompletion?(image)
+        // YENİ: Geçici dosya oluştur ve orientation düzeltmesi uygula
+        let tempURL = createTempImageFile()
+        
+        do {
+            try imageData.write(to: tempURL)
+            
+            // Arka planda orientation düzeltmesi yap
+            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                self?.processImageOrientation(at: tempURL.path)
+            }
+            
+        } catch {
+            print("❌ Resim kaydetme hatası: \(error)")
+            photoCompletion?(nil)
+        }
+    }
+    
+    private func createTempImageFile() -> URL {
+        let tempDir = FileManager.default.temporaryDirectory
+        let fileName = "temp_camera_\(UUID().uuidString).jpg"
+        return tempDir.appendingPathComponent(fileName)
+    }
+    
+    private func processImageOrientation(at imagePath: String) {
+        print("🔄 [CameraModel] Resim orientation işleniyor: \(imagePath)")
+        
+        // Orijinal resim boyutlarını kontrol et
+        if let originalImage = UIImage(contentsOfFile: imagePath) {
+            print("📐 [CameraModel] Orijinal resim boyutları: \(originalImage.size.width)x\(originalImage.size.height)")
+        }
+        
+        // ImageOrientationUtils'daki Android mantığını kullan
+        let fixedPath = ImageOrientationUtils.fixImageOrientationWithDeviceOrientation(
+            imagePath: imagePath, 
+            deviceOrientation: deviceOrientation
+        )
+        
+        // Ana thread'de sonucu döndür
+        DispatchQueue.main.async { [weak self] in
+            if let image = UIImage(contentsOfFile: fixedPath) {
+                print("✅ [CameraModel] Orientation düzeltmesi tamamlandı, resim callback'e gönderiliyor")
+                self?.photoCompletion?(image)
+            } else {
+                print("❌ [CameraModel] Final resim yüklenemedi")
+                self?.photoCompletion?(nil)
+            }
+        }
+    }
+    
+
+    
+    private func applyManualRotation(imagePath: String) {
+        guard let image = UIImage(contentsOfFile: imagePath) else { return }
+        
+        let imageSize = image.size
+        let isImageLandscape = imageSize.width > imageSize.height
+        
+        print("📐 [CameraModel] Resim boyutları: \(imageSize.width)x\(imageSize.height) (landscape: \(isImageLandscape))")
+        print("� [CaimeraModel] Device orientation: \(getOrientationName(deviceOrientation))")
+        
+        var shouldRotate = false
+        var rotationAngle: CGFloat = 0
+        
+        switch deviceOrientation {
+        case .portrait:
+            // Cihaz portrait, resim landscape ise 90° döndür
+            if isImageLandscape {
+                shouldRotate = true
+                rotationAngle = 90
+            }
+        case .landscapeLeft:
+            // Cihaz landscape left, resim portrait ise 270° döndür
+            if !isImageLandscape {
+                shouldRotate = true
+                rotationAngle = 270
+            }
+        case .portraitUpsideDown:
+            // Cihaz upside down, resim landscape ise 270° döndür
+            if isImageLandscape {
+                shouldRotate = true
+                rotationAngle = 270
+            }
+        case .landscapeRight:
+            // Cihaz landscape right, resim portrait ise 90° döndür
+            if !isImageLandscape {
+                shouldRotate = true
+                rotationAngle = 90
+            }
+        default:
+            break
+        }
+        
+        if shouldRotate && rotationAngle != 0 {
+            print("🔄 [CameraModel] Manuel rotation uygulanıyor: \(rotationAngle)°")
+            
+            let rotatedImage = ImageOrientationUtils.rotateImage(image, angle: rotationAngle)
+            
+            // Döndürülmüş resmi kaydet
+            if let imageData = rotatedImage.jpegData(compressionQuality: 0.9) {
+                do {
+                    try imageData.write(to: URL(fileURLWithPath: imagePath))
+                    print("✅ [CameraModel] Manuel rotation başarıyla uygulandı: \(rotationAngle)°")
+                    
+                    // Final resim boyutlarını kontrol et
+                    if let finalImage = UIImage(contentsOfFile: imagePath) {
+                        print("📐 [CameraModel] Final resim boyutları: \(finalImage.size.width)x\(finalImage.size.height)")
+                    }
+                } catch {
+                    print("❌ [CameraModel] Manuel rotation kaydetme hatası: \(error)")
+                }
+            }
+        } else {
+            print("ℹ️ [CameraModel] Manuel rotation gerekmiyor, resim zaten doğru yönde")
+        }
+    }
+    
+    // YENİ: Android mantığı ile manuel rotation
+    private func applyManualRotationNew(imagePath: String) {
+        print("🔧 [CameraModel] applyManualRotation başladı (Android mantığı)")
+        
+        guard let image = UIImage(contentsOfFile: imagePath) else { 
+            print("❌ [CameraModel] Resim dosyası yüklenemedi: \(imagePath)")
+            return 
+        }
+        
+        let imageSize = image.size
+        print("📐 [CameraModel] Resim boyutları: \(imageSize.width)x\(imageSize.height)")
+        print("📱 [CameraModel] Device orientation: \(getOrientationName(deviceOrientation))")
+        
+        // Android mantığı: Device orientation'a göre target format belirle
+        let targetShouldBePortrait = shouldTargetBePortrait(deviceOrientation: deviceOrientation)
+        let currentIsPortrait = imageSize.height > imageSize.width
+        
+        print("🎯 [CameraModel] Target format: \(targetShouldBePortrait ? "PORTRAIT" : "LANDSCAPE")")
+        print("📐 [CameraModel] Current format: \(currentIsPortrait ? "PORTRAIT" : "LANDSCAPE")")
+        
+        var rotationAngle: CGFloat = 0
+        
+        if targetShouldBePortrait && !currentIsPortrait {
+            // Target portrait ama current landscape → 90° döndür
+            rotationAngle = 90
+            print("🔄 [CameraModel] Landscape → Portrait: 90° rotation")
+        } else if !targetShouldBePortrait && currentIsPortrait {
+            // Target landscape ama current portrait → 270° döndür  
+            rotationAngle = 270
+            print("🔄 [CameraModel] Portrait → Landscape: 270° rotation")
+        } else {
+            print("ℹ️ [CameraModel] Format zaten doğru, rotation gerekmiyor")
+            return
+        }
+        
+        // Rotation uygula
+        print("🔄 [CameraModel] Manuel rotation uygulanıyor: \(rotationAngle)°")
+        
+        let rotatedImage = ImageOrientationUtils.rotateImage(image, angle: rotationAngle)
+        
+        // Döndürülmüş resmi kaydet
+        if let imageData = rotatedImage.jpegData(compressionQuality: 0.9) {
+            do {
+                try imageData.write(to: URL(fileURLWithPath: imagePath))
+                print("✅ [CameraModel] Manuel rotation başarıyla uygulandı: \(rotationAngle)°")
+                
+                // Final resim boyutlarını kontrol et
+                if let finalImage = UIImage(contentsOfFile: imagePath) {
+                    print("📐 [CameraModel] Final resim boyutları: \(finalImage.size.width)x\(finalImage.size.height)")
+                }
+            } catch {
+                print("❌ [CameraModel] Manuel rotation kaydetme hatası: \(error)")
+            }
+        }
     }
 }
 
@@ -1552,3 +1824,4 @@ class SimpleImageViewController: UIViewController, UIScrollViewDelegate {
 #Preview {
     BarcodeUploadView()
 } 
+                  
