@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+import WebKit
 
 struct SettingsView: View {
     @ObservedObject var viewModel: MainViewModel
@@ -78,8 +79,6 @@ struct SettingsView: View {
                     }
                 }
                 
-
-                
                 // Tehlikeli İşlemler
                 Section(header: Text("Tehlikeli İşlemler")) {
                     Button(action: {
@@ -145,15 +144,16 @@ struct SettingsView: View {
             }
             Button("İptal", role: .cancel) { }
         } message: {
-            Text("Tüm ayarlar varsayılan değerlere sıfırlanacak. Bu işlem geri alınamaz.")
+            Text("Tüm ayarlar varsayılan değerlere sıfırlanacak ve web önbelleği temizlenecek. Bu işlem geri alınamaz.")
         }
+
         .alert("Resim Veritabanını Temizle", isPresented: $showingClearDatabaseAlert) {
             Button("Temizle", role: .destructive) {
                 clearDatabase()
             }
             Button("İptal", role: .cancel) { }
         } message: {
-            Text("Barkod resim veritabanındaki tüm kayıtlar silinecek. Dosyalar korunur ancak yükleme geçmişi kaybolur. Bu işlem geri alınamaz.")
+            Text("Tüm resim veritabanı kayıtları ve fiziksel dosyalar silinecek (barkod ve müşteri resimleri). Bu işlem geri alınamaz.")
         }
         .alert("Kaydedilmemiş Değişiklikler", isPresented: $showingUnsavedChangesAlert) {
             Button("Kaydet ve Çık") {
@@ -221,38 +221,65 @@ struct SettingsView: View {
     }
     
     private func resetAllSettings() {
+        // 1. UserDefaults'ı temizle
         let domain = Bundle.main.bundleIdentifier!
         UserDefaults.standard.removePersistentDomain(forName: domain)
         UserDefaults.standard.synchronize()
         
-        // Default değerleri UserDefaults'a kaydet
+        // 2. Web önbelleğini temizle
+        let websiteDataTypes = WKWebsiteDataStore.allWebsiteDataTypes()
+        let dateFrom = Date(timeIntervalSince1970: 0)
+        
+        WKWebsiteDataStore.default().removeData(ofTypes: websiteDataTypes, modifiedSince: dateFrom) {
+            DispatchQueue.main.async {
+                // URLCache'i de temizle
+                URLCache.shared.removeAllCachedResponses()
+                
+                // HTTPCookieStorage'ı temizle
+                if let cookies = HTTPCookieStorage.shared.cookies {
+                    for cookie in cookies {
+                        HTTPCookieStorage.shared.deleteCookie(cookie)
+                    }
+                }
+                
+                print("✅ Web önbelleği temizlendi (Ayarlar sıfırlama ile birlikte)")
+            }
+        }
+        
+        // 3. Default değerleri UserDefaults'a kaydet
         UserDefaults.standard.set(Constants.Network.defaultBaseURL, forKey: Constants.UserDefaults.baseURL)
         UserDefaults.standard.set(true, forKey: Constants.UserDefaults.wifiOnly) // 🔥 DEFAULT: Sadece WiFi AÇIK
         UserDefaults.standard.synchronize()
         
-        // UI değerleri sıfırla
+        // 4. UI değerleri sıfırla
         deviceOwner = ""
         baseURL = Constants.Network.defaultBaseURL
         wifiOnlyUpload = true
         viewModel.updateDeviceOwner("")
         
-        // Orijinal değerleri de güncelle
+        // 5. Orijinal değerleri de güncelle
         originalDeviceOwner = deviceOwner
         originalBaseURL = baseURL
         originalWifiOnlyUpload = wifiOnlyUpload
+        
+        print("🔄 Tüm ayarlar sıfırlandı (UserDefaults + Web Önbelleği)")
     }
     
 
     
     private func clearDatabase() {
-        // Database'deki tüm barkod resim kayıtlarını temizle
+        // Database'deki tüm resim kayıtlarını ve fiziksel dosyaları temizle (hem barkod hem müşteri resimleri)
         let dbManager = DatabaseManager.getInstance()
-        let success = dbManager.clearAllBarkodResimler()
+        let success = dbManager.clearAllImageDatabasesWithFiles()
         
         if success {
             UploadService.shared.stopUploadService()
         }
     }
+    
+
+    
+
 }
 
 #Preview {

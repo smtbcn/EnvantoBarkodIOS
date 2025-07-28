@@ -698,6 +698,202 @@ class DatabaseManager {
         return false
     }
     
+    // MARK: - Clear All Musteri Resimler (Müşteri resim veritabanını temizleme)
+    func clearAllMusteriResimler() -> Bool {
+        guard db != nil else { return false }
+        
+        let deleteSQL = "DELETE FROM \(DatabaseManager.TABLE_MUSTERI_RESIMLER)"
+        var statement: OpaquePointer?
+        
+        if sqlite3_prepare_v2(db, deleteSQL, -1, &statement, nil) == SQLITE_OK {
+            if sqlite3_step(statement) == SQLITE_DONE {
+                let deletedCount = sqlite3_changes(db)
+                sqlite3_finalize(statement)
+                return true
+            }
+        }
+        
+        sqlite3_finalize(statement)
+        return false
+    }
+    
+    // MARK: - Clear All Image Databases (Hem barkod hem müşteri resimlerini temizle)
+    func clearAllImageDatabases() -> Bool {
+        let barkodSuccess = clearAllBarkodResimler()
+        let musteriSuccess = clearAllMusteriResimler()
+        
+        return barkodSuccess && musteriSuccess
+    }
+    
+    // MARK: - Clear All Image Databases with Physical Files (Veritabanı + fiziksel dosyalar)
+    func clearAllImageDatabasesWithFiles() -> Bool {
+        // Önce veritabanından tüm resim yollarını al
+        let barkodImages = getAllBarkodResimleri()
+        let musteriImages = getAllMusteriResimleriPaths()
+        
+        // Veritabanı kayıtlarını temizle
+        let dbSuccess = clearAllImageDatabases()
+        
+        // Fiziksel dosyaları sil
+        var filesDeleted = 0
+        var totalFiles = 0
+        
+        // Barkod resimlerini sil
+        for image in barkodImages {
+            totalFiles += 1
+            if deletePhysicalFile(path: image.resimYolu) {
+                filesDeleted += 1
+            }
+        }
+        
+        // Müşteri resimlerini sil
+        for imagePath in musteriImages {
+            totalFiles += 1
+            if deletePhysicalFile(path: imagePath) {
+                filesDeleted += 1
+            }
+        }
+        
+        // Boş klasörleri temizle
+        cleanupEmptyImageDirectories()
+        
+        print("📁 Temizleme sonucu: \(filesDeleted)/\(totalFiles) dosya silindi")
+        
+        return dbSuccess
+    }
+    
+    // MARK: - Helper Functions for File Deletion
+    private func getAllBarkodResimleri() -> [BarkodResim] {
+        return databaseQueue.sync {
+            let selectSQL = """
+                SELECT \(DatabaseManager.COLUMN_ID), \(DatabaseManager.COLUMN_MUSTERI_ADI), 
+                       \(DatabaseManager.COLUMN_RESIM_YOLU), \(DatabaseManager.COLUMN_TARIH), 
+                       \(DatabaseManager.COLUMN_YUKLEYEN), \(DatabaseManager.COLUMN_YUKLENDI)
+                FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER)
+            """
+            
+            var statement: OpaquePointer?
+            defer { sqlite3_finalize(statement) }
+            
+            guard sqlite3_prepare_v2(db, selectSQL, -1, &statement, nil) == SQLITE_OK else {
+                return []
+            }
+            
+            var results: [BarkodResim] = []
+            
+            while sqlite3_step(statement) == SQLITE_ROW {
+                let id = Int(sqlite3_column_int(statement, 0))
+                let musteriAdi = String(cString: sqlite3_column_text(statement, 1))
+                let resimYolu = String(cString: sqlite3_column_text(statement, 2))
+                let tarih = String(cString: sqlite3_column_text(statement, 3))
+                let yukleyen = String(cString: sqlite3_column_text(statement, 4))
+                let yuklendi = Int(sqlite3_column_int(statement, 5))
+                
+                let barkodResim = BarkodResim(
+                    id: id,
+                    musteriAdi: musteriAdi,
+                    resimYolu: resimYolu,
+                    tarih: tarih,
+                    yukleyen: yukleyen,
+                    yuklendi: yuklendi
+                )
+                
+                results.append(barkodResim)
+            }
+            
+            return results
+        }
+    }
+    
+    private func getAllMusteriResimleriPaths() -> [String] {
+        return databaseQueue.sync {
+            let selectSQL = """
+                SELECT \(DatabaseManager.COLUMN_RESIM_YOLU)
+                FROM \(DatabaseManager.TABLE_MUSTERI_RESIMLER)
+            """
+            
+            var statement: OpaquePointer?
+            defer { sqlite3_finalize(statement) }
+            
+            guard sqlite3_prepare_v2(db, selectSQL, -1, &statement, nil) == SQLITE_OK else {
+                return []
+            }
+            
+            var results: [String] = []
+            
+            while sqlite3_step(statement) == SQLITE_ROW {
+                let resimYolu = String(cString: sqlite3_column_text(statement, 0))
+                results.append(resimYolu)
+            }
+            
+            return results
+        }
+    }
+    
+    private func deletePhysicalFile(path: String) -> Bool {
+        let fileManager = FileManager.default
+        
+        guard fileManager.fileExists(atPath: path) else {
+            return true // Dosya zaten yok, başarılı kabul et
+        }
+        
+        do {
+            try fileManager.removeItem(atPath: path)
+            return true
+        } catch {
+            print("❌ Dosya silinemedi: \(path) - \(error)")
+            return false
+        }
+    }
+    
+    private func cleanupEmptyImageDirectories() {
+        let fileManager = FileManager.default
+        
+        guard let documentsDir = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            return
+        }
+        
+        // Envanto klasörünü temizle
+        let envantoDir = documentsDir.appendingPathComponent("Envanto")
+        cleanupEmptyDirectory(envantoDir)
+        
+        // Müşteri resimleri klasörünü temizle
+        let musteriResimleriDir = documentsDir.appendingPathComponent("musteriresimleri")
+        cleanupEmptyDirectory(musteriResimleriDir)
+    }
+    
+    private func cleanupEmptyDirectory(_ directory: URL) {
+        let fileManager = FileManager.default
+        
+        guard fileManager.fileExists(atPath: directory.path) else {
+            return
+        }
+        
+        do {
+            let contents = try fileManager.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)
+            
+            // Alt klasörleri önce temizle
+            for item in contents {
+                var isDirectory: ObjCBool = false
+                if fileManager.fileExists(atPath: item.path, isDirectory: &isDirectory) && isDirectory.boolValue {
+                    cleanupEmptyDirectory(item)
+                }
+            }
+            
+            // Şimdi bu klasörün içeriğini tekrar kontrol et
+            let updatedContents = try fileManager.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)
+            
+            // Eğer klasör boşsa ve ana Documents klasörü değilse sil
+            if updatedContents.isEmpty && directory.lastPathComponent != "Documents" {
+                try fileManager.removeItem(at: directory)
+                print("🗑️ Boş klasör silindi: \(directory.lastPathComponent)")
+            }
+            
+        } catch {
+            print("❌ Klasör temizleme hatası: \(directory.path) - \(error)")
+        }
+    }
+    
     // MARK: - Clear Invalid Records (Kaldırıldı - Gereksiz karmaşıklık)
     // clearInvalidImageRecords() kaldırıldı
     
