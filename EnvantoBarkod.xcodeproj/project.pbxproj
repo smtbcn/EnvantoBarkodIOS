@@ -486,7 +486,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2025.07.03;
+				MARKETING_VERSION = 2025.08.01;
 				PRODUCT_BUNDLE_IDENTIFIER = com.envanto.barcode.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -527,7 +527,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2025.07.03;
+				MARKETING_VERSION = 2025.08.01;
 				PRODUCT_BUNDLE_IDENTIFIER = com.envanto.barcode.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
