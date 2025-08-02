@@ -13,6 +13,15 @@ struct ContentView: View {
                 ScannerView()
                     .environmentObject(appState)
             }
+            .onDisappear {
+                // Scanner kapandığında main thread'in serbest olduğundan emin ol
+                print("📱 [ContentView] Scanner fullScreenCover kapandı")
+                
+                // Kısa bir gecikme ile UI'ın responsive olduğundan emin ol
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    print("✅ [ContentView] Main thread serbest")
+                }
+            }
         }
         .onOpenURL { url in
             handleURLScheme(url)
@@ -55,8 +64,14 @@ class AppStateManager: ObservableObject {
     }
     
     func closeScannerToMainMenu() {
-        showScanner = false
-        pendingURLScheme = false
+        print("🏠 [AppStateManager] Ana menüye dönülüyor")
+        
+        // UI güncellemesini main thread'de yap
+        DispatchQueue.main.async {
+            self.showScanner = false
+            self.pendingURLScheme = false
+            print("✅ [AppStateManager] Ana menü gösterildi")
+        }
     }
 }
 

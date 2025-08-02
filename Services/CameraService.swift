@@ -36,6 +36,11 @@ class CameraService: NSObject, ObservableObject {
     private func configureCaptureSession() {
         captureSession.beginConfiguration()
         
+        // Pil optimizasyonu: Orta çözünürlük kullan
+        if captureSession.canSetSessionPreset(.medium) {
+            captureSession.sessionPreset = .medium
+        }
+        
         // Kamera cihazını seç
         guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else {
             setError("Kamera bulunamadı")
@@ -53,6 +58,12 @@ class CameraService: NSObject, ObservableObject {
             
             // Video çıkışını ayarla
             videoOutput.setSampleBufferDelegate(self, queue: DispatchQueue(label: "video.output.queue"))
+            
+            // Pil optimizasyonu: Frame rate'i düşür
+            videoOutput.videoSettings = [
+                kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA
+            ]
+            
             if captureSession.canAddOutput(videoOutput) {
                 captureSession.addOutput(videoOutput)
             }
@@ -65,17 +76,10 @@ class CameraService: NSObject, ObservableObject {
             // Kamera ayarlarını optimize et
             try device.lockForConfiguration()
             
-            // Otomatik odaklama
-            if device.isFocusModeSupported(.continuousAutoFocus) {
-                device.focusMode = .continuousAutoFocus
-            }
-            
-            // Otomatik pozlama
-            if device.isExposureModeSupported(.continuousAutoExposure) {
-                device.exposureMode = .continuousAutoExposure
-            }
-            
             device.unlockForConfiguration()
+            
+            // Pil optimizasyonu: Akıllı ayarlar
+            BatteryOptimizer.shared.optimizeCameraSettings(for: device)
             
         } catch {
             setError("Kamera yapılandırılamadı: \(error.localizedDescription)")

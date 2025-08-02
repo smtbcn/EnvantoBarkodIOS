@@ -42,6 +42,7 @@
 		AB1234567890123400000080 /* LoginManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000081 /* LoginManager.swift */; };
 		AB1234567890123400000082 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000083 /* LoginView.swift */; };
 		AB1234567890123400000085 /* ImageOrientationUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000084 /* ImageOrientationUtils.swift */; };
+		AB1234567890123400000086 /* BatteryOptimizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000087 /* BatteryOptimizer.swift */; };
 		AB12345678901234ASSETS002 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AB12345678901234ASSETS001 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
@@ -82,6 +83,7 @@
 		AB1234567890123400000081 /* LoginManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginManager.swift; sourceTree = "<group>"; };
 		AB1234567890123400000083 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		AB1234567890123400000084 /* ImageOrientationUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageOrientationUtils.swift; sourceTree = "<group>"; };
+		AB1234567890123400000087 /* BatteryOptimizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatteryOptimizer.swift; sourceTree = "<group>"; };
 		AB12345678901234ASSETS001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -185,6 +187,7 @@
 				AB123456789012340000005C /* DeviceIdentifier.swift */,
 				AB1234567890123400000060 /* AudioManager.swift */,
 				AB1234567890123400000084 /* ImageOrientationUtils.swift */,
+				AB1234567890123400000087 /* BatteryOptimizer.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -311,6 +314,7 @@
 				AB123456789012340000005B /* DeviceIdentifier.swift in Sources */,
 				AB123456789012340000005F /* AudioManager.swift in Sources */,
 				AB1234567890123400000085 /* ImageOrientationUtils.swift in Sources */,
+				AB1234567890123400000086 /* BatteryOptimizer.swift in Sources */,
 				AB123456789012340000001B /* Constants.swift in Sources */,
 				AB123456789012340000001D /* Extensions.swift in Sources */,
 			);

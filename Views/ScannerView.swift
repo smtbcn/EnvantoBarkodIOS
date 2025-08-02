@@ -102,6 +102,7 @@ struct ScannerView: View {
             viewModel.startScanning()
         }
         .onDisappear {
+            print("👋 [ScannerView] onDisappear çağrıldı")
             viewModel.stopScanning()
         }
         .onReceive(viewModel.$scannedBarcode) { barcode in
@@ -122,16 +123,38 @@ struct ScannerView: View {
             WebBrowserView(
                 url: viewModel.currentURL,
                 onReturnToScanner: {
+                    print("🔄 [ScannerView] WebView'den scanner'a dönülüyor")
                     viewModel.showWebBrowser = false
                     viewModel.resetScanning()
-                    // Kamerayı tekrar başlat
-                    viewModel.startScanning()
+                    
+                    // Kamerayı güvenli şekilde yeniden başlat
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                        print("🎥 [ScannerView] Kamera yeniden başlatılıyor")
+                        viewModel.startScanning()
+                    }
                 },
                 onClose: {
-                    viewModel.showWebBrowser = false
-                    appState.closeScannerToMainMenu()
+                    print("❌ [ScannerView] WebView kapatılıyor, ana menüye dönülüyor")
+                    
+                    // UI güncellemelerini main thread'de yap
+                    DispatchQueue.main.async {
+                        viewModel.showWebBrowser = false
+                        
+                        // Kısa bir gecikme ile ana menüye dön (UI'ın hazır olması için)
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            appState.closeScannerToMainMenu()
+                        }
+                    }
                 }
             )
+        }
+        .onChange(of: viewModel.showWebBrowser) { isShowing in
+            if isShowing {
+                print("🌐 [ScannerView] WebView açılıyor, kamera durduruluyor")
+                viewModel.stopScanning()
+            } else {
+                print("📱 [ScannerView] WebView kapandı")
+            }
         }
     }
 }
