@@ -192,33 +192,54 @@ jobs:
         mkdir -p build/Payload
         echo "This is a test build without proper signing" > build/test-build.txt
         
-    - name: Build Release IPA with Automatic Signing
+    - name: Build Release IPA with Fastlane Match Certificates
       if: github.event.inputs.build_type == 'release' || github.ref == 'refs/heads/main'
-      continue-on-error: true
       env:
         ASC_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
         ASC_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
         ASC_KEY_PATH: ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
       run: |
-        echo "Building Release IPA with automatic signing..."
+        echo "🏗️ Building Release IPA with Fastlane Match certificates..."
         
-        # Archive with automatic signing
+        # Check if certificates were installed by Match
+        echo "🔍 Checking installed certificates..."
+        security find-identity -v -p codesigning || echo "No code signing identities found"
+        
+        # Archive with automatic signing (should use Match certificates)
+        echo "📦 Creating archive..."
         xcodebuild -project "$XCODE_PROJECT" \
                    -scheme "$XCODE_SCHEME" \
                    -configuration Release \
                    -destination generic/platform=iOS \
                    -archivePath $PWD/build/EnvantoBarkod.xcarchive \
                    -allowProvisioningUpdates \
-                   archive || echo "Archive failed - continuing with dummy IPA creation"
+                   archive
         
-        # Export IPA (only if archive succeeded)
-        if [ -d "$PWD/build/EnvantoBarkod.xcarchive" ]; then
-          xcodebuild -exportArchive \
-                     -archivePath $PWD/build/EnvantoBarkod.xcarchive \
-                     -exportOptionsPlist ExportOptions-Release.plist \
-                     -exportPath $PWD/build \
-                     -allowProvisioningUpdates || echo "Export failed - continuing with dummy IPA creation"
+        # Verify archive was created
+        if [ ! -d "$PWD/build/EnvantoBarkod.xcarchive" ]; then
+          echo "❌ Archive creation failed"
+          exit 1
         fi
+        
+        echo "✅ Archive created successfully"
+        
+        # Export IPA
+        echo "📱 Exporting IPA..."
+        xcodebuild -exportArchive \
+                   -archivePath $PWD/build/EnvantoBarkod.xcarchive \
+                   -exportOptionsPlist ExportOptions-Release.plist \
+                   -exportPath $PWD/build \
+                   -allowProvisioningUpdates
+        
+        # Verify IPA was created
+        IPA_FILE=$(find build -name "*.ipa" | head -1)
+        if [ -z "$IPA_FILE" ]; then
+          echo "❌ IPA export failed"
+          exit 1
+        fi
+        
+        echo "✅ IPA created successfully: $IPA_FILE"
+        ls -la build/*.ipa
                    
     - name: Build Ad Hoc IPA (Manual Approach)
       if: github.event.inputs.build_type == 'adhoc'
