@@ -171,6 +171,32 @@ jobs:
           }
         }
         
+        # Verify certificates were installed
+        echo "🔍 Verifying certificate installation..."
+        security find-identity -v -p codesigning
+        
+        # List provisioning profiles
+        echo "📋 Checking provisioning profiles..."
+        ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ || echo "No provisioning profiles directory found"
+        
+        # Import certificates to build keychain if needed
+        echo "🔐 Ensuring certificates are in build keychain..."
+        security list-keychains -s build.keychain login.keychain
+        security set-keychain-settings -t 3600 -u build.keychain
+        
+        # Force Match to use build keychain
+        echo "🔑 Forcing Match to use build keychain..."
+        export MATCH_KEYCHAIN_NAME="build.keychain"
+        export MATCH_KEYCHAIN_PASSWORD=""
+        
+        # Re-run Match to ensure certificates are in the correct keychain
+        echo "🔄 Re-running Match to install certificates in build keychain..."
+        fastlane match appstore --readonly --keychain_name build.keychain --keychain_password "" || echo "Match re-run completed"
+        
+        # Verify certificates are now available
+        echo "✅ Final certificate verification..."
+        security find-identity -v -p codesigning
+        
     - name: Create Build Directory
       run: mkdir -p build
         
