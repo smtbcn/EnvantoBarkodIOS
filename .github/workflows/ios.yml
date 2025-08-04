@@ -173,13 +173,11 @@ jobs:
           Commit: ${{ github.sha }}
           Branch: ${{ github.ref_name }}
           
-    - name: Send Slack Notification
+    - name: Build Summary
       if: always()
-      uses: 8398a7/action-slack@v3
-      with:
-        status: ${{ job.status }}
-        channel: '#ios-builds'
-        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
-        fields: repo,message,commit,author,action,eventName,ref,workflow
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+      run: |
+        echo "🏗️ Build completed!"
+        echo "Build Type: ${{ github.event.inputs.build_type || 'auto' }}"
+        echo "Status: ${{ job.status }}"
+        echo "Commit: ${{ github.sha }}"
+        echo "Branch: ${{ github.ref_name }}"
