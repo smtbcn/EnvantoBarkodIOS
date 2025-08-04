@@ -239,7 +239,7 @@ jobs:
         echo "FASTLANE_SESSION=not-needed" >> $GITHUB_ENV
         
     - name: Create Dummy IPA for Testing
-      if: (github.event.inputs.build_type == 'release' || github.ref == 'refs/heads/main') && steps.find_ipa.outputs.has_real_ipa == 'false'
+      if: github.event.inputs.build_type == 'release' || github.ref == 'refs/heads/main'
       run: |
         echo "Creating dummy IPA structure for testing..."
         mkdir -p build/Payload/EnvantoBarkod.app
