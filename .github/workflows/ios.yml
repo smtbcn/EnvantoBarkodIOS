@@ -99,6 +99,45 @@ jobs:
         echo "ASC_ISSUER_ID=${{ secrets.APPSTORE_ISSUER_ID }}" >> $GITHUB_ENV
         echo "ASC_KEY_PATH=~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8" >> $GITHUB_ENV
         
+    - name: Generate Certificate and Provisioning Profile
+      env:
+        MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD || 'temp-password-123' }}
+        MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GITHUB_TOKEN }}
+      run: |
+        echo "Generating certificate and provisioning profile automatically..."
+        
+        # Install fastlane for certificate management
+        sudo gem install fastlane
+        
+        # Create Fastlane Matchfile for automatic certificate management
+        mkdir -p fastlane
+        cat > fastlane/Matchfile << EOF
+        git_url("https://github.com/smtbcn/certificates")
+        storage_mode("git")
+        type("appstore")
+        app_identifier(["${{ env.BUNDLE_ID }}"])
+        username("${{ env.APPLE_ID }}")
+        team_id("${{ env.TEAM_ID }}")
+        EOF
+        
+        # Set up git authentication for match
+        git config --global user.email "${{ env.APPLE_ID }}"
+        git config --global user.name "GitHub Actions"
+        
+        # Try to generate certificates automatically
+        echo "Attempting automatic certificate generation..."
+        export FASTLANE_USER="${{ env.APPLE_ID }}"
+        export FASTLANE_TEAM_ID="${{ env.TEAM_ID }}"
+        export FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD="not-needed"
+        export FASTLANE_SESSION="not-needed"
+        
+        # First try to get existing certificates
+        fastlane match appstore --readonly || {
+          echo "No existing certificates found, creating new ones..."
+          # Create new certificates if none exist
+          fastlane match appstore || echo "Certificate creation failed - will use automatic signing"
+        }
+        
     - name: Create Build Directory
       run: mkdir -p build
         
