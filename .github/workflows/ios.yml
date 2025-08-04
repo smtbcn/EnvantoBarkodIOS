@@ -81,7 +81,11 @@ jobs:
         api-key-id: ${{ secrets.APPSTORE_KEY_ID }}
         api-private-key: ${{ secrets.APPSTORE_PRIVATE_KEY }}
         
-    - name: Setup Apple Developer Account
+    - name: Install Fastlane
+      run: |
+        sudo gem install fastlane
+        
+    - name: Setup Apple Developer Account with Fastlane
       run: |
         echo "Setting up Apple Developer account for automatic signing..."
         # Create temporary keychain
@@ -94,76 +98,86 @@ jobs:
         mkdir -p ~/private_keys
         echo "${{ secrets.APPSTORE_PRIVATE_KEY }}" > ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
         
-        # Set environment variables for xcodebuild
-        echo "APPSTORE_CONNECT_API_KEY_ID=${{ secrets.APPSTORE_KEY_ID }}" >> $GITHUB_ENV
-        echo "APPSTORE_CONNECT_ISSUER_ID=${{ secrets.APPSTORE_ISSUER_ID }}" >> $GITHUB_ENV
-        echo "APPSTORE_CONNECT_API_KEY_PATH=~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8" >> $GITHUB_ENV
+        # Create Fastlane Appfile
+        mkdir -p fastlane
+        cat > fastlane/Appfile << EOF
+        app_identifier("${{ env.BUNDLE_ID }}")
+        apple_id("${{ env.APPLE_ID }}")
+        team_id("${{ env.TEAM_ID }}")
+        
+        # App Store Connect API Key
+        app_store_connect_api_key(
+          key_id: "${{ secrets.APPSTORE_KEY_ID }}",
+          issuer_id: "${{ secrets.APPSTORE_ISSUER_ID }}",
+          key_filepath: "~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8"
+        )
+        EOF
         
     - name: Create Build Directory
       run: mkdir -p build
         
+    - name: Create Fastlane Build Script
+      run: |
+        # Create Fastlane build script
+        cat > fastlane/Fastfile << 'EOF'
+        default_platform(:ios)
+        
+        platform :ios do
+          desc "Build Debug IPA"
+          lane :build_debug do
+            build_app(
+              project: ENV["XCODE_PROJECT"],
+              scheme: ENV["XCODE_SCHEME"],
+              configuration: "Debug",
+              output_directory: "./build",
+              output_name: "EnvantoBarkod.ipa",
+              export_method: "development",
+              skip_profile_detection: true
+            )
+          end
+          
+          desc "Build Release IPA"
+          lane :build_release do
+            build_app(
+              project: ENV["XCODE_PROJECT"],
+              scheme: ENV["XCODE_SCHEME"],
+              configuration: "Release",
+              output_directory: "./build",
+              output_name: "EnvantoBarkod.ipa",
+              export_method: "app-store",
+              skip_profile_detection: true
+            )
+          end
+          
+          desc "Build Ad Hoc IPA"
+          lane :build_adhoc do
+            build_app(
+              project: ENV["XCODE_PROJECT"],
+              scheme: ENV["XCODE_SCHEME"],
+              configuration: "Release",
+              output_directory: "./build",
+              output_name: "EnvantoBarkod.ipa",
+              export_method: "ad-hoc",
+              skip_profile_detection: true
+            )
+          end
+        end
+        EOF
+        
     - name: Build Debug IPA
       if: github.event.inputs.build_type == 'debug' || (github.event_name == 'push' && github.ref != 'refs/heads/main')
-      env:
-        ASC_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
-        ASC_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
-        ASC_KEY_PATH: ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
       run: |
-        xcodebuild -project "$XCODE_PROJECT" \
-                   -scheme "$XCODE_SCHEME" \
-                   -configuration Debug \
-                   -destination generic/platform=iOS \
-                   -archivePath $PWD/build/EnvantoBarkod.xcarchive \
-                   -allowProvisioningUpdates \
-                   archive
-        
-        xcodebuild -exportArchive \
-                   -archivePath $PWD/build/EnvantoBarkod.xcarchive \
-                   -exportOptionsPlist ExportOptions-Debug.plist \
-                   -exportPath $PWD/build \
-                   -allowProvisioningUpdates
+        fastlane ios build_debug
                    
     - name: Build Release IPA
       if: github.event.inputs.build_type == 'release' || github.ref == 'refs/heads/main'
-      env:
-        ASC_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
-        ASC_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
-        ASC_KEY_PATH: ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
       run: |
-        xcodebuild -project "$XCODE_PROJECT" \
-                   -scheme "$XCODE_SCHEME" \
-                   -configuration Release \
-                   -destination generic/platform=iOS \
-                   -archivePath $PWD/build/EnvantoBarkod.xcarchive \
-                   -allowProvisioningUpdates \
-                   archive
-        
-        xcodebuild -exportArchive \
-                   -archivePath $PWD/build/EnvantoBarkod.xcarchive \
-                   -exportOptionsPlist ExportOptions-Release.plist \
-                   -exportPath $PWD/build \
-                   -allowProvisioningUpdates
+        fastlane ios build_release
                    
     - name: Build Ad Hoc IPA
       if: github.event.inputs.build_type == 'adhoc'
-      env:
-        ASC_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
-        ASC_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
-        ASC_KEY_PATH: ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
       run: |
-        xcodebuild -project "$XCODE_PROJECT" \
-                   -scheme "$XCODE_SCHEME" \
-                   -configuration Release \
-                   -destination generic/platform=iOS \
-                   -archivePath $PWD/build/EnvantoBarkod.xcarchive \
-                   -allowProvisioningUpdates \
-                   archive
-        
-        xcodebuild -exportArchive \
-                   -archivePath $PWD/build/EnvantoBarkod.xcarchive \
-                   -exportOptionsPlist ExportOptions-AdHoc.plist \
-                   -exportPath $PWD/build \
-                   -allowProvisioningUpdates
+        fastlane ios build_adhoc
                    
     - name: Find IPA File
       id: find_ipa
