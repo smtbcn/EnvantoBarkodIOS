@@ -275,13 +275,44 @@ jobs:
         
     - name: Upload to TestFlight with Altool
       if: (github.event.inputs.build_type == 'release' || github.ref == 'refs/heads/main')
+      env:
+        API_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
+        API_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+        API_PRIVATE_KEY: ${{ secrets.APPSTORE_PRIVATE_KEY }}
       run: |
+        # Debug: Check if secrets are available
+        echo "Checking secrets availability..."
+        if [ -z "$API_KEY_ID" ]; then
+          echo "ERROR: APPSTORE_KEY_ID secret is not set"
+          exit 1
+        fi
+        if [ -z "$API_ISSUER_ID" ]; then
+          echo "ERROR: APPSTORE_ISSUER_ID secret is not set"
+          exit 1
+        fi
+        if [ -z "$API_PRIVATE_KEY" ]; then
+          echo "ERROR: APPSTORE_PRIVATE_KEY secret is not set"
+          exit 1
+        fi
+        
+        echo "All secrets are available ✅"
+        echo "API Key ID: $API_KEY_ID"
+        echo "Issuer ID: $API_ISSUER_ID"
+        
         # Create API key file in the correct location for altool
         mkdir -p ~/private_keys
-        echo "${{ secrets.APPSTORE_PRIVATE_KEY }}" > ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
+        echo "$API_PRIVATE_KEY" > ~/private_keys/AuthKey_$API_KEY_ID.p8
         
         # Set proper permissions
-        chmod 600 ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
+        chmod 600 ~/private_keys/AuthKey_$API_KEY_ID.p8
+        
+        # Verify API key file was created
+        if [ ! -f ~/private_keys/AuthKey_$API_KEY_ID.p8 ]; then
+          echo "ERROR: API key file was not created"
+          exit 1
+        fi
+        
+        echo "API key file created successfully ✅"
         
         # Find IPA file
         IPA_FILE=$(find build -name "*.ipa" | head -1)
@@ -291,16 +322,13 @@ jobs:
         fi
         
         echo "Attempting to upload $IPA_FILE to TestFlight..."
-        echo "Using API Key ID: ${{ secrets.APPSTORE_KEY_ID }}"
-        echo "Using Issuer ID: ${{ secrets.APPSTORE_ISSUER_ID }}"
         
-        # Try upload with altool using API key file path
+        # Try upload with altool using correct parameter format
         xcrun altool --upload-app \
           --type ios \
           --file "$IPA_FILE" \
-          --apiKey "${{ secrets.APPSTORE_KEY_ID }}" \
-          --apiIssuer "${{ secrets.APPSTORE_ISSUER_ID }}" \
-          --apiKeyPath ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8 \
+          --apiKey "$API_KEY_ID" \
+          --apiIssuer "$API_ISSUER_ID" \
           --verbose || echo "Upload failed - this is expected for dummy IPA"
         
     - name: Upload to Firebase App Distribution (Debug/AdHoc)
