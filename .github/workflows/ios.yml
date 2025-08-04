@@ -21,6 +21,8 @@ env:
   XCODE_PROJECT: EnvantoBarkod.xcodeproj
   XCODE_SCHEME: EnvantoBarkod
   BUNDLE_ID: com.envanto.barcode.ios
+  APPLE_ID: samet.bicen@icloud.com
+  TEAM_ID: 6F974S63AX
 
 jobs:
   build:
@@ -66,8 +68,11 @@ jobs:
         api-key-id: ${{ secrets.APPSTORE_KEY_ID }}
         api-private-key: ${{ secrets.APPSTORE_PRIVATE_KEY }}
         
+    - name: Create Build Directory
+      run: mkdir -p build
+        
     - name: Build Debug IPA
-      if: github.event.inputs.build_type == 'debug' || (github.event.inputs.build_type == '' && github.ref != 'refs/heads/main')
+      if: github.event.inputs.build_type == 'debug' || (github.event_name == 'push' && github.ref != 'refs/heads/main')
       run: |
         xcodebuild -project "$XCODE_PROJECT" \
                    -scheme "$XCODE_SCHEME" \
@@ -111,12 +116,19 @@ jobs:
                    -exportOptionsPlist ExportOptions-AdHoc.plist \
                    -exportPath $PWD/build
                    
+    - name: Find IPA File
+      id: find_ipa
+      run: |
+        IPA_PATH=$(find build -name "*.ipa" | head -1)
+        echo "ipa_path=$IPA_PATH" >> $GITHUB_OUTPUT
+        echo "Found IPA: $IPA_PATH"
+        
     - name: Upload IPA to Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: EnvantoBarkod-${{ github.event.inputs.build_type || 'debug' }}-${{ github.run_number }}
+        name: EnvantoBarkod-${{ github.event.inputs.build_type || 'auto' }}-${{ github.run_number }}
         path: |
-          build/*.ipa
+          ${{ steps.find_ipa.outputs.ipa_path }}
           build/EnvantoBarkod.xcarchive
         retention-days: 30
         
@@ -124,7 +136,7 @@ jobs:
       if: github.event.inputs.build_type == 'release' || github.ref == 'refs/heads/main'
       uses: Apple-Actions/upload-testflight-build@v1
       with:
-        app-path: build/EnvantoBarkod.ipa
+        app-path: ${{ steps.find_ipa.outputs.ipa_path }}
         issuer-id: ${{ secrets.APPSTORE_ISSUER_ID }}
         api-key-id: ${{ secrets.APPSTORE_KEY_ID }}
         api-private-key: ${{ secrets.APPSTORE_PRIVATE_KEY }}
@@ -136,7 +148,7 @@ jobs:
         appId: ${{ secrets.FIREBASE_APP_ID }}
         serviceCredentialsFileContent: ${{ secrets.CREDENTIAL_FILE_CONTENT }}
         groups: testers
-        file: build/EnvantoBarkod.ipa
+        file: ${{ steps.find_ipa.outputs.ipa_path }}
         releaseNotes: |
           Build: ${{ github.run_number }}
           Commit: ${{ github.sha }}
