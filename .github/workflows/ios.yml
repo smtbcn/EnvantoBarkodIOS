@@ -94,11 +94,7 @@ jobs:
         security unlock-keychain -p "" build.keychain
         security set-keychain-settings -t 3600 -u build.keychain
         
-        # Create App Store Connect API key file
-        mkdir -p ~/private_keys
-        echo "${{ secrets.APPSTORE_PRIVATE_KEY }}" > ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
-        
-        # Create Fastlane Appfile
+        # Create Fastlane Appfile with Apple ID authentication
         mkdir -p fastlane
         cat > fastlane/Appfile << EOF
         app_identifier("${{ env.BUNDLE_ID }}")
@@ -106,10 +102,11 @@ jobs:
         team_id("${{ env.TEAM_ID }}")
         EOF
         
-        # Set App Store Connect API environment variables
-        echo "APP_STORE_CONNECT_API_KEY_ID=${{ secrets.APPSTORE_KEY_ID }}" >> $GITHUB_ENV
-        echo "APP_STORE_CONNECT_ISSUER_ID=${{ secrets.APPSTORE_ISSUER_ID }}" >> $GITHUB_ENV
-        echo "APP_STORE_CONNECT_API_KEY_PATH=~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8" >> $GITHUB_ENV
+        # Set Fastlane environment variables for Apple ID authentication
+        echo "FASTLANE_USER=${{ env.APPLE_ID }}" >> $GITHUB_ENV
+        echo "FASTLANE_TEAM_ID=${{ env.TEAM_ID }}" >> $GITHUB_ENV
+        echo "FASTLANE_DONT_STORE_PASSWORD=1" >> $GITHUB_ENV
+        echo "FASTLANE_SKIP_2FA_UPGRADE=1" >> $GITHUB_ENV
         
     - name: Create Build Directory
       run: mkdir -p build
