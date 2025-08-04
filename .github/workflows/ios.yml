@@ -81,17 +81,23 @@ jobs:
         api-key-id: ${{ secrets.APPSTORE_KEY_ID }}
         api-private-key: ${{ secrets.APPSTORE_PRIVATE_KEY }}
         
-    - name: Setup Manual Code Signing (Alternative Approach)
+    - name: Setup Automatic Code Signing with API Key
       run: |
-        echo "Setting up manual code signing as fallback..."
+        echo "Setting up automatic code signing with App Store Connect API..."
         # Create temporary keychain
         security create-keychain -p "" build.keychain
         security default-keychain -s build.keychain
         security unlock-keychain -p "" build.keychain
         security set-keychain-settings -t 3600 -u build.keychain
         
-        # Create a dummy certificate for testing (this won't work for real deployment)
-        echo "Creating dummy certificate for build testing..."
+        # Create App Store Connect API key file for automatic signing
+        mkdir -p ~/private_keys
+        echo "${{ secrets.APPSTORE_PRIVATE_KEY }}" > ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
+        
+        # Set up automatic signing environment
+        echo "ASC_KEY_ID=${{ secrets.APPSTORE_KEY_ID }}" >> $GITHUB_ENV
+        echo "ASC_ISSUER_ID=${{ secrets.APPSTORE_ISSUER_ID }}" >> $GITHUB_ENV
+        echo "ASC_KEY_PATH=~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8" >> $GITHUB_ENV
         
     - name: Create Build Directory
       run: mkdir -p build
@@ -114,23 +120,30 @@ jobs:
         mkdir -p build/Payload
         echo "This is a test build without proper signing" > build/test-build.txt
         
-    - name: Build Release IPA (Manual Approach)
+    - name: Build Release IPA with Automatic Signing
       if: github.event.inputs.build_type == 'release' || github.ref == 'refs/heads/main'
+      env:
+        ASC_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
+        ASC_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+        ASC_KEY_PATH: ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
       run: |
-        echo "Attempting manual build without signing..."
+        echo "Building Release IPA with automatic signing..."
+        
+        # Archive with automatic signing
         xcodebuild -project "$XCODE_PROJECT" \
                    -scheme "$XCODE_SCHEME" \
                    -configuration Release \
                    -destination generic/platform=iOS \
                    -archivePath $PWD/build/EnvantoBarkod.xcarchive \
-                   CODE_SIGN_IDENTITY="" \
-                   CODE_SIGNING_REQUIRED=NO \
-                   CODE_SIGNING_ALLOWED=NO \
-                   archive || echo "Build failed as expected without signing"
+                   -allowProvisioningUpdates \
+                   archive
         
-        # Try to create a basic archive structure for testing
-        mkdir -p build/Payload
-        echo "This is a test build without proper signing" > build/test-build.txt
+        # Export IPA
+        xcodebuild -exportArchive \
+                   -archivePath $PWD/build/EnvantoBarkod.xcarchive \
+                   -exportOptionsPlist ExportOptions-Release.plist \
+                   -exportPath $PWD/build \
+                   -allowProvisioningUpdates
                    
     - name: Build Ad Hoc IPA (Manual Approach)
       if: github.event.inputs.build_type == 'adhoc'
@@ -171,14 +184,67 @@ jobs:
           build/EnvantoBarkod.xcarchive
         retention-days: 30
         
-    - name: Upload to TestFlight (Release only)
+    - name: Install Fastlane for TestFlight Upload
       if: (github.event.inputs.build_type == 'release' || github.ref == 'refs/heads/main') && endsWith(steps.find_ipa.outputs.ipa_path, '.ipa')
-      uses: Apple-Actions/upload-testflight-build@v1
-      with:
-        app-path: ${{ steps.find_ipa.outputs.ipa_path }}
-        issuer-id: ${{ secrets.APPSTORE_ISSUER_ID }}
-        api-key-id: ${{ secrets.APPSTORE_KEY_ID }}
-        api-private-key: ${{ secrets.APPSTORE_PRIVATE_KEY }}
+      run: |
+        sudo gem install fastlane
+        
+    - name: Create Fastlane Configuration for TestFlight
+      if: (github.event.inputs.build_type == 'release' || github.ref == 'refs/heads/main') && endsWith(steps.find_ipa.outputs.ipa_path, '.ipa')
+      run: |
+        mkdir -p fastlane
+        
+        # Create Appfile
+        cat > fastlane/Appfile << EOF
+        app_identifier("${{ env.BUNDLE_ID }}")
+        apple_id("${{ env.APPLE_ID }}")
+        team_id("${{ env.TEAM_ID }}")
+        EOF
+        
+        # Create Fastfile for TestFlight upload
+        cat > fastlane/Fastfile << 'EOF'
+        default_platform(:ios)
+        
+        platform :ios do
+          desc "Upload to TestFlight"
+          lane :upload_testflight do
+            upload_to_testflight(
+              api_key_path: ENV["API_KEY_PATH"],
+              app_identifier: ENV["BUNDLE_ID"],
+              apple_id: ENV["APP_STORE_CONNECT_APP_ID"],
+              team_id: ENV["TEAM_ID"],
+              skip_waiting_for_build_processing: true,
+              skip_submission: true,
+              distribute_external: false,
+              notify_external_testers: false,
+              changelog: "Build #{ENV['GITHUB_RUN_NUMBER']} - #{ENV['GITHUB_SHA'][0..6]}"
+            )
+          end
+        end
+        EOF
+        
+        # Create API key file
+        mkdir -p ~/.appstoreconnect/private_keys
+        echo "${{ secrets.APPSTORE_PRIVATE_KEY }}" > ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
+        
+        # Set environment variables
+        echo "API_KEY_PATH=~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8" >> $GITHUB_ENV
+        echo "FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD=not-needed" >> $GITHUB_ENV
+        echo "FASTLANE_SESSION=not-needed" >> $GITHUB_ENV
+        
+    - name: Upload to TestFlight
+      if: (github.event.inputs.build_type == 'release' || github.ref == 'refs/heads/main') && endsWith(steps.find_ipa.outputs.ipa_path, '.ipa')
+      env:
+        FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD: "not-needed"
+        FASTLANE_SESSION: "not-needed"
+        APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
+        APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+        APP_STORE_CONNECT_API_KEY_PATH: ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
+        APP_STORE_CONNECT_APP_ID: ${{ secrets.APP_STORE_CONNECT_APP_ID }}
+        BUNDLE_ID: ${{ env.BUNDLE_ID }}
+        TEAM_ID: ${{ env.TEAM_ID }}
+      run: |
+        fastlane ios upload_testflight
         
     - name: Upload to Firebase App Distribution (Debug/AdHoc)
       if: (github.event.inputs.build_type != 'release' && github.ref != 'refs/heads/main') && endsWith(steps.find_ipa.outputs.ipa_path, '.ipa')
