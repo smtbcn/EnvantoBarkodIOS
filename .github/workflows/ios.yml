@@ -55,18 +55,26 @@ jobs:
         fi
         
     - name: Import Code-Signing Certificates
+      if: secrets.IOS_DIST_SIGNING_KEY != ''
       uses: Apple-Actions/import-codesign-certs@v2
       with:
         p12-file-base64: ${{ secrets.IOS_DIST_SIGNING_KEY }}
         p12-password: ${{ secrets.IOS_DIST_SIGNING_KEY_PASSWORD }}
         
     - name: Import Provisioning Profile
+      if: secrets.IOS_DIST_SIGNING_KEY != ''
       uses: Apple-Actions/download-provisioning-profiles@v2
       with:
         bundle-id: ${{ env.BUNDLE_ID }}
         issuer-id: ${{ secrets.APPSTORE_ISSUER_ID }}
         api-key-id: ${{ secrets.APPSTORE_KEY_ID }}
         api-private-key: ${{ secrets.APPSTORE_PRIVATE_KEY }}
+        
+    - name: Setup Automatic Code Signing (Fallback)
+      if: secrets.IOS_DIST_SIGNING_KEY == ''
+      run: |
+        echo "⚠️ Distribution certificate not found. Using automatic signing for testing."
+        echo "This build will fail at signing step, but we can test the workflow structure."
         
     - name: Create Build Directory
       run: mkdir -p build
