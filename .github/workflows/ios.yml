@@ -171,6 +171,9 @@ jobs:
           echo "No IPA file found, creating test file..."
           echo "Test build without signing - $(date)" > build/EnvantoBarkod-test.txt
           IPA_PATH="build/EnvantoBarkod-test.txt"
+          echo "has_real_ipa=false" >> $GITHUB_OUTPUT
+        else
+          echo "has_real_ipa=true" >> $GITHUB_OUTPUT
         fi
         echo "ipa_path=$IPA_PATH" >> $GITHUB_OUTPUT
         echo "Found file: $IPA_PATH"
@@ -233,7 +236,7 @@ jobs:
         echo "FASTLANE_SESSION=not-needed" >> $GITHUB_ENV
         
     - name: Create Dummy IPA for Testing
-      if: (github.event.inputs.build_type == 'release' || github.ref == 'refs/heads/main') && !endsWith(steps.find_ipa.outputs.ipa_path, '.ipa')
+      if: (github.event.inputs.build_type == 'release' || github.ref == 'refs/heads/main') && steps.find_ipa.outputs.has_real_ipa == 'false'
       run: |
         echo "Creating dummy IPA structure for testing..."
         mkdir -p build/Payload/EnvantoBarkod.app
