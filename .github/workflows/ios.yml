@@ -104,14 +104,12 @@ jobs:
         app_identifier("${{ env.BUNDLE_ID }}")
         apple_id("${{ env.APPLE_ID }}")
         team_id("${{ env.TEAM_ID }}")
-        
-        # App Store Connect API Key
-        app_store_connect_api_key(
-          key_id: "${{ secrets.APPSTORE_KEY_ID }}",
-          issuer_id: "${{ secrets.APPSTORE_ISSUER_ID }}",
-          key_filepath: "~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8"
-        )
         EOF
+        
+        # Set App Store Connect API environment variables
+        echo "APP_STORE_CONNECT_API_KEY_ID=${{ secrets.APPSTORE_KEY_ID }}" >> $GITHUB_ENV
+        echo "APP_STORE_CONNECT_ISSUER_ID=${{ secrets.APPSTORE_ISSUER_ID }}" >> $GITHUB_ENV
+        echo "APP_STORE_CONNECT_API_KEY_PATH=~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8" >> $GITHUB_ENV
         
     - name: Create Build Directory
       run: mkdir -p build
@@ -132,7 +130,8 @@ jobs:
               output_directory: "./build",
               output_name: "EnvantoBarkod.ipa",
               export_method: "development",
-              skip_profile_detection: true
+              skip_profile_detection: true,
+              xcargs: "-allowProvisioningUpdates"
             )
           end
           
@@ -145,7 +144,8 @@ jobs:
               output_directory: "./build",
               output_name: "EnvantoBarkod.ipa",
               export_method: "app-store",
-              skip_profile_detection: true
+              skip_profile_detection: true,
+              xcargs: "-allowProvisioningUpdates"
             )
           end
           
@@ -158,7 +158,8 @@ jobs:
               output_directory: "./build",
               output_name: "EnvantoBarkod.ipa",
               export_method: "ad-hoc",
-              skip_profile_detection: true
+              skip_profile_detection: true,
+              xcargs: "-allowProvisioningUpdates"
             )
           end
         end
