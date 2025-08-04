@@ -172,7 +172,7 @@ jobs:
         retention-days: 30
         
     - name: Upload to TestFlight (Release only)
-      if: github.event.inputs.build_type == 'release' || github.ref == 'refs/heads/main'
+      if: (github.event.inputs.build_type == 'release' || github.ref == 'refs/heads/main') && endsWith(steps.find_ipa.outputs.ipa_path, '.ipa')
       uses: Apple-Actions/upload-testflight-build@v1
       with:
         app-path: ${{ steps.find_ipa.outputs.ipa_path }}
@@ -181,7 +181,7 @@ jobs:
         api-private-key: ${{ secrets.APPSTORE_PRIVATE_KEY }}
         
     - name: Upload to Firebase App Distribution (Debug/AdHoc)
-      if: github.event.inputs.build_type != 'release' && github.ref != 'refs/heads/main'
+      if: (github.event.inputs.build_type != 'release' && github.ref != 'refs/heads/main') && endsWith(steps.find_ipa.outputs.ipa_path, '.ipa')
       uses: wzieba/Firebase-Distribution-Github-Action@v1
       with:
         appId: ${{ secrets.FIREBASE_APP_ID }}
