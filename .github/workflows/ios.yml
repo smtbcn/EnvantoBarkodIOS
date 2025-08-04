@@ -104,6 +104,10 @@ jobs:
         
     - name: Build Debug IPA
       if: github.event.inputs.build_type == 'debug' || (github.event_name == 'push' && github.ref != 'refs/heads/main')
+      env:
+        ASC_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
+        ASC_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+        ASC_KEY_PATH: ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
       run: |
         xcodebuild -project "$XCODE_PROJECT" \
                    -scheme "$XCODE_SCHEME" \
@@ -111,22 +115,20 @@ jobs:
                    -destination generic/platform=iOS \
                    -archivePath $PWD/build/EnvantoBarkod.xcarchive \
                    -allowProvisioningUpdates \
-                   -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8 \
-                   -authenticationKeyID ${{ secrets.APPSTORE_KEY_ID }} \
-                   -authenticationKeyIssuerID ${{ secrets.APPSTORE_ISSUER_ID }} \
                    archive
         
         xcodebuild -exportArchive \
                    -archivePath $PWD/build/EnvantoBarkod.xcarchive \
                    -exportOptionsPlist ExportOptions-Debug.plist \
                    -exportPath $PWD/build \
-                   -allowProvisioningUpdates \
-                   -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8 \
-                   -authenticationKeyID ${{ secrets.APPSTORE_KEY_ID }} \
-                   -authenticationKeyIssuerID ${{ secrets.APPSTORE_ISSUER_ID }}
+                   -allowProvisioningUpdates
                    
     - name: Build Release IPA
       if: github.event.inputs.build_type == 'release' || github.ref == 'refs/heads/main'
+      env:
+        ASC_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
+        ASC_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+        ASC_KEY_PATH: ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
       run: |
         xcodebuild -project "$XCODE_PROJECT" \
                    -scheme "$XCODE_SCHEME" \
@@ -134,22 +136,20 @@ jobs:
                    -destination generic/platform=iOS \
                    -archivePath $PWD/build/EnvantoBarkod.xcarchive \
                    -allowProvisioningUpdates \
-                   -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8 \
-                   -authenticationKeyID ${{ secrets.APPSTORE_KEY_ID }} \
-                   -authenticationKeyIssuerID ${{ secrets.APPSTORE_ISSUER_ID }} \
                    archive
         
         xcodebuild -exportArchive \
                    -archivePath $PWD/build/EnvantoBarkod.xcarchive \
                    -exportOptionsPlist ExportOptions-Release.plist \
                    -exportPath $PWD/build \
-                   -allowProvisioningUpdates \
-                   -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8 \
-                   -authenticationKeyID ${{ secrets.APPSTORE_KEY_ID }} \
-                   -authenticationKeyIssuerID ${{ secrets.APPSTORE_ISSUER_ID }}
+                   -allowProvisioningUpdates
                    
     - name: Build Ad Hoc IPA
       if: github.event.inputs.build_type == 'adhoc'
+      env:
+        ASC_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
+        ASC_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+        ASC_KEY_PATH: ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
       run: |
         xcodebuild -project "$XCODE_PROJECT" \
                    -scheme "$XCODE_SCHEME" \
@@ -157,19 +157,13 @@ jobs:
                    -destination generic/platform=iOS \
                    -archivePath $PWD/build/EnvantoBarkod.xcarchive \
                    -allowProvisioningUpdates \
-                   -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8 \
-                   -authenticationKeyID ${{ secrets.APPSTORE_KEY_ID }} \
-                   -authenticationKeyIssuerID ${{ secrets.APPSTORE_ISSUER_ID }} \
                    archive
         
         xcodebuild -exportArchive \
                    -archivePath $PWD/build/EnvantoBarkod.xcarchive \
                    -exportOptionsPlist ExportOptions-AdHoc.plist \
                    -exportPath $PWD/build \
-                   -allowProvisioningUpdates \
-                   -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8 \
-                   -authenticationKeyID ${{ secrets.APPSTORE_KEY_ID }} \
-                   -authenticationKeyIssuerID ${{ secrets.APPSTORE_ISSUER_ID }}
+                   -allowProvisioningUpdates
                    
     - name: Find IPA File
       id: find_ipa
