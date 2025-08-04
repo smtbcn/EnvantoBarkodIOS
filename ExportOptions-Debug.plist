@@ -14,10 +14,5 @@
     <false/>
     <key>signingStyle</key>
     <string>automatic</string>
-    <key>provisioningProfiles</key>
-    <dict>
-        <key>com.envanto.barcode.ios</key>
-        <string>Envanto Barkod Development</string>
-    </dict>
 </dict>
 </plist>

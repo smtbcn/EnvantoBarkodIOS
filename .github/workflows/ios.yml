@@ -98,12 +98,14 @@ jobs:
                    -configuration Debug \
                    -destination generic/platform=iOS \
                    -archivePath $PWD/build/EnvantoBarkod.xcarchive \
+                   -allowProvisioningUpdates \
                    archive
         
         xcodebuild -exportArchive \
                    -archivePath $PWD/build/EnvantoBarkod.xcarchive \
                    -exportOptionsPlist ExportOptions-Debug.plist \
-                   -exportPath $PWD/build
+                   -exportPath $PWD/build \
+                   -allowProvisioningUpdates
                    
     - name: Build Release IPA
       if: github.event.inputs.build_type == 'release' || github.ref == 'refs/heads/main'
@@ -113,12 +115,14 @@ jobs:
                    -configuration Release \
                    -destination generic/platform=iOS \
                    -archivePath $PWD/build/EnvantoBarkod.xcarchive \
+                   -allowProvisioningUpdates \
                    archive
         
         xcodebuild -exportArchive \
                    -archivePath $PWD/build/EnvantoBarkod.xcarchive \
                    -exportOptionsPlist ExportOptions-Release.plist \
-                   -exportPath $PWD/build
+                   -exportPath $PWD/build \
+                   -allowProvisioningUpdates
                    
     - name: Build Ad Hoc IPA
       if: github.event.inputs.build_type == 'adhoc'
@@ -128,12 +132,14 @@ jobs:
                    -configuration Release \
                    -destination generic/platform=iOS \
                    -archivePath $PWD/build/EnvantoBarkod.xcarchive \
+                   -allowProvisioningUpdates \
                    archive
         
         xcodebuild -exportArchive \
                    -archivePath $PWD/build/EnvantoBarkod.xcarchive \
                    -exportOptionsPlist ExportOptions-AdHoc.plist \
-                   -exportPath $PWD/build
+                   -exportPath $PWD/build \
+                   -allowProvisioningUpdates
                    
     - name: Find IPA File
       id: find_ipa
