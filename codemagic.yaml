@@ -1,126 +1,17 @@
 workflows:
-  ios-workflow:
-    name: Envanto Barkod iOS Build
-    max_build_duration: 120
-    instance_type: mac_mini_m1
-    integrations:
-      app_store_connect: codemagic
-    environment:
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.envanto.barcode.ios
-      vars:
-        # Automatic code signing için
-        CODE_SIGN_STYLE: Automatic
-        DEVELOPMENT_TEAM: 6F974S63AX
-        XCODE_WORKSPACE: "EnvantoBarkod.xcodeproj"
-        XCODE_SCHEME: "EnvantoBarkod"
-        BUNDLE_ID: "com.envanto.barcode.ios"
-        APP_STORE_APPLE_ID: 6749488468
-      xcode: latest
-      cocoapods: default
-    scripts:
-      - name: Set up automatic code signing
-        script: |
-          # Automatic code signing kullan
-          xcode-project use-profiles --code-sign-style Automatic
-      - name: Get CocoaPods dependencies
-        script: |
-          # CocoaPods kullanılmıyorsa bu adımı kaldırabilirsiniz
-          if [ -f "Podfile" ]; then
-            pod install
-          else
-            echo "Podfile bulunamadı, CocoaPods adımı atlanıyor"
-          fi
-      - name: Build ipa for distribution
-        script: |
-          xcode-project build-ipa \
-            --workspace "$XCODE_WORKSPACE" \
-            --scheme "$XCODE_SCHEME" \
-            --archive-flags="-destination 'generic/platform=iOS'"
-    artifacts:
-      - build/ios/ipa/*.ipa
-      - /tmp/xcodebuild_logs/*.log
-      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
-      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
-    publishing:
-      email:
-        recipients:
-          - samet.bicen@icloud.com
-        notify:
-          success: true
-          failure: true
-      app_store_connect:
-        auth: integration
-        submit_to_testflight: true
-        beta_groups:
-          - App Store Connect Users
-        submit_to_app_store: false
-
-  ios-debug-workflow:
-    name: Envanto Barkod iOS Debug Build
+  ios-development-workflow:
+    name: Envanto Barkod iOS Development Build
     max_build_duration: 60
     instance_type: mac_mini_m1
     environment:
-      ios_signing:
-        distribution_type: development
-        bundle_identifier: com.envanto.barcode.ios
-      vars:
-        CODE_SIGN_STYLE: Automatic
-        DEVELOPMENT_TEAM: 6F974S63AX
-        XCODE_WORKSPACE: "EnvantoBarkod.xcodeproj"
-        XCODE_SCHEME: "EnvantoBarkod"
-      xcode: latest
-      cocoapods: default
-    scripts:
-      - name: Set up debug code signing
-        script: |
-          xcode-project use-profiles --code-sign-style Automatic
-      - name: Get CocoaPods dependencies
-        script: |
-          if [ -f "Podfile" ]; then
-            pod install
-          else
-            echo "Podfile bulunamadı, CocoaPods adımı atlanıyor"
-          fi
-      - name: Build debug version
-        script: |
-          xcode-project build-ipa \
-            --workspace "$XCODE_WORKSPACE" \
-            --scheme "$XCODE_SCHEME" \
-            --config "Debug" \
-            --archive-flags="-destination 'generic/platform=iOS'"
-    artifacts:
-      - build/ios/ipa/*.ipa
-      - /tmp/xcodebuild_logs/*.log
-    publishing:
-      email:
-        recipients:
-          - samet.bicen@icloud.com
-        notify:
-          success: true
-          failure: true
-
-  ios-adhoc-workflow:
-    name: Envanto Barkod iOS AdHoc Build
-    max_build_duration: 90
-    instance_type: mac_mini_m1
-    environment:
-      ios_signing:
-        distribution_type: ad_hoc
-        bundle_identifier: com.envanto.barcode.ios
       vars:
         XCODE_WORKSPACE: "EnvantoBarkod.xcodeproj"
         XCODE_SCHEME: "EnvantoBarkod"
         BUNDLE_ID: "com.envanto.barcode.ios"
-        CODE_SIGN_STYLE: Automatic
-        DEVELOPMENT_TEAM: 6F974S63AX
+        DEVELOPMENT_TEAM: "6F974S63AX"
       xcode: latest
       cocoapods: default
     scripts:
-      - name: Set up AdHoc code signing
-        script: |
-          xcode-project use-profiles --code-sign-style Automatic
       - name: Get CocoaPods dependencies
         script: |
           if [ -f "Podfile" ]; then
@@ -128,15 +19,36 @@ workflows:
           else
             echo "Podfile bulunamadı, CocoaPods adımı atlanıyor"
           fi
-      - name: Build AdHoc ipa
+      - name: Set up project for development build
         script: |
-          xcode-project build-ipa \
-            --workspace "$XCODE_WORKSPACE" \
-            --scheme "$XCODE_SCHEME" \
-            --config "Release" \
-            --archive-flags="-destination 'generic/platform=iOS'"
+          # Xcode projesinde automatic signing ayarla
+          /usr/libexec/PlistBuddy -c "Set :objects:AB1234567890123400000033:buildSettings:CODE_SIGN_STYLE Automatic" EnvantoBarkod.xcodeproj/project.pbxproj || true
+          /usr/libexec/PlistBuddy -c "Set :objects:AB1234567890123400000034:buildSettings:CODE_SIGN_STYLE Automatic" EnvantoBarkod.xcodeproj/project.pbxproj || true
+          /usr/libexec/PlistBuddy -c "Set :objects:AB1234567890123400000033:buildSettings:DEVELOPMENT_TEAM 6F974S63AX" EnvantoBarkod.xcodeproj/project.pbxproj || true
+          /usr/libexec/PlistBuddy -c "Set :objects:AB1234567890123400000034:buildSettings:DEVELOPMENT_TEAM 6F974S63AX" EnvantoBarkod.xcodeproj/project.pbxproj || true
+      - name: Build for development
+        script: |
+          xcodebuild \
+            -project "$XCODE_WORKSPACE" \
+            -scheme "$XCODE_SCHEME" \
+            -configuration Debug \
+            -destination 'generic/platform=iOS' \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_*.p8 \
+            -authenticationKeyID $APP_STORE_CONNECT_KEY_IDENTIFIER \
+            -authenticationKeyIssuerID $APP_STORE_CONNECT_ISSUER_ID \
+            archive \
+            -archivePath build/EnvantoBarkod.xcarchive
+      - name: Export IPA
+        script: |
+          xcodebuild \
+            -exportArchive \
+            -archivePath build/EnvantoBarkod.xcarchive \
+            -exportPath build \
+            -exportOptionsPlist export_options.plist
     artifacts:
-      - build/ios/ipa/*.ipa
+      - build/*.ipa
+      - build/EnvantoBarkod.xcarchive
       - /tmp/xcodebuild_logs/*.log
     publishing:
       email:
@@ -172,6 +84,38 @@ workflows:
             -sdk iphonesimulator \
             -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
             build
+    artifacts:
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      email:
+        recipients:
+          - samet.bicen@icloud.com
+        notify:
+          success: true
+          failure: true
+
+  ios-simple-build:
+    name: Envanto Barkod iOS Simple Build
+    max_build_duration: 45
+    instance_type: mac_mini_m1
+    environment:
+      vars:
+        XCODE_WORKSPACE: "EnvantoBarkod.xcodeproj"
+        XCODE_SCHEME: "EnvantoBarkod"
+      xcode: latest
+    scripts:
+      - name: Simple build test
+        script: |
+          # En basit build - sadece compile kontrolü
+          xcodebuild \
+            -project "$XCODE_WORKSPACE" \
+            -scheme "$XCODE_SCHEME" \
+            -sdk iphoneos \
+            -configuration Debug \
+            build \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
     artifacts:
       - /tmp/xcodebuild_logs/*.log
     publishing:
