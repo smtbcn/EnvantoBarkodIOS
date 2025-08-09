@@ -63,21 +63,6 @@ workflows:
         beta_groups:
           - App Store Connect Users
         submit_to_app_store: false
-        # TestFlight release notes
-        beta_build_localizations:
-          - locale: tr
-            whats_new: |
-              🚀 Envanto Barkod iOS Uygulaması
-              
-              ✅ Barkod tarama özelliği
-              ✅ QR kod desteği
-              ✅ Flash desteği
-              ✅ Otomatik odaklama
-              ✅ Ses ve titreşim geri bildirimi
-              ✅ Web yönlendirme
-              ✅ Ayarlar paneli
-              
-              📱 Test için hazır!
 
   ios-testflight-debug:
     name: Envanto Barkod iOS TestFlight Debug
