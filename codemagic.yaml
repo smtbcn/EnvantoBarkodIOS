@@ -1,4 +1,134 @@
 workflows:
+  ios-testflight-workflow:
+    name: Envanto Barkod iOS TestFlight Build
+    max_build_duration: 120
+    instance_type: mac_mini_m1
+    integrations:
+      app_store_connect: codemagic
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.envanto.barcode.ios
+      vars:
+        XCODE_WORKSPACE: "EnvantoBarkod.xcodeproj"
+        XCODE_SCHEME: "EnvantoBarkod"
+        BUNDLE_ID: "com.envanto.barcode.ios"
+        APP_STORE_APPLE_ID: 6749488468
+        # TestFlight için gerekli bilgiler
+        APP_STORE_CONNECT_ISSUER_ID: $APP_STORE_CONNECT_ISSUER_ID
+        APP_STORE_CONNECT_KEY_IDENTIFIER: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        APP_STORE_CONNECT_PRIVATE_KEY: $APP_STORE_CONNECT_PRIVATE_KEY
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Get CocoaPods dependencies
+        script: |
+          if [ -f "Podfile" ]; then
+            pod install
+          else
+            echo "Podfile bulunamadı, CocoaPods adımı atlanıyor"
+          fi
+      - name: Increment build number
+        script: |
+          # Build number'ı otomatik artır
+          BUILD_NUMBER=$(date +%Y%m%d%H%M)
+          echo "🔢 Setting build number to: $BUILD_NUMBER"
+          
+          # Info.plist'te build number güncelle
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" Info.plist
+          
+          # Xcode project'te de güncelle
+          xcrun agvtool new-version -all $BUILD_NUMBER
+      - name: Build for App Store
+        script: |
+          echo "🏗️ Building for App Store distribution..."
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME" \
+            --archive-flags="-destination 'generic/platform=iOS'"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+    publishing:
+      email:
+        recipients:
+          - samet.bicen@icloud.com
+        notify:
+          success: true
+          failure: true
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        beta_groups:
+          - App Store Connect Users
+        submit_to_app_store: false
+        # TestFlight release notes
+        beta_build_localizations:
+          - locale: tr
+            whats_new: |
+              🚀 Envanto Barkod iOS Uygulaması
+              
+              ✅ Barkod tarama özelliği
+              ✅ QR kod desteği
+              ✅ Flash desteği
+              ✅ Otomatik odaklama
+              ✅ Ses ve titreşim geri bildirimi
+              ✅ Web yönlendirme
+              ✅ Ayarlar paneli
+              
+              📱 Test için hazır!
+
+  ios-testflight-debug:
+    name: Envanto Barkod iOS TestFlight Debug
+    max_build_duration: 90
+    instance_type: mac_mini_m1
+    integrations:
+      app_store_connect: codemagic
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.envanto.barcode.ios
+      vars:
+        XCODE_WORKSPACE: "EnvantoBarkod.xcodeproj"
+        XCODE_SCHEME: "EnvantoBarkod"
+        BUNDLE_ID: "com.envanto.barcode.ios"
+        APP_STORE_APPLE_ID: 6749488468
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Get CocoaPods dependencies
+        script: |
+          if [ -f "Podfile" ]; then
+            pod install
+          else
+            echo "Podfile bulunamadı, CocoaPods adımı atlanıyor"
+          fi
+      - name: Build for TestFlight (Debug Config)
+        script: |
+          echo "🏗️ Building debug version for TestFlight..."
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME" \
+            --config "Debug" \
+            --archive-flags="-destination 'generic/platform=iOS'"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      email:
+        recipients:
+          - samet.bicen@icloud.com
+        notify:
+          success: true
+          failure: true
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        beta_groups:
+          - App Store Connect Users
+        submit_to_app_store: false
+
   ios-no-signing-build:
     name: Envanto Barkod iOS Build (No Signing)
     max_build_duration: 45
@@ -93,124 +223,6 @@ workflows:
             -destination 'platform=iOS Simulator,name=iPhone 15,OS=latest' \
             build
     artifacts:
-      - /tmp/xcodebuild_logs/*.log
-    publishing:
-      email:
-        recipients:
-          - samet.bicen@icloud.com
-        notify:
-          success: true
-          failure: true
-
-  ios-manual-signing:
-    name: Envanto Barkod iOS Manual Signing
-    max_build_duration: 60
-    instance_type: mac_mini_m1
-    environment:
-      vars:
-        XCODE_WORKSPACE: "EnvantoBarkod.xcodeproj"
-        XCODE_SCHEME: "EnvantoBarkod"
-        BUNDLE_ID: "com.envanto.barcode.ios"
-        DEVELOPMENT_TEAM: "6F974S63AX"
-        TARGET_DEVICE_UDID: "00008140-001469903469801C"
-      xcode: latest
-      cocoapods: default
-    scripts:
-      - name: Setup Apple Developer credentials
-        script: |
-          # Apple Developer hesabı ile giriş yap
-          echo "🔐 Setting up Apple Developer credentials..."
-          
-          # Keychain'e certificate ekle (eğer varsa)
-          security list-keychains
-          
-          # Provisioning profile'ları listele
-          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ || echo "No provisioning profiles found"
-      - name: Register device if needed
-        script: |
-          echo "📱 Checking device registration..."
-          echo "Device UDID: $TARGET_DEVICE_UDID"
-          
-          # Cihaz kayıtlı mı kontrol et (bu adım manuel yapılmalı)
-          echo "⚠️  Device must be registered in Apple Developer Portal manually"
-          echo "   1. Go to developer.apple.com"
-          echo "   2. Add device with UDID: $TARGET_DEVICE_UDID"
-      - name: Get CocoaPods dependencies
-        script: |
-          if [ -f "Podfile" ]; then
-            pod install
-          else
-            echo "Podfile bulunamadı, CocoaPods adımı atlanıyor"
-          fi
-      - name: Try automatic provisioning
-        script: |
-          echo "🔧 Attempting automatic provisioning..."
-          
-          # Automatic signing ile deneme
-          xcodebuild \
-            -project "$XCODE_WORKSPACE" \
-            -scheme "$XCODE_SCHEME" \
-            -configuration Debug \
-            -destination 'generic/platform=iOS' \
-            -allowProvisioningUpdates \
-            DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" \
-            CODE_SIGN_STYLE=Automatic \
-            PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID" \
-            build \
-            || echo "❌ Automatic provisioning failed - device may not be registered"
-      - name: Create development archive
-        script: |
-          echo "📦 Creating development archive..."
-          
-          xcodebuild \
-            -project "$XCODE_WORKSPACE" \
-            -scheme "$XCODE_SCHEME" \
-            -configuration Debug \
-            -destination 'generic/platform=iOS' \
-            -allowProvisioningUpdates \
-            DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" \
-            CODE_SIGN_STYLE=Automatic \
-            PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID" \
-            archive \
-            -archivePath build/EnvantoBarkod.xcarchive \
-            || echo "❌ Archive creation failed"
-      - name: Export IPA
-        script: |
-          if [ -d "build/EnvantoBarkod.xcarchive" ]; then
-            echo "📱 Exporting IPA..."
-            
-            # Export options oluştur
-            cat > export_options.plist << EOF
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>method</key>
-              <string>development</string>
-              <key>teamID</key>
-              <string>$DEVELOPMENT_TEAM</string>
-              <key>uploadBitcode</key>
-              <false/>
-              <key>compileBitcode</key>
-              <false/>
-              <key>signingStyle</key>
-              <string>automatic</string>
-          </dict>
-          </plist>
-          EOF
-            
-            xcodebuild \
-              -exportArchive \
-              -archivePath build/EnvantoBarkod.xcarchive \
-              -exportPath build \
-              -exportOptionsPlist export_options.plist \
-              || echo "❌ IPA export failed"
-          else
-            echo "❌ Archive not found, skipping IPA export"
-          fi
-    artifacts:
-      - build/*.ipa
-      - build/EnvantoBarkod.xcarchive
       - /tmp/xcodebuild_logs/*.log
     publishing:
       email:
