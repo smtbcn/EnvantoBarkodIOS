@@ -4,12 +4,16 @@ workflows:
     max_build_duration: 120
     instance_type: mac_mini_m2
     environment:
-      groups:
-        - app_store_credentials
       vars:
         XCODE_WORKSPACE: "EnvantoBarkod.xcodeproj"
         XCODE_SCHEME: "EnvantoBarkod"
         BUNDLE_ID: "com.envanto.barcode.ios"
+        APP_STORE_CONNECT_ISSUER_ID: "f8637023-a8ad-468f-b46e-41e076d111e7"
+        APP_STORE_CONNECT_KEY_IDENTIFIER: "79RJH98G9R"
+        APP_STORE_CONNECT_PRIVATE_KEY: |
+          -----BEGIN PRIVATE KEY-----
+          MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQg7YyV64dhmduUofi+y8D9vOZsuLv+ZflhzymrD0oJ+GWgCgYIKoZIzj0DAQehRANCAAQpesZeoMppKkkEyrdTG0KmCITvkII17qOtTHXZ0Rix2v7oH9DaLfgsav7/EwEIqXW0/w/ZIta/JONwG+2Z
+          -----END PRIVATE KEY-----
       xcode: latest
     scripts:
       - name: Create export options
