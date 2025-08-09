@@ -1,5 +1,5 @@
 workflows:
-  ios-workflow:
+  ios-testflight-auto:
     name: iOS Workflow
     max_build_duration: 120
     instance_type: mac_mini_m2
