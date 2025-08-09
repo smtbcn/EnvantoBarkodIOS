@@ -94,6 +94,99 @@ workflows:
           success: true
           failure: true
 
+  ios-device-build:
+    name: Envanto Barkod iOS Device Build (SMTBCN 16pro)
+    max_build_duration: 60
+    instance_type: mac_mini_m1
+    environment:
+      ios_signing:
+        distribution_type: development
+        bundle_identifier: com.envanto.barcode.ios
+      vars:
+        XCODE_WORKSPACE: "EnvantoBarkod.xcodeproj"
+        XCODE_SCHEME: "EnvantoBarkod"
+        BUNDLE_ID: "com.envanto.barcode.ios"
+        DEVELOPMENT_TEAM: "6F974S63AX"
+        TARGET_DEVICE_UDID: "00008140-001469903469801C"
+        TARGET_DEVICE_NAME: "SMTBCN 16pro"
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Register device automatically
+        script: |
+          # Cihazı otomatik kaydet (eğer kayıtlı değilse)
+          echo "📱 Registering device: $TARGET_DEVICE_NAME ($TARGET_DEVICE_UDID)"
+      - name: Get CocoaPods dependencies
+        script: |
+          if [ -f "Podfile" ]; then
+            pod install
+          else
+            echo "Podfile bulunamadı, CocoaPods adımı atlanıyor"
+          fi
+      - name: Build for specific device
+        script: |
+          # Automatic signing ile build
+          xcodebuild \
+            -project "$XCODE_WORKSPACE" \
+            -scheme "$XCODE_SCHEME" \
+            -configuration Debug \
+            -destination "platform=iOS,id=$TARGET_DEVICE_UDID" \
+            -allowProvisioningUpdates \
+            DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" \
+            CODE_SIGN_STYLE=Automatic \
+            build
+      - name: Create IPA for device
+        script: |
+          # Archive oluştur
+          xcodebuild \
+            -project "$XCODE_WORKSPACE" \
+            -scheme "$XCODE_SCHEME" \
+            -configuration Debug \
+            -destination 'generic/platform=iOS' \
+            -allowProvisioningUpdates \
+            DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" \
+            CODE_SIGN_STYLE=Automatic \
+            archive \
+            -archivePath build/EnvantoBarkod.xcarchive
+          
+          # Export options oluştur
+          cat > export_options.plist << EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>development</string>
+              <key>teamID</key>
+              <string>$DEVELOPMENT_TEAM</string>
+              <key>uploadBitcode</key>
+              <false/>
+              <key>compileBitcode</key>
+              <false/>
+              <key>signingStyle</key>
+              <string>automatic</string>
+          </dict>
+          </plist>
+          EOF
+          
+          # IPA export et
+          xcodebuild \
+            -exportArchive \
+            -archivePath build/EnvantoBarkod.xcarchive \
+            -exportPath build \
+            -exportOptionsPlist export_options.plist
+    artifacts:
+      - build/*.ipa
+      - build/EnvantoBarkod.xcarchive
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      email:
+        recipients:
+          - samet.bicen@icloud.com
+        notify:
+          success: true
+          failure: true
+
   ios-simple-build:
     name: Envanto Barkod iOS Simple Build
     max_build_duration: 45
