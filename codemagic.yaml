@@ -1,6 +1,6 @@
 workflows:
   ios-testflight-auto:
-    name: iOS Workflow
+    name: iOS Workflow 2
     max_build_duration: 120
     instance_type: mac_mini_m2
     environment:
@@ -18,7 +18,7 @@ workflows:
     scripts:
       - name: Set up code signing
         script: |
-          echo "�  Setting up code signing..."
+          echo "Setting up code signing..."
           keychain initialize
           app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE --create
           keychain add-certificates
