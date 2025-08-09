@@ -16,31 +16,34 @@ workflows:
           -----END PRIVATE KEY-----
       xcode: latest
     scripts:
-      - name: Debug environment
-        script: |
-          echo "🔍 Environment check:"
-          echo "BUNDLE_ID: $BUNDLE_ID"
-          echo "APP_STORE_CONNECT_ISSUER_ID: $([ -n "$APP_STORE_CONNECT_ISSUER_ID" ] && echo "SET" || echo "NOT SET")"
-          echo "APP_STORE_CONNECT_KEY_IDENTIFIER: $([ -n "$APP_STORE_CONNECT_KEY_IDENTIFIER" ] && echo "SET" || echo "NOT SET")"
-          echo "APP_STORE_CONNECT_PRIVATE_KEY: $([ -n "$APP_STORE_CONNECT_PRIVATE_KEY" ] && echo "SET" || echo "NOT SET")"
       - name: Set up code signing
         script: |
-          echo "🔐 Setting up code signing..."
+          echo "�  Setting up code signing..."
           keychain initialize
-          echo "📱 Fetching signing files..."
-          app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE --create --verbose
-          echo "🔑 Adding certificates..."
+          app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE --create
           keychain add-certificates
-          echo "📋 Using profiles..."
           xcode-project use-profiles
-
-      - name: Build ipa for distribution
+      - name: Build and archive
         script: |
-          xcode-project build-ipa \
-            --project "$XCODE_WORKSPACE" \
-            --scheme "$XCODE_SCHEME"
+          echo "🏗️ Building..."
+          xcodebuild \
+            -project "$XCODE_WORKSPACE" \
+            -scheme "$XCODE_SCHEME" \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/app.xcarchive \
+            archive
+      - name: Export IPA
+        script: |
+          echo "📦 Exporting IPA..."
+          xcodebuild \
+            -exportArchive \
+            -archivePath build/app.xcarchive \
+            -exportPath build \
+            -exportOptionsPlist /dev/null
     artifacts:
-      - build/ios/ipa/*.ipa
+      - build/*.ipa
+      - build/app.xcarchive
       - /tmp/xcodebuild_logs/*.log
     publishing:
       email:
