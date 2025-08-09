@@ -1,31 +1,27 @@
 workflows:
   ios-testflight-auto:
-    name: iOS Workflow 2
+    name: iOS TestFlight
     max_build_duration: 120
     instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: Codemagic developer
     environment:
+      groups:
+        - app_store_credentials
       vars:
         XCODE_WORKSPACE: "EnvantoBarkod.xcodeproj"
         XCODE_SCHEME: "EnvantoBarkod"
         BUNDLE_ID: "com.envanto.barcode.ios"
-        APP_STORE_CONNECT_ISSUER_ID: "f8637023-a8ad-468f-b46e-41e076d111e7"
-        APP_STORE_CONNECT_KEY_IDENTIFIER: "79RJH98G9R"
-        APP_STORE_CONNECT_PRIVATE_KEY: |
-          -----BEGIN PRIVATE KEY-----
-          MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQg7YyV64dhmduUofi+y8D9vOZsuLv+ZflhzymrD0oJ+GWgCgYIKoZIzj0DAQehRANCAAQpesZeoMppKkkEyrdTG0KmCITvkII17qOtTHXZ0Rix2v7oH9DaLfgsav7/EwEIqXW0/w/ZIta/JONwG+2Z
-          -----END PRIVATE KEY-----
       xcode: latest
     scripts:
       - name: Set up code signing
         script: |
-          echo "Setting up code signing..."
           keychain initialize
           app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE --create
           keychain add-certificates
           xcode-project use-profiles
       - name: Build and archive
         script: |
-          echo "🏗️ Building..."
           xcodebuild \
             -project "$XCODE_WORKSPACE" \
             -scheme "$XCODE_SCHEME" \
@@ -35,21 +31,32 @@ workflows:
             archive
       - name: Export IPA
         script: |
-          echo "📦 Exporting IPA..."
           xcodebuild \
             -exportArchive \
             -archivePath build/app.xcarchive \
             -exportPath build \
-            -exportOptionsPlist /dev/null
+            -exportOptionsPlist export_options.plist
+      - name: Create export options
+        script: |
+          cat > export_options.plist << EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>app-store</string>
+              <key>teamID</key>
+              <string>6F974S63AX</string>
+          </dict>
+          </plist>
+          EOF
     artifacts:
       - build/*.ipa
       - build/app.xcarchive
-      - /tmp/xcodebuild_logs/*.log
     publishing:
-      email:
-        recipients:
-          - samet.bicen@icloud.com
-        notify:
-          success: true
-          failure: true
-      # TestFlight upload will be added after successful build
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        beta_groups:
+          - App Store Connect Users
+        submit_to_app_store: false
