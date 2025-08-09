@@ -24,16 +24,23 @@ workflows:
           else
             echo "Podfile bulunamadı, CocoaPods adımı atlanıyor"
           fi
+      - name: Debug environment
+        script: |
+          echo "� SChecking environment variables..."
+          echo "BUNDLE_ID: $BUNDLE_ID"
+          echo "APP_STORE_CONNECT_ISSUER_ID exists: $([ -n "$APP_STORE_CONNECT_ISSUER_ID" ] && echo "YES" || echo "NO")"
+          echo "APP_STORE_CONNECT_KEY_IDENTIFIER exists: $([ -n "$APP_STORE_CONNECT_KEY_IDENTIFIER" ] && echo "YES" || echo "NO")"
+          echo "APP_STORE_CONNECT_PRIVATE_KEY exists: $([ -n "$APP_STORE_CONNECT_PRIVATE_KEY" ] && echo "YES" || echo "NO")"
       - name: Set up code signing
         script: |
           echo "🔐 Setting up code signing..."
           keychain initialize
           echo "📱 Fetching signing files for $BUNDLE_ID..."
-          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create --verbose
+          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create --verbose || echo "❌ fetch-signing-files failed"
           echo "🔑 Adding certificates to keychain..."
-          keychain add-certificates
+          keychain add-certificates || echo "❌ add-certificates failed"
           echo "📋 Using profiles..."
-          xcode-project use-profiles
+          xcode-project use-profiles || echo "❌ use-profiles failed"
       - name: Increment build number
         script: |
           BUILD_NUMBER=$(date +%Y%m%d%H%M)
