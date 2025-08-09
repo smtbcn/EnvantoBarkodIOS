@@ -28,8 +28,9 @@ workflows:
           EOF
       - name: Set up code signing
         script: |
-          echo "Manual code signing setup"
+          echo "Setting up Apple Developer account"
           keychain initialize
+          xcrun altool --store-password-in-keychain-item "AC_PASSWORD" -u "samet.bicen@icloud.com" -p "@keychain:AC_PASSWORD"
       - name: Build and archive
         script: |
           xcodebuild \
@@ -39,6 +40,7 @@ workflows:
             -destination 'generic/platform=iOS' \
             -archivePath build/app.xcarchive \
             -allowProvisioningUpdates \
+            DEVELOPMENT_TEAM=6F974S63AX \
             archive
       - name: Export IPA
         script: |
