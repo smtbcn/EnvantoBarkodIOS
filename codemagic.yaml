@@ -14,10 +14,24 @@ workflows:
         BUNDLE_ID: "com.envanto.barcode.ios"
       xcode: latest
     scripts:
+      - name: Create export options
+        script: |
+          cat > export_options.plist << EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>app-store</string>
+              <key>teamID</key>
+              <string>6F974S63AX</string>
+          </dict>
+          </plist>
+          EOF
       - name: Set up code signing
         script: |
           keychain initialize
-          app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE --create
+          app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE --create --verbose
           keychain add-certificates
           xcode-project use-profiles
       - name: Build and archive
@@ -36,20 +50,6 @@ workflows:
             -archivePath build/app.xcarchive \
             -exportPath build \
             -exportOptionsPlist export_options.plist
-      - name: Create export options
-        script: |
-          cat > export_options.plist << EOF
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>method</key>
-              <string>app-store</string>
-              <key>teamID</key>
-              <string>6F974S63AX</string>
-          </dict>
-          </plist>
-          EOF
     artifacts:
       - build/*.ipa
       - build/app.xcarchive
