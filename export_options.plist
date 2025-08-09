@@ -18,7 +18,7 @@
     <key>provisioningProfiles</key>
     <dict>
         <key>com.envanto.barcode.ios</key>
-        <string>Automatic App Store Profile</string>
+        <string>AEnvantoBarkod App Store</string>
     </dict>
 </dict>
 </plist>
