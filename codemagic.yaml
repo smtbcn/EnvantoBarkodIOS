@@ -53,4 +53,9 @@ workflows:
       - build/*.ipa
       - build/app.xcarchive
     publishing:
-      # TestFlight upload will be added after successful build
+      email:
+        recipients:
+          - samet.bicen@icloud.com
+        notify:
+          success: true
+          failure: true
