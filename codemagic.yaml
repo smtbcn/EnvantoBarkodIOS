@@ -1,10 +1,8 @@
 workflows:
-  ios-manual-build:
-    name: iOS Manual Build
+  ios-build-only:
+    name: iOS Build Only
     max_build_duration: 120
     instance_type: mac_mini_m2
-    integrations:
-      app_store_connect: EnvantoBarkod App Store
     environment:
       groups:
         - app_store_credentials
@@ -14,20 +12,6 @@ workflows:
         BUNDLE_ID: "com.envanto.barcode.ios"
       xcode: latest
     scripts:
-      - name: Create export options
-        script: |
-          cat > export_options.plist << EOF
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>method</key>
-              <string>app-store</string>
-              <key>teamID</key>
-              <string>6F974S63AX</string>
-          </dict>
-          </plist>
-          EOF
       - name: Set up code signing
         script: |
           keychain initialize
@@ -50,6 +34,20 @@ workflows:
             -archivePath build/app.xcarchive \
             -exportPath build \
             -exportOptionsPlist export_options.plist
+      - name: Create export options
+        script: |
+          cat > export_options.plist << EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>app-store</string>
+              <key>teamID</key>
+              <string>6F974S63AX</string>
+          </dict>
+          </plist>
+          EOF
     artifacts:
       - build/*.ipa
       - build/app.xcarchive
@@ -60,9 +58,3 @@ workflows:
         notify:
           success: true
           failure: true
-      app_store_connect:
-        auth: integration
-        submit_to_testflight: true
-        beta_groups:
-          - App Store Connect Users
-        submit_to_app_store: false
