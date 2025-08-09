@@ -4,7 +4,7 @@ workflows:
     max_build_duration: 60
     environment:
       vars:
-        XCODE_WORKSPACE: "EnvantoBarkod.xcodeproj"
+        XCODE_PROJECT: "EnvantoBarkod.xcodeproj"
         XCODE_SCHEME: "EnvantoBarkod"
         BUNDLE_ID: "com.envanto.barcode.ios"
         APP_STORE_CONNECT_ISSUER_ID: "f8637023-a8ad-468f-b46e-41e076d111e7"
@@ -18,7 +18,6 @@ workflows:
           -----END PRIVATE KEY-----
         DEVELOPMENT_TEAM: "6F974S63AX"
       xcode: latest
-      cocoapods: default
     triggering:
       events:
         - push
@@ -26,14 +25,10 @@ workflows:
         - pattern: "main"
           include: true
     scripts:
-      - name: Install CocoaPods dependencies
-        script: |
-          cd ios
-          pod install
       - name: Build iOS release
         script: |
           xcodebuild clean archive \
-            -project "$XCODE_WORKSPACE" \
+            -project "$XCODE_PROJECT" \
             -scheme "$XCODE_SCHEME" \
             -configuration Release \
             -archivePath build/EnvantoBarkod.xcarchive \
@@ -43,7 +38,7 @@ workflows:
         script: |
           xcodebuild -exportArchive \
             -archivePath build/EnvantoBarkod.xcarchive \
-            -exportOptionsPlist ios/exportOptions.plist \
+            -exportOptionsPlist exportOptions.plist \
             -exportPath build
       - name: Publish to TestFlight
         script: |
@@ -52,7 +47,6 @@ workflows:
             -t ios \
             --apiKey $APP_STORE_CONNECT_KEY_IDENTIFIER \
             --apiIssuer $APP_STORE_CONNECT_ISSUER_ID
-          echo "Release notes: Initial Test Release"
     artifacts:
       - build/*.ipa
     publishing:
