@@ -14,6 +14,13 @@ workflows:
         BUNDLE_ID: "com.envanto.barcode.ios"
         APP_STORE_APPLE_ID: 6749488468
         APPLE_ID: "samet.bicen@icloud.com"
+        # App Store Connect API credentials
+        APP_STORE_CONNECT_ISSUER_ID: "f8637023-a8ad-468f-b46e-41e076d111e7"
+        APP_STORE_CONNECT_KEY_IDENTIFIER: "79RJH98G9R"
+        APP_STORE_CONNECT_PRIVATE_KEY: |
+          -----BEGIN PRIVATE KEY-----
+          MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQg7YyV64dhmduUofi+y8D9vOZsuLv+ZflhzymrD0oJ+GWgCgYIKoZIzj0DAQehRANCAAQpesZeoMppKkkEyrdBfrdTG0KmCITvkII17qOtTHXZ0Rix2v7oH9DaLfgsav7/EwEIqXW0/w/ZIta/JONwG+2Z
+          -----END PRIVATE KEY-----
       xcode: latest
       cocoapods: default
     scripts:
