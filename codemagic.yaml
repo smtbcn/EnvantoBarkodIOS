@@ -1,6 +1,6 @@
 workflows:
-  ios-appstore-build:
-    name: Envanto Barkod iOS App Store Build
+  ios-development-build:
+    name: Envanto Barkod iOS Development Build
     max_build_duration: 120
     instance_type: mac_mini_m1
     environment:
@@ -12,7 +12,6 @@ workflows:
         DEVELOPMENT_TEAM: "6F974S63AX"
         # Automatic code signing için
         CODE_SIGN_STYLE: "Automatic"
-        CODE_SIGN_IDENTITY: "Apple Distribution"
       xcode: latest
       cocoapods: default
     scripts:
@@ -40,25 +39,24 @@ workflows:
           
           # Info.plist'te build number güncelle
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" Info.plist || true
-      - name: Build for App Store with automatic signing
+      - name: Build for development with automatic signing
         script: |
-          echo "🏗️ Building for App Store distribution with automatic signing..."
+          echo "🏗️ Building for development with automatic signing..."
           
           xcodebuild \
             -project "$XCODE_WORKSPACE" \
             -scheme "$XCODE_SCHEME" \
-            -configuration Release \
+            -configuration Debug \
             -destination 'generic/platform=iOS' \
             -allowProvisioningUpdates \
             DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" \
             CODE_SIGN_STYLE=Automatic \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
             PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID" \
             archive \
             -archivePath build/EnvantoBarkod.xcarchive
-      - name: Export IPA for App Store
+      - name: Export IPA for development
         script: |
-          echo "📦 Exporting IPA for App Store..."
+          echo "📦 Exporting IPA for development..."
           
           # Export options oluştur
           cat > export_options.plist << EOF
@@ -67,7 +65,7 @@ workflows:
           <plist version="1.0">
           <dict>
               <key>method</key>
-              <string>app-store</string>
+              <string>development</string>
               <key>teamID</key>
               <string>$DEVELOPMENT_TEAM</string>
               <key>uploadBitcode</key>
@@ -76,8 +74,6 @@ workflows:
               <false/>
               <key>signingStyle</key>
               <string>automatic</string>
-              <key>destination</key>
-              <string>export</string>
           </dict>
           </plist>
           EOF
