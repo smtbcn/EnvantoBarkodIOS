@@ -1,17 +1,19 @@
 workflows:
-  ios-development-build:
-    name: Envanto Barkod iOS Development Build
+  ios-testflight-auto:
+    name: Envanto Barkod iOS → TestFlight
     max_build_duration: 120
     instance_type: mac_mini_m1
+    integrations:
+      app_store_connect: codemagic
     environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.envanto.barcode.ios
       vars:
         XCODE_WORKSPACE: "EnvantoBarkod.xcodeproj"
         XCODE_SCHEME: "EnvantoBarkod"
         BUNDLE_ID: "com.envanto.barcode.ios"
         APP_STORE_APPLE_ID: 6749488468
-        DEVELOPMENT_TEAM: "6F974S63AX"
-        # Automatic code signing için
-        CODE_SIGN_STYLE: "Automatic"
       xcode: latest
       cocoapods: default
     scripts:
@@ -22,70 +24,92 @@ workflows:
           else
             echo "Podfile bulunamadı, CocoaPods adımı atlanıyor"
           fi
-      - name: Set up automatic code signing
+      - name: Set up code signing
         script: |
-          echo "🔧 Setting up automatic code signing..."
-          
-          # Xcode project'te automatic signing ayarla
-          /usr/libexec/PlistBuddy -c "Set :objects:AB1234567890123400000033:buildSettings:CODE_SIGN_STYLE Automatic" EnvantoBarkod.xcodeproj/project.pbxproj || true
-          /usr/libexec/PlistBuddy -c "Set :objects:AB1234567890123400000034:buildSettings:CODE_SIGN_STYLE Automatic" EnvantoBarkod.xcodeproj/project.pbxproj || true
-          /usr/libexec/PlistBuddy -c "Set :objects:AB1234567890123400000033:buildSettings:DEVELOPMENT_TEAM $DEVELOPMENT_TEAM" EnvantoBarkod.xcodeproj/project.pbxproj || true
-          /usr/libexec/PlistBuddy -c "Set :objects:AB1234567890123400000034:buildSettings:DEVELOPMENT_TEAM $DEVELOPMENT_TEAM" EnvantoBarkod.xcodeproj/project.pbxproj || true
+          echo "🔐 Setting up App Store code signing..."
+          xcode-project use-profiles
       - name: Increment build number
         script: |
-          # Build number'ı otomatik artır
+          # Build number'ı otomatik artır (timestamp)
           BUILD_NUMBER=$(date +%Y%m%d%H%M)
           echo "🔢 Setting build number to: $BUILD_NUMBER"
           
           # Info.plist'te build number güncelle
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" Info.plist || true
-      - name: Build for development with automatic signing
+          
+          echo "✅ Build number updated: $BUILD_NUMBER"
+      - name: Build for App Store
         script: |
-          echo "🏗️ Building for development with automatic signing..."
-          
-          xcodebuild \
-            -project "$XCODE_WORKSPACE" \
-            -scheme "$XCODE_SCHEME" \
-            -configuration Debug \
-            -destination 'generic/platform=iOS' \
-            -allowProvisioningUpdates \
-            DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" \
-            CODE_SIGN_STYLE=Automatic \
-            PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID" \
-            archive \
-            -archivePath build/EnvantoBarkod.xcarchive
-      - name: Export IPA for development
-        script: |
-          echo "📦 Exporting IPA for development..."
-          
-          # Export options oluştur
-          cat > export_options.plist << EOF
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>method</key>
-              <string>development</string>
-              <key>teamID</key>
-              <string>$DEVELOPMENT_TEAM</string>
-              <key>uploadBitcode</key>
-              <false/>
-              <key>compileBitcode</key>
-              <false/>
-              <key>signingStyle</key>
-              <string>automatic</string>
-          </dict>
-          </plist>
-          EOF
-          
-          xcodebuild \
-            -exportArchive \
-            -archivePath build/EnvantoBarkod.xcarchive \
-            -exportPath build \
-            -exportOptionsPlist export_options.plist
+          echo "🏗️ Building for App Store distribution..."
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME" \
+            --config "Release"
     artifacts:
-      - build/*.ipa
-      - build/EnvantoBarkod.xcarchive
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+    publishing:
+      email:
+        recipients:
+          - samet.bicen@icloud.com
+        notify:
+          success: true
+          failure: true
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        beta_groups:
+          - App Store Connect Users
+        submit_to_app_store: false
+
+  ios-testflight-debug:
+    name: Envanto Barkod iOS → TestFlight (Debug)
+    max_build_duration: 90
+    instance_type: mac_mini_m1
+    integrations:
+      app_store_connect: codemagic
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.envanto.barcode.ios
+      vars:
+        XCODE_WORKSPACE: "EnvantoBarkod.xcodeproj"
+        XCODE_SCHEME: "EnvantoBarkod"
+        BUNDLE_ID: "com.envanto.barcode.ios"
+        APP_STORE_APPLE_ID: 6749488468
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Get CocoaPods dependencies
+        script: |
+          if [ -f "Podfile" ]; then
+            pod install
+          else
+            echo "Podfile bulunamadı, CocoaPods adımı atlanıyor"
+          fi
+      - name: Set up code signing
+        script: |
+          echo "🔐 Setting up App Store code signing..."
+          xcode-project use-profiles
+      - name: Increment build number
+        script: |
+          # Debug için farklı build number pattern
+          BUILD_NUMBER="$(date +%Y%m%d%H%M)d"
+          echo "🔢 Setting debug build number to: $BUILD_NUMBER"
+          
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" Info.plist || true
+          
+          echo "✅ Debug build number updated: $BUILD_NUMBER"
+      - name: Build for TestFlight (Debug Config)
+        script: |
+          echo "🏗️ Building debug version for TestFlight..."
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME" \
+            --config "Debug"
+    artifacts:
+      - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
     publishing:
       email:
@@ -94,12 +118,21 @@ workflows:
         notify:
           success: true
           failure: true
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        beta_groups:
+          - App Store Connect Users
+        submit_to_app_store: false
 
-  ios-no-signing-build:
-    name: Envanto Barkod iOS Build (No Signing)
-    max_build_duration: 45
+  ios-development-build:
+    name: Envanto Barkod iOS Development Build
+    max_build_duration: 60
     instance_type: mac_mini_m1
     environment:
+      ios_signing:
+        distribution_type: development
+        bundle_identifier: com.envanto.barcode.ios
       vars:
         XCODE_WORKSPACE: "EnvantoBarkod.xcodeproj"
         XCODE_SCHEME: "EnvantoBarkod"
@@ -114,45 +147,19 @@ workflows:
           else
             echo "Podfile bulunamadı, CocoaPods adımı atlanıyor"
           fi
-      - name: Build without code signing
+      - name: Set up development code signing
         script: |
-          # Code signing olmadan build
-          xcodebuild \
-            -project "$XCODE_WORKSPACE" \
-            -scheme "$XCODE_SCHEME" \
-            -sdk iphoneos \
-            -configuration Debug \
-            build \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            PROVISIONING_PROFILE_SPECIFIER=""
-      - name: Create unsigned IPA
+          echo "🔐 Setting up development code signing..."
+          xcode-project use-profiles
+      - name: Build for development
         script: |
-          # Unsigned IPA oluştur (test amaçlı)
-          echo "📦 Creating unsigned IPA for testing..."
-          
-          # Build klasörünü bul
-          BUILD_DIR=$(find ~/Library/Developer/Xcode/DerivedData -name "*.app" -path "*/Build/Products/Debug-iphoneos/*" | head -1)
-          
-          if [ -n "$BUILD_DIR" ]; then
-            echo "✅ App found: $BUILD_DIR"
-            
-            # IPA klasör yapısı oluştur
-            mkdir -p build/Payload
-            cp -r "$BUILD_DIR" build/Payload/
-            
-            # ZIP olarak paketleyip IPA yap
-            cd build
-            zip -r EnvantoBarkod-unsigned.ipa Payload/
-            cd ..
-            
-            echo "✅ Unsigned IPA created: build/EnvantoBarkod-unsigned.ipa"
-          else
-            echo "❌ App build not found"
-          fi
+          echo "🏗️ Building for development..."
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME" \
+            --config "Debug"
     artifacts:
-      - build/*.ipa
+      - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
     publishing:
       email:
