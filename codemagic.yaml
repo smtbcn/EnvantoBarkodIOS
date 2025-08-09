@@ -3,8 +3,6 @@ workflows:
     name: Envanto Barkod iOS → TestFlight
     max_build_duration: 120
     instance_type: mac_mini_m2
-
-
     environment:
       vars:
         XCODE_WORKSPACE: "EnvantoBarkod.xcodeproj"
@@ -31,7 +29,7 @@ workflows:
           fi
       - name: Debug environment
         script: |
-          echo "� SChecking environment variables..."
+          echo "🔍 Checking environment variables..."
           echo "BUNDLE_ID: $BUNDLE_ID"
           echo "APP_STORE_CONNECT_ISSUER_ID exists: $([ -n "$APP_STORE_CONNECT_ISSUER_ID" ] && echo "YES" || echo "NO")"
           echo "APP_STORE_CONNECT_KEY_IDENTIFIER exists: $([ -n "$APP_STORE_CONNECT_KEY_IDENTIFIER" ] && echo "YES" || echo "NO")"
@@ -98,10 +96,3 @@ workflows:
         notify:
           success: true
           failure: true
-      # App Store Connect publishing disabled for now
-      # app_store_connect:
-      #   auth: integration
-      #   submit_to_testflight: true
-      #   beta_groups:
-      #     - App Store Connect Users
-      #   submit_to_app_store: false
