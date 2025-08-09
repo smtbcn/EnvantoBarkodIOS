@@ -28,8 +28,11 @@ workflows:
         script: |
           echo "🔐 Setting up code signing..."
           keychain initialize
-          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
+          echo "📱 Fetching signing files for $BUNDLE_ID..."
+          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create --verbose
+          echo "🔑 Adding certificates to keychain..."
           keychain add-certificates
+          echo "📋 Using profiles..."
           xcode-project use-profiles
       - name: Increment build number
         script: |
