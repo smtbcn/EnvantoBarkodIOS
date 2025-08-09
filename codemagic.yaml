@@ -1,10 +1,9 @@
 workflows:
   ios-testflight-auto:
-    name: iOS TestFlight
+    name: iOS TestFlight 2
     max_build_duration: 120
     instance_type: mac_mini_m2
-    integrations:
-      app_store_connect: Codemagic developer
+
     environment:
       groups:
         - app_store_credentials
@@ -54,9 +53,4 @@ workflows:
       - build/*.ipa
       - build/app.xcarchive
     publishing:
-      app_store_connect:
-        auth: integration
-        submit_to_testflight: true
-        beta_groups:
-          - App Store Connect Users
-        submit_to_app_store: false
+      # TestFlight upload will be added after successful build
