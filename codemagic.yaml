@@ -14,11 +14,22 @@ workflows:
         BUNDLE_ID: "com.envanto.barcode.ios"
       xcode: latest
     scripts:
+      - name: Debug environment
+        script: |
+          echo "🔍 Environment check:"
+          echo "BUNDLE_ID: $BUNDLE_ID"
+          echo "APP_STORE_CONNECT_ISSUER_ID: $([ -n "$APP_STORE_CONNECT_ISSUER_ID" ] && echo "SET" || echo "NOT SET")"
+          echo "APP_STORE_CONNECT_KEY_IDENTIFIER: $([ -n "$APP_STORE_CONNECT_KEY_IDENTIFIER" ] && echo "SET" || echo "NOT SET")"
+          echo "APP_STORE_CONNECT_PRIVATE_KEY: $([ -n "$APP_STORE_CONNECT_PRIVATE_KEY" ] && echo "SET" || echo "NOT SET")"
       - name: Set up code signing
         script: |
+          echo "🔐 Setting up code signing..."
           keychain initialize
-          app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE --create
+          echo "📱 Fetching signing files..."
+          app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE --create --verbose
+          echo "🔑 Adding certificates..."
           keychain add-certificates
+          echo "📋 Using profiles..."
           xcode-project use-profiles
 
       - name: Build ipa for distribution
