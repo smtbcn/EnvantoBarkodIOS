@@ -2,7 +2,7 @@ workflows:
   ios-testflight-auto:
     name: Envanto Barkod iOS → TestFlight
     max_build_duration: 120
-    instance_type: mac_mini_m1
+    instance_type: mac_mini_m2
     integrations:
       app_store_connect: Codemagic developer
     environment:
@@ -28,6 +28,8 @@ workflows:
         script: |
           echo "🔐 Setting up code signing..."
           keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
+          keychain add-certificates
           xcode-project use-profiles
       - name: Increment build number
         script: |
