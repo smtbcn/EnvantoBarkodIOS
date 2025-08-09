@@ -13,7 +13,6 @@ workflows:
         XCODE_SCHEME: "EnvantoBarkod"
         BUNDLE_ID: "com.envanto.barcode.ios"
       xcode: latest
-      cocoapods: default
     scripts:
       - name: Set up code signing
         script: |
@@ -21,9 +20,7 @@ workflows:
           app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE --create
           keychain add-certificates
           xcode-project use-profiles
-      - name: Get CocoaPods dependencies
-        script: |
-          pod install
+
       - name: Build ipa for distribution
         script: |
           xcode-project build-ipa \
