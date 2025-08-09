@@ -33,7 +33,8 @@ workflows:
             -configuration Release \
             -archivePath build/EnvantoBarkod.xcarchive \
             DEVELOPMENT_TEAM=$DEVELOPMENT_TEAM \
-            CODE_SIGN_STYLE=Automatic
+            CODE_SIGN_STYLE=Automatic \
+            -allowProvisioningUpdates
       - name: Export IPA
         script: |
           xcodebuild -exportArchive \
