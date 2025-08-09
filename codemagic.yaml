@@ -16,6 +16,7 @@ workflows:
           lYg4SmyM8DEe8bdCD81E1RdjTIJnTYVdYTXtd1WSEXu6DWM0QBwdS0mcv3MYgEhp
           nG2IRj8I
           -----END PRIVATE KEY-----
+        DEVELOPMENT_TEAM: "6F974S63AX"
       xcode: latest
       cocoapods: default
     triggering:
@@ -36,7 +37,7 @@ workflows:
             -scheme "$XCODE_SCHEME" \
             -configuration Release \
             -archivePath build/EnvantoBarkod.xcarchive \
-            DEVELOPMENT_TEAM=$APP_STORE_CONNECT_ISSUER_ID \
+            DEVELOPMENT_TEAM=$DEVELOPMENT_TEAM \
             CODE_SIGN_STYLE=Automatic
       - name: Export IPA
         script: |
@@ -51,6 +52,7 @@ workflows:
             -t ios \
             --apiKey $APP_STORE_CONNECT_KEY_IDENTIFIER \
             --apiIssuer $APP_STORE_CONNECT_ISSUER_ID
+          echo "Release notes: Initial Test Release"
     artifacts:
       - build/*.ipa
     publishing:
@@ -59,4 +61,3 @@ workflows:
         key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
         issuer_id: $APP_STORE_CONNECT_ISSUER_ID
         submit_to_testflight: true
-        release_notes: "Initial Test Release"
