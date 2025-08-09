@@ -1,93 +1,36 @@
 workflows:
-  ios-testflight-auto:
-    name: Envanto Barkod iOS → TestFlight
+  ios-workflow:
+    name: iOS Workflow
     max_build_duration: 120
     instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: Codemagic developer
     environment:
+      groups:
+        - app_store_credentials
       vars:
         XCODE_WORKSPACE: "EnvantoBarkod.xcodeproj"
         XCODE_SCHEME: "EnvantoBarkod"
         BUNDLE_ID: "com.envanto.barcode.ios"
-        APP_STORE_APPLE_ID: 6749488468
-        APPLE_ID: "samet.bicen@icloud.com"
-        # App Store Connect API credentials
-        APP_STORE_CONNECT_ISSUER_ID: "f8637023-a8ad-468f-b46e-41e076d111e7"
-        APP_STORE_CONNECT_KEY_IDENTIFIER: "79RJH98G9R"
-        APP_STORE_CONNECT_PRIVATE_KEY: |
-          -----BEGIN PRIVATE KEY-----
-          MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQg7YyV64dhmduUofi+y8D9vOZsuLv+ZflhzymrD0oJ+GWgCgYIKoZIzj0DAQehRANCAAQpesZeoMppKkkEyrdBfrdTG0KmCITvkII17qOtTHXZ0Rix2v7oH9DaLfgsav7/EwEIqXW0/w/ZIta/JONwG+2Z
-          -----END PRIVATE KEY-----
       xcode: latest
       cocoapods: default
     scripts:
-      - name: Get CocoaPods dependencies
-        script: |
-          if [ -f "Podfile" ]; then
-            pod install
-          else
-            echo "Podfile bulunamadı, CocoaPods adımı atlanıyor"
-          fi
-      - name: Debug environment
-        script: |
-          echo "🔍 Checking environment variables..."
-          echo "BUNDLE_ID: $BUNDLE_ID"
-          echo "APP_STORE_CONNECT_ISSUER_ID exists: $([ -n "$APP_STORE_CONNECT_ISSUER_ID" ] && echo "YES" || echo "NO")"
-          echo "APP_STORE_CONNECT_KEY_IDENTIFIER exists: $([ -n "$APP_STORE_CONNECT_KEY_IDENTIFIER" ] && echo "YES" || echo "NO")"
-          echo "APP_STORE_CONNECT_PRIVATE_KEY exists: $([ -n "$APP_STORE_CONNECT_PRIVATE_KEY" ] && echo "YES" || echo "NO")"
       - name: Set up code signing
         script: |
-          echo "🔐 Setting up code signing..."
           keychain initialize
-          echo "📱 Fetching signing files for $BUNDLE_ID..."
-          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create --verbose || echo "❌ fetch-signing-files failed"
-          echo "🔑 Adding certificates to keychain..."
-          keychain add-certificates || echo "❌ add-certificates failed"
-          echo "📋 Using profiles..."
-          xcode-project use-profiles || echo "❌ use-profiles failed"
-      - name: Increment build number
+          app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE --create
+          keychain add-certificates
+          xcode-project use-profiles
+      - name: Get CocoaPods dependencies
         script: |
-          BUILD_NUMBER=$(date +%Y%m%d%H%M)
-          echo "🔢 Setting build number to: $BUILD_NUMBER"
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" Info.plist || true
-      - name: Create export options
+          pod install
+      - name: Build ipa for distribution
         script: |
-          cat > export_options.plist << EOF
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>method</key>
-              <string>app-store</string>
-              <key>uploadBitcode</key>
-              <false/>
-              <key>compileBitcode</key>
-              <false/>
-              <key>teamID</key>
-              <string>6F974S63AX</string>
-          </dict>
-          </plist>
-          EOF
-      - name: Build and archive
-        script: |
-          echo "🏗️ Building and archiving..."
-          xcodebuild \
-            -project "$XCODE_WORKSPACE" \
-            -scheme "$XCODE_SCHEME" \
-            -configuration Release \
-            -destination 'generic/platform=iOS' \
-            -archivePath build/app.xcarchive \
-            archive
-      - name: Export for App Store
-        script: |
-          echo "📦 Exporting for App Store..."
-          xcodebuild \
-            -exportArchive \
-            -archivePath build/app.xcarchive \
-            -exportPath build \
-            -exportOptionsPlist export_options.plist
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
     artifacts:
-      - build/*.ipa
-      - build/app.xcarchive
+      - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
     publishing:
       email:
@@ -96,3 +39,9 @@ workflows:
         notify:
           success: true
           failure: true
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        beta_groups:
+          - App Store Connect Users
+        submit_to_app_store: false
