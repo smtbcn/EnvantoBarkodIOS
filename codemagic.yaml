@@ -1,8 +1,7 @@
 workflows:
-  ios-build-only:
-    name: iOS Build Only
-    max_build_duration: 120
-    instance_type: mac_mini_m2
+  ios-app-store:
+    name: iOS App Store Deployment
+    max_build_duration: 60
     environment:
       vars:
         XCODE_WORKSPACE: "EnvantoBarkod.xcodeproj"
@@ -18,50 +17,46 @@ workflows:
           nG2IRj8I
           -----END PRIVATE KEY-----
       xcode: latest
+      cocoapods: default
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: "main"
+          include: true
     scripts:
-      - name: Set up code signing
+      - name: Install CocoaPods dependencies
         script: |
-          keychain initialize
-          app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE --create
-          keychain add-certificates
-          xcode-project use-profiles
-      - name: Build and archive
+          cd ios
+          pod install
+      - name: Build iOS release
         script: |
-          xcodebuild \
+          xcodebuild clean archive \
             -project "$XCODE_WORKSPACE" \
             -scheme "$XCODE_SCHEME" \
             -configuration Release \
-            -destination 'generic/platform=iOS' \
-            -archivePath build/app.xcarchive \
-            archive
+            -archivePath build/EnvantoBarkod.xcarchive \
+            DEVELOPMENT_TEAM=$APP_STORE_CONNECT_ISSUER_ID \
+            CODE_SIGN_STYLE=Automatic
       - name: Export IPA
         script: |
-          xcodebuild \
-            -exportArchive \
-            -archivePath build/app.xcarchive \
-            -exportPath build \
-            -exportOptionsPlist export_options.plist
-      - name: Create export options
+          xcodebuild -exportArchive \
+            -archivePath build/EnvantoBarkod.xcarchive \
+            -exportOptionsPlist ios/exportOptions.plist \
+            -exportPath build
+      - name: Publish to TestFlight
         script: |
-          cat > export_options.plist << EOF
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>method</key>
-              <string>app-store</string>
-              <key>teamID</key>
-              <string>6F974S63AX</string>
-          </dict>
-          </plist>
-          EOF
+          xcrun altool --upload-app \
+            -f build/EnvantoBarkod.ipa \
+            -t ios \
+            --apiKey $APP_STORE_CONNECT_KEY_IDENTIFIER \
+            --apiIssuer $APP_STORE_CONNECT_ISSUER_ID
     artifacts:
       - build/*.ipa
-      - build/app.xcarchive
     publishing:
-      email:
-        recipients:
-          - samet.bicen@icloud.com
-        notify:
-          success: true
-          failure: true
+      app_store_connect:
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        submit_to_testflight: true
+        release_notes: "Initial Test Release"
