@@ -4,12 +4,19 @@ workflows:
     max_build_duration: 120
     instance_type: mac_mini_m2
     environment:
-      groups:
-        - app_store_credentials
       vars:
         XCODE_WORKSPACE: "EnvantoBarkod.xcodeproj"
         XCODE_SCHEME: "EnvantoBarkod"
         BUNDLE_ID: "com.envanto.barcode.ios"
+        APP_STORE_CONNECT_ISSUER_ID: "f8637023-a8ad-468f-b46e-41e076d111e7"
+        APP_STORE_CONNECT_KEY_IDENTIFIER: "29J5WPPB65"
+        APP_STORE_CONNECT_PRIVATE_KEY: |
+          -----BEGIN PRIVATE KEY-----
+          MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQgUSTjwD8G50uN7SIs
+          9ok2wlpgYr+T66wcbXpe2+6Y5F+gCgYIKoZIzj0DAQehRANCAATALDU3nA/mh1zX
+          lYg4SmyM8DEe8bdCD81E1RdjTIJnTYVdYTXtd1WSEXu6DWM0QBwdS0mcv3MYgEhp
+          nG2IRj8I
+          -----END PRIVATE KEY-----
       xcode: latest
     scripts:
       - name: Set up code signing
