@@ -24,18 +24,23 @@ jobs:
         echo "${{ secrets.CERTIFICATES_P12 }}" | base64 --decode > certificate.p12
         
         # Create keychain
-        security create-keychain -p "" build.keychain
+        security create-keychain -p "temp123" build.keychain
         security default-keychain -s build.keychain
-        security unlock-keychain -p "" build.keychain
-        security set-keychain-settings -t 3600 -u build.keychain
+        security unlock-keychain -p "temp123" build.keychain
+        security set-keychain-settings -t 3600 -l -u build.keychain
         
-        # Import certificate
-        security import certificate.p12 -k build.keychain -P "${{ secrets.CERTIFICATES_PASSWORD }}" -T /usr/bin/codesign
-        security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
+        # Import certificate with private key
+        security import certificate.p12 -k build.keychain -P "${{ secrets.CERTIFICATES_PASSWORD }}" -A
+        
+        # Set partition list for codesigning
+        security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "temp123" build.keychain
         
         # List certificates
         echo "Available certificates:"
         security find-identity -v -p codesigning
+        
+        echo "All identities:"
+        security find-identity -v
     
     - name: Import Provisioning Profile
       run: |
@@ -54,6 +59,7 @@ jobs:
           -archivePath EnvantoBarkod.xcarchive \
           -configuration Release \
           CODE_SIGN_STYLE=Automatic \
+          CODE_SIGN_IDENTITY="Apple Development" \
           DEVELOPMENT_TEAM=6F974S63AX
     
     - name: Export IPA
