@@ -1,31 +1,38 @@
 workflows:
-  fresh-envanto-workflow:
-    name: Fresh Envanto Barkod Build
+  final-clean-build:
+    name: Final Clean iOS Build
     environment:
       groups:
         - admin
       xcode: latest
       cocoapods: default
     scripts:
-      - name: Check Xcode version
-        script: xcode-select --print-path && xcodebuild -version
-      - name: Set up keychain
-        script: keychain initialize
-      - name: Debug certificates and profiles
+      - name: Check environment
         script: |
-          echo "=== Available Certificates ==="
+          echo "Starting clean build process..."
+          xcode-select --print-path
+          xcodebuild -version
+      - name: Initialize keychain
+        script: keychain initialize
+      - name: List available resources
+        script: |
+          echo "=== Certificates ==="
           app-store-connect certificates list --type IOS_DISTRIBUTION
-          echo "=== Available Profiles ==="
+          echo "=== Profiles ==="
           app-store-connect profiles list --type IOS_APP_STORE
-      - name: Fetch signing files (manual certificate)
+      - name: Download signing files
         script: |
           app-store-connect fetch-signing-files "com.envanto.barcode.ios" --type IOS_APP_STORE
-      - name: Set up signing certificate
+      - name: Add certificates to keychain
         script: keychain add-certificates
-      - name: Set up code signing settings
+      - name: Configure code signing
         script: xcode-project use-profiles
-      - name: Build App
-        script: xcode-project build-ipa --project "EnvantoBarkod.xcodeproj" --scheme "EnvantoBarkod" --export-options-plist export_options.plist
+      - name: Build IPA
+        script: |
+          xcode-project build-ipa \
+            --project "EnvantoBarkod.xcodeproj" \
+            --scheme "EnvantoBarkod" \
+            --export-options-plist export_options.plist
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
