@@ -30,17 +30,24 @@ workflows:
           security find-identity -v -p codesigning
           echo "=== Available Provisioning Profiles ==="
           find ~/Library/MobileDevice/Provisioning\ Profiles -name "*.mobileprovision" -exec echo {} \; -exec security cms -D -i {} \; 2>/dev/null || echo "No profiles found"
-      - name: Build IPA with correct settings
+      - name: Build with xcodebuild directly
         script: |
-          xcode-project build-ipa \
-            --project "EnvantoBarkod.xcodeproj" \
-            --scheme "EnvantoBarkod" \
-            --export-options-plist export_options.plist \
-            --archive-flags="-destination 'generic/platform=iOS' \
+          # Direkt xcodebuild kullan
+          xcodebuild archive \
+            -project "EnvantoBarkod.xcodeproj" \
+            -scheme "EnvantoBarkod" \
+            -archivePath "build/EnvantoBarkod.xcarchive" \
+            -configuration Release \
             DEVELOPMENT_TEAM=6F974S63AX \
             CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY='iPhone Distribution' \
-            PROVISIONING_PROFILE_SPECIFIER='EnvantoBarkod App Store'"
+            "CODE_SIGN_IDENTITY=iPhone Distribution" \
+            "PROVISIONING_PROFILE_SPECIFIER=EnvantoBarkod App Store"
+          
+          # Export IPA
+          xcodebuild -exportArchive \
+            -archivePath "build/EnvantoBarkod.xcarchive" \
+            -exportPath "build/ios/ipa" \
+            -exportOptionsPlist export_options.plist
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
