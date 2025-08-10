@@ -1,35 +1,28 @@
 workflows:
-  envanto-barkod-final:
-    name: Envanto Barkod Final Build
+  ios-workflow:
+    name: iOS Workflow
     environment:
       groups:
         - admin
       xcode: latest
-      cocoapods: default
     scripts:
-      - name: Check environment
-        script: |
-          echo "Starting build process..."
-          xcode-select --print-path
-          xcodebuild -version
-      - name: Initialize keychain
+      - name: Set up keychain
         script: keychain initialize
-      - name: Build IPA
+      - name: Set up provisioning profiles
         script: |
-          xcodebuild archive \
-            -project "EnvantoBarkod.xcodeproj" \
-            -scheme "EnvantoBarkod" \
-            -archivePath "build/EnvantoBarkod.xcarchive" \
-            -configuration Release \
-            DEVELOPMENT_TEAM=6F974S63AX \
-            CODE_SIGN_STYLE=Manual \
-            "CODE_SIGN_IDENTITY=iPhone Distribution" \
-            "PROVISIONING_PROFILE_SPECIFIER=EnvantoBarkod App Store"
-          
-          xcodebuild -exportArchive \
-            -archivePath "build/EnvantoBarkod.xcarchive" \
-            -exportPath "build/ios/ipa" \
-            -exportOptionsPlist export_options.plist
+          PROFILES_HOME="$HOME/Library/MobileDevice/Provisioning Profiles"
+          mkdir -p "$PROFILES_HOME"
+          PROFILE_PATH=$(find /tmp -name "*.mobileprovision")
+          cp "$PROFILE_PATH" "$PROFILES_HOME"
+      - name: Set up signing certificate
+        script: keychain add-certificates
+      - name: Set up code signing settings on Xcode project
+        script: xcode-project use-profiles
+      - name: Build ipa for distribution
+        script: |
+          xcode-project build-ipa \
+            --project "EnvantoBarkod.xcodeproj" \
+            --scheme "EnvantoBarkod"
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
