@@ -9,8 +9,8 @@ workflows:
       - name: Set up keychain
         script: keychain initialize
 
-      - name: Set up signing certificate
-        script: keychain add-certificates
+      - name: Skip certificate setup
+        script: echo "Using certificates from Codemagic dashboard"
       - name: Set up code signing settings on Xcode project
         script: xcode-project use-profiles
       - name: Build ipa for distribution
