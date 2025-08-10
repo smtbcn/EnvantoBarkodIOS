@@ -41,7 +41,8 @@ jobs:
         xcodebuild -exportArchive \
           -archivePath EnvantoBarkod.xcarchive \
           -exportPath . \
-          -exportOptionsPlist export_options.plist
+          -exportOptionsPlist export_options.plist \
+          -allowProvisioningUpdates
     
     - name: Upload IPA
       uses: actions/upload-artifact@v4
