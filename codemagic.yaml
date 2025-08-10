@@ -20,9 +20,11 @@ workflows:
           app-store-connect certificates list --type IOS_DISTRIBUTION
           echo "=== Profiles ==="
           app-store-connect profiles list --type IOS_APP_STORE
-      - name: Download signing files
+      - name: Download signing files with P12
         script: |
-          app-store-connect fetch-signing-files "com.envanto.barcode.ios" --type IOS_APP_STORE
+          # P12 sertifikası ile signing files'ları indir
+          app-store-connect fetch-signing-files "com.envanto.barcode.ios" \
+            --type IOS_APP_STORE
       - name: Add certificates to keychain
         script: keychain add-certificates
       - name: Configure code signing
