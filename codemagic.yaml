@@ -1,52 +1,27 @@
 workflows:
-  ios-app-store:
-    name: iOS App Store Deployment
-    max_build_duration: 60
+  envanto-barkod-workflow:
+    name: Envanto Barkod iOS Build
     environment:
-      vars:
-        XCODE_PROJECT: "EnvantoBarkod.xcodeproj"
-        XCODE_SCHEME: "EnvantoBarkod"
-        BUNDLE_ID: "com.envanto.barcode.ios"
-        APP_STORE_CONNECT_ISSUER_ID: "f8637023-a8ad-468f-b46e-41e076d111e7"
-        APP_STORE_CONNECT_KEY_IDENTIFIER: "29J5WPPB65"
-        APP_STORE_CONNECT_PRIVATE_KEY: -----BEGIN PRIVATE KEY-----MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQgUSTjwD8G50uN7SIs9ok2wlpgYr+T66wcbXpe2+6Y5F+gCgYIKoZIzj0DAQehRANCAATALDU3nA/mh1zXlYg4SmyM8DEe8bdCD81E1RdjTIJnTYVdYTXtd1WSEXu6DWM0QBwdS0mcv3MYgEhpnG2IRj8I-----END PRIVATE KEY-----
-        DEVELOPMENT_TEAM: "6F974S63AX"
+      groups:
+        - admin
       xcode: latest
-    triggering:
-      events:
-        - push
-      branch_patterns:
-        - pattern: "main"
-          include: true
+      cocoapods: default
     scripts:
-      - name: Build iOS release
+      - name: Check Xcode version
+        script: xcode-select --print-path && xcodebuild -version
+      - name: Set up keychain to be used for code signing using Codemagic CLI 'keychain' command
+        script: keychain initialize
+      - name: Fetch signing files
         script: |
-          xcodebuild clean archive \
-            -project "$XCODE_PROJECT" \
-            -scheme "$XCODE_SCHEME" \
-            -configuration Release \
-            -archivePath build/EnvantoBarkod.xcarchive \
-            DEVELOPMENT_TEAM=$DEVELOPMENT_TEAM \
-            CODE_SIGN_STYLE=Automatic \
-            -allowProvisioningUpdates
-      - name: Export IPA
-        script: |
-          xcodebuild -exportArchive \
-            -archivePath build/EnvantoBarkod.xcarchive \
-            -exportOptionsPlist exportOptions.plist \
-            -exportPath build
-      - name: Publish to TestFlight
-        script: |
-          xcrun altool --upload-app \
-            -f build/EnvantoBarkod.ipa \
-            -t ios \
-            --apiKey $APP_STORE_CONNECT_KEY_IDENTIFIER \
-            --apiIssuer $APP_STORE_CONNECT_ISSUER_ID
+          app-store-connect fetch-signing-files "com.envanto.barcode.ios" \
+          --type IOS_APP_STORE
+      - name: Set up signing certificate
+        script: keychain add-certificates
+      - name: Set up code signing settings on Xcode project
+        script: xcode-project use-profiles
+      - name: Build App
+        script: xcode-project build-ipa --project "EnvantoBarkod.xcodeproj" --scheme "EnvantoBarkod" --export-options-plist export_options.plist
     artifacts:
-      - build/*.ipa
-    publishing:
-      app_store_connect:
-        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
-        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
-        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
-        submit_to_testflight: true
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
