@@ -8,6 +8,8 @@ workflows:
         XCODE_SCHEME: "EnvantoBarkod"
         BUNDLE_ID: "com.envanto.barcode.ios"
         DEVELOPMENT_TEAM: "6F974S63AX"
+        PROVISIONING_PROFILE_SPECIFIER: "EnvantoBarkod_AppStore"
+        CODE_SIGN_IDENTITY: "iPhone Distribution"
       xcode: latest
     triggering:
       events:
@@ -24,8 +26,9 @@ workflows:
             -configuration Release \
             -archivePath build/EnvantoBarkod.xcarchive \
             DEVELOPMENT_TEAM=$DEVELOPMENT_TEAM \
-            CODE_SIGN_STYLE=Automatic \
-            -allowProvisioningUpdates
+            CODE_SIGN_STYLE=Manual \
+            PROVISIONING_PROFILE_SPECIFIER="EnvantoBarkod_AppStore" \
+            CODE_SIGN_IDENTITY="iPhone Distribution"
       - name: Export IPA
         script: |
           xcodebuild -exportArchive \
