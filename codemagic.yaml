@@ -1,21 +1,12 @@
 workflows:
-  ios-app-store:
-    name: iOS App Store Deployment
+  ios-build-only:
+    name: iOS Build Only
     max_build_duration: 60
     environment:
       vars:
         XCODE_PROJECT: "EnvantoBarkod.xcodeproj"
         XCODE_SCHEME: "EnvantoBarkod"
         BUNDLE_ID: "com.envanto.barcode.ios"
-        APP_STORE_CONNECT_ISSUER_ID: "f8637023-a8ad-468f-b46e-41e076d111e7"
-        APP_STORE_CONNECT_KEY_IDENTIFIER: "29J5WPPB65"
-        APP_STORE_CONNECT_PRIVATE_KEY: |
-          -----BEGIN PRIVATE KEY-----
-          MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQgUSTjwD8G50uN7SIs
-          9ok2wlpgYr+T66wcbXpe2+6Y5F+gCgYIKoZIzj0DAQehRANCAATALDU3nA/mh1zX
-          lYg4SmyM8DEe8bdCD81E1RdjTIJnTYVdYTXtd1WSEXu6DWM0QBwdS0mcv3MYgEhp
-          nG2IRj8I
-          -----END PRIVATE KEY-----
         DEVELOPMENT_TEAM: "6F974S63AX"
       xcode: latest
     triggering:
@@ -39,20 +30,7 @@ workflows:
         script: |
           xcodebuild -exportArchive \
             -archivePath build/EnvantoBarkod.xcarchive \
-            -exportOptionsPlist exportOptions.plist \
+            -exportOptionsPlist export_options.plist \
             -exportPath build
-      - name: Publish to TestFlight
-        script: |
-          xcrun altool --upload-app \
-            -f build/EnvantoBarkod.ipa \
-            -t ios \
-            --apiKey $APP_STORE_CONNECT_KEY_IDENTIFIER \
-            --apiIssuer $APP_STORE_CONNECT_ISSUER_ID
     artifacts:
       - build/*.ipa
-    publishing:
-      app_store_connect:
-        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
-        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
-        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
-        submit_to_testflight: true
