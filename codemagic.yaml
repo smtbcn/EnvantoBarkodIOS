@@ -18,6 +18,7 @@ workflows:
           xcodebuild archive \
             -project "EnvantoBarkod.xcodeproj" \
             -scheme "EnvantoBarkod" \
+            -destination "generic/platform=iOS" \
             -archivePath "build/EnvantoBarkod.xcarchive" \
             -configuration Release \
             DEVELOPMENT_TEAM=6F974S63AX \
