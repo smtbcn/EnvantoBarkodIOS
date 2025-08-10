@@ -191,6 +191,110 @@ Xcode Console'da aşağıdaki logları takip edin:
 
 Bu proje Envanto şirketi için geliştirilmiştir. Tüm hakları saklıdır.
 
+## � GietHub Actions Workflows
+
+Bu proje otomatik build ve deployment için GitHub Actions kullanır.
+
+### 📱 iOS Build Workflow (`ios-build.yml`)
+
+**Tetiklenme Koşulları:**
+- `main` ve `develop` branch'lerine push
+- `main` branch'ine pull request
+- Manuel tetikleme
+
+**İşlemler:**
+- ✅ Xcode kurulumu ve konfigürasyonu
+- 🔨 Debug ve Release build'leri
+- 🧪 Unit test çalıştırma
+- 📦 Archive oluşturma
+- 📤 Build artifact'lerini yükleme
+- 🔍 SwiftLint kod analizi
+- 🔒 Güvenlik taraması
+
+### 🎯 iOS Release Workflow (`ios-release.yml`)
+
+**Tetiklenme Koşulları:**
+- `v*` tag'leri (örn: v1.0.0)
+- Manuel tetikleme
+
+**İşlemler:**
+- 📝 Version güncelleme
+- 🏗️ Release build oluşturma
+- 📱 IPA export (signing olmadan)
+- 🗜️ Archive ve dSYM paketleme
+- 🚀 GitHub Release oluşturma
+- 📊 Build durumu raporu
+
+### 🛠️ Workflow Kullanımı
+
+#### Otomatik Build
+```bash
+# Main branch'e push yap
+git push origin main
+
+# Veya pull request oluştur
+git checkout -b feature/new-feature
+git push origin feature/new-feature
+```
+
+#### Release Oluşturma
+```bash
+# Tag oluştur ve push et
+git tag v1.0.0
+git push origin v1.0.0
+
+# Veya GitHub Actions sekmesinden manuel tetikle
+```
+
+#### Manuel Workflow Tetikleme
+1. GitHub repository'ye git
+2. "Actions" sekmesine tıkla
+3. İstediğin workflow'u seç
+4. "Run workflow" butonuna tıkla
+
+### 📋 Build Gereksinimleri
+
+- **Xcode:** 15.0+
+- **iOS Deployment Target:** 16.0+
+- **Swift:** 5.0+
+- **macOS Runner:** macos-14
+
+### 🔧 CI/CD Konfigürasyonu
+
+#### SwiftLint
+Proje `.swiftlint.yml` dosyası ile konfigüre edilmiştir:
+- Kod kalitesi kontrolleri
+- Stil rehberi uygulaması
+- Özel kurallar (print statement, force unwrap vb.)
+
+#### Build Ayarları
+- **Code Signing:** Devre dışı (CI/CD için)
+- **Bitcode:** Devre dışı
+- **Swift Compilation Mode:** Whole Module (Release)
+- **Optimization Level:** -O (Release)
+
+### 📊 Build Status
+
+[![iOS Build](https://github.com/[username]/EnvantoBarkod/actions/workflows/ios-build.yml/badge.svg)](https://github.com/[username]/EnvantoBarkod/actions/workflows/ios-build.yml)
+[![iOS Release](https://github.com/[username]/EnvantoBarkod/actions/workflows/ios-release.yml/badge.svg)](https://github.com/[username]/EnvantoBarkod/actions/workflows/ios-release.yml)
+
+### 📦 Artifacts
+
+Build işlemleri sonucunda şu artifact'ler oluşturulur:
+- **ios-build-artifacts:** Debug build dosyaları
+- **ios-release-[version]:** Release build, IPA ve dSYM dosyaları
+
+### 🔍 CI/CD Troubleshooting
+
+#### Build Hataları
+- Xcode version uyumsuzluğu: `.github/workflows/` dosyalarında `XCODE_VERSION` güncelle
+- Scheme bulunamadı: `xcodebuild -list` ile mevcut scheme'leri kontrol et
+- Signing hataları: `CODE_SIGNING_ALLOWED=NO` parametresi eklenmiş olmalı
+
+#### Workflow Hataları
+- macOS runner kapasitesi: GitHub Actions limits kontrol et
+- Artifact upload hatası: Dosya boyutu ve retention ayarlarını kontrol et
+
 ## 📞 İletişim
 
 Proje ile ilgili sorularınız için:
