@@ -8,12 +8,7 @@
     <key>teamID</key>
     <string>6F974S63AX</string>
     <key>signingStyle</key>
-    <string>manual</string>
-    <key>provisioningProfiles</key>
-    <dict>
-        <key>com.envanto.barcode.ios</key>
-        <string>260ae5b3-c2dc-486a-8aa9-e9399999c2b4</string>
-    </dict>
+    <string>automatic</string>
     <key>uploadBitcode</key>
     <false/>
     <key>uploadSymbols</key>

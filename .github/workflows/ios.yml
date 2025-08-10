@@ -18,40 +18,11 @@ jobs:
       with:
         xcode-version: latest-stable
     
-    - name: Import Certificate
-      run: |
-        echo "Importing certificate..."
-        echo "${{ secrets.CERTIFICATES_P12 }}" | base64 --decode > certificate.p12
-        
-        # Create keychain
-        security create-keychain -p "temp123" build.keychain
-        security default-keychain -s build.keychain
-        security unlock-keychain -p "temp123" build.keychain
-        security set-keychain-settings -t 3600 -l -u build.keychain
-        
-        # Import certificate with private key
-        security import certificate.p12 -k build.keychain -P "${{ secrets.CERTIFICATES_PASSWORD }}" -A
-        
-        # Set partition list for codesigning
-        security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "temp123" build.keychain
-        
-        # List certificates
-        echo "Available certificates:"
-        security find-identity -v -p codesigning
-        
-        echo "All identities:"
-        security find-identity -v
-        
-        echo "Certificate details:"
-        security dump-keychain build.keychain | grep -A5 -B5 "labl"
+    - name: Skip certificate import
+      run: echo "Using automatic signing without manual certificate"
     
-    - name: Import Provisioning Profile
-      run: |
-        echo "Creating provisioning profile..."
-        echo "${{ secrets.PROVISIONING_PROFILE_BASE64 }}" | base64 --decode > profile.mobileprovision
-        mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-        cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
-        echo "Profile installed successfully"
+    - name: Skip provisioning profile import
+      run: echo "Using automatic signing without manual profile"
     
     - name: Build Archive
       run: |
