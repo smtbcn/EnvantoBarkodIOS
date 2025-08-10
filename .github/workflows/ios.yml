@@ -19,10 +19,23 @@ jobs:
         xcode-version: latest-stable
     
     - name: Import Certificate
-      uses: apple-actions/import-codesign-certs@v2
-      with:
-        p12-file-base64: ${{ secrets.CERTIFICATES_P12 }}
-        p12-password: ${{ secrets.CERTIFICATES_PASSWORD }}
+      run: |
+        echo "Importing certificate..."
+        echo "${{ secrets.CERTIFICATES_P12 }}" | base64 --decode > certificate.p12
+        
+        # Create keychain
+        security create-keychain -p "" build.keychain
+        security default-keychain -s build.keychain
+        security unlock-keychain -p "" build.keychain
+        security set-keychain-settings -t 3600 -u build.keychain
+        
+        # Import certificate
+        security import certificate.p12 -k build.keychain -P "${{ secrets.CERTIFICATES_PASSWORD }}" -T /usr/bin/codesign
+        security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
+        
+        # List certificates
+        echo "Available certificates:"
+        security find-identity -v -p codesigning
     
     - name: Import Provisioning Profile
       run: |
