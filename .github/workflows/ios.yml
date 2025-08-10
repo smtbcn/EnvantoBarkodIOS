@@ -24,6 +24,11 @@ jobs:
     - name: Skip provisioning profile import
       run: echo "Using automatic signing without manual profile"
     
+    - name: Setup App Store Connect API
+      run: |
+        mkdir -p ~/private_keys
+        echo "${{ secrets.APPSTORE_PRIVATE_KEY }}" > ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8
+        
     - name: Build Archive
       run: |
         xcodebuild archive \
@@ -33,6 +38,9 @@ jobs:
           -archivePath EnvantoBarkod.xcarchive \
           -configuration Release \
           -allowProvisioningUpdates \
+          -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8 \
+          -authenticationKeyID ${{ secrets.APPSTORE_KEY_ID }} \
+          -authenticationKeyIssuerID ${{ secrets.APPSTORE_ISSUER_ID }} \
           CODE_SIGN_STYLE=Automatic \
           DEVELOPMENT_TEAM=6F974S63AX
     
@@ -42,7 +50,10 @@ jobs:
           -archivePath EnvantoBarkod.xcarchive \
           -exportPath . \
           -exportOptionsPlist export_options.plist \
-          -allowProvisioningUpdates
+          -allowProvisioningUpdates \
+          -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.APPSTORE_KEY_ID }}.p8 \
+          -authenticationKeyID ${{ secrets.APPSTORE_KEY_ID }} \
+          -authenticationKeyIssuerID ${{ secrets.APPSTORE_ISSUER_ID }}
     
     - name: Upload IPA
       uses: actions/upload-artifact@v4
