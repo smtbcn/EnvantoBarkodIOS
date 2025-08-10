@@ -4,7 +4,7 @@
 <plist version="1.0">
 <dict>
     <key>method</key>
-    <string>app-store</string>
+    <string>app-store-connect</string>
     <key>teamID</key>
     <string>6F974S63AX</string>
     <key>uploadBitcode</key>
@@ -17,8 +17,6 @@
     <string>automatic</string>
     <key>provisioningProfiles</key>
     <dict>
-        <key>com.envanto.barcode.ios</key>
-        <string>EnvantoBarkod App Store</string>
     </dict>
 </dict>
 </plist>
