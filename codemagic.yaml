@@ -29,7 +29,7 @@ workflows:
           echo "=== Available Certificates ==="
           security find-identity -v -p codesigning
           echo "=== Available Provisioning Profiles ==="
-          find ~/Library/MobileDevice/Provisioning\ Profiles -name "*.mobileprovision" -exec echo "Profile: {}" \; -exec security cms -D -i {} | grep -A5 -B5 "Name\|TeamName\|UUID" \; 2>/dev/null || echo "No profiles found"
+          find ~/Library/MobileDevice/Provisioning\ Profiles -name "*.mobileprovision" -exec echo "=== Profile: {} ===" \; -exec security cms -D -i {} | grep -E "Name|UUID|TeamName|TeamIdentifier" \; 2>/dev/null || echo "No profiles found"
       - name: Build with xcodebuild directly
         script: |
           # Direkt xcodebuild kullan
