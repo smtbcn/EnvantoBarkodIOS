@@ -11,8 +11,24 @@ workflows:
 
       - name: Skip certificate setup
         script: echo "Using certificates from Codemagic dashboard"
-      - name: Set up code signing settings on Xcode project
-        script: xcode-project use-profiles
+      - name: Build with UUID
+        script: |
+          echo "Using profile UUID: 260ae5b3-c2dc-486a-8aa9-e9399999c2b4"
+          
+          xcodebuild archive \
+            -project "EnvantoBarkod.xcodeproj" \
+            -scheme "EnvantoBarkod" \
+            -archivePath "build/EnvantoBarkod.xcarchive" \
+            -configuration Release \
+            DEVELOPMENT_TEAM=6F974S63AX \
+            CODE_SIGN_STYLE=Manual \
+            "CODE_SIGN_IDENTITY=iPhone Distribution" \
+            "PROVISIONING_PROFILE=260ae5b3-c2dc-486a-8aa9-e9399999c2b4"
+          
+          xcodebuild -exportArchive \
+            -archivePath "build/EnvantoBarkod.xcarchive" \
+            -exportPath "build/ios/ipa" \
+            -exportOptionsPlist export_options.plist
       - name: Build ipa for distribution
         script: |
           xcode-project build-ipa \
