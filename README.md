@@ -225,6 +225,22 @@ Bu proje otomatik build ve deployment için GitHub Actions kullanır.
 - 🚀 GitHub Release oluşturma
 - 📊 Build durumu raporu
 
+### 🚀 iOS TestFlight Workflow (`ios-testflight.yml`)
+
+**Tetiklenme Koşulları:**
+- `testflight-*` tag'leri (örn: testflight-1.0.0)
+- `v*.*.*-beta*` tag'leri (örn: v1.0.0-beta1)
+- Manuel tetikleme
+
+**İşlemler:**
+- 🔐 Apple sertifikalarını yükleme
+- 📝 Version ve build number güncelleme
+- 🏗️ Signed release build oluşturma
+- 📱 App Store IPA export
+- 🚀 TestFlight'a otomatik yükleme
+- 📊 Deployment raporu
+- 💬 Slack bildirimi (opsiyonel)
+
 ### 🛠️ Workflow Kullanımı
 
 #### Otomatik Build
@@ -239,9 +255,17 @@ git push origin feature/new-feature
 
 #### Release Oluşturma
 ```bash
-# Tag oluştur ve push et
+# GitHub Release için tag oluştur
 git tag v1.0.0
 git push origin v1.0.0
+
+# TestFlight deployment için tag oluştur
+git tag testflight-1.0.0
+git push origin testflight-1.0.0
+
+# Beta release için
+git tag v1.0.0-beta1
+git push origin v1.0.0-beta1
 
 # Veya GitHub Actions sekmesinden manuel tetikle
 ```
@@ -277,6 +301,7 @@ Proje `.swiftlint.yml` dosyası ile konfigüre edilmiştir:
 
 [![iOS Build](https://github.com/[username]/EnvantoBarkod/actions/workflows/ios-build.yml/badge.svg)](https://github.com/[username]/EnvantoBarkod/actions/workflows/ios-build.yml)
 [![iOS Release](https://github.com/[username]/EnvantoBarkod/actions/workflows/ios-release.yml/badge.svg)](https://github.com/[username]/EnvantoBarkod/actions/workflows/ios-release.yml)
+[![TestFlight Deploy](https://github.com/[username]/EnvantoBarkod/actions/workflows/ios-testflight.yml/badge.svg)](https://github.com/[username]/EnvantoBarkod/actions/workflows/ios-testflight.yml)
 
 ### 📦 Artifacts
 
