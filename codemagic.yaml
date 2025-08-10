@@ -5,37 +5,42 @@ workflows:
       groups:
         - admin
       xcode: latest
+      vars:
+        XCODE_WORKSPACE: "EnvantoBarkod.xcodeproj"
+        XCODE_SCHEME: "EnvantoBarkod"
     scripts:
-      - name: Set up keychain
-        script: keychain initialize
-
-      - name: Skip certificate setup
-        script: echo "Using certificates from Codemagic dashboard"
-      - name: Build with UUID
+      - name: Setup App Store Connect API
         script: |
-          echo "Using profile UUID: 260ae5b3-c2dc-486a-8aa9-e9399999c2b4"
+          mkdir -p ~/private_keys
+          echo "$APP_STORE_CONNECT_PRIVATE_KEY" > ~/private_keys/AuthKey_$APP_STORE_CONNECT_KEY_IDENTIFIER.p8
           
+      - name: Build Archive
+        script: |
           xcodebuild archive \
-            -project "EnvantoBarkod.xcodeproj" \
-            -scheme "EnvantoBarkod" \
+            -project EnvantoBarkod.xcodeproj \
+            -scheme EnvantoBarkod \
             -destination "generic/platform=iOS" \
-            -archivePath "build/EnvantoBarkod.xcarchive" \
+            -archivePath EnvantoBarkod.xcarchive \
             -configuration Release \
-            DEVELOPMENT_TEAM=6F974S63AX \
-            CODE_SIGN_STYLE=Manual \
-            "CODE_SIGN_IDENTITY=iPhone Distribution" \
-            "PROVISIONING_PROFILE=260ae5b3-c2dc-486a-8aa9-e9399999c2b4"
-          
-          xcodebuild -exportArchive \
-            -archivePath "build/EnvantoBarkod.xcarchive" \
-            -exportPath "build/ios/ipa" \
-            -exportOptionsPlist export_options.plist
-      - name: Build ipa for distribution
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_$APP_STORE_CONNECT_KEY_IDENTIFIER.p8 \
+            -authenticationKeyID $APP_STORE_CONNECT_KEY_IDENTIFIER \
+            -authenticationKeyIssuerID $APP_STORE_CONNECT_ISSUER_ID \
+            CODE_SIGN_STYLE=Automatic \
+            DEVELOPMENT_TEAM=6F974S63AX
+            
+      - name: Export IPA
         script: |
-          xcode-project build-ipa \
-            --project "EnvantoBarkod.xcodeproj" \
-            --scheme "EnvantoBarkod"
+          xcodebuild -exportArchive \
+            -archivePath EnvantoBarkod.xcarchive \
+            -exportPath . \
+            -exportOptionsPlist export_options.plist \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_$APP_STORE_CONNECT_KEY_IDENTIFIER.p8 \
+            -authenticationKeyID $APP_STORE_CONNECT_KEY_IDENTIFIER \
+            -authenticationKeyIssuerID $APP_STORE_CONNECT_ISSUER_ID
+            
     artifacts:
-      - build/ios/ipa/*.ipa
+      - "*.ipa"
       - /tmp/xcodebuild_logs/*.log
       - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
