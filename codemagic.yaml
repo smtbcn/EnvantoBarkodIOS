@@ -1,6 +1,6 @@
 workflows:
-  final-clean-build:
-    name: Final Clean iOS Build
+  envanto-barkod-final:
+    name: Envanto Barkod Final Build
     environment:
       groups:
         - admin
@@ -9,29 +9,13 @@ workflows:
     scripts:
       - name: Check environment
         script: |
-          echo "Starting clean build process..."
+          echo "Starting build process..."
           xcode-select --print-path
           xcodebuild -version
       - name: Initialize keychain
         script: keychain initialize
-      - name: List available resources
+      - name: Build IPA
         script: |
-          echo "=== Certificates ==="
-          app-store-connect certificates list --type IOS_DISTRIBUTION
-          echo "=== Profiles ==="
-          app-store-connect profiles list --type IOS_APP_STORE
-      - name: Skip automatic signing - use manual
-        script: |
-          echo "Using manual code signing from Codemagic dashboard"
-          echo "Certificates and profiles should be uploaded manually"
-      - name: List available profiles and certificates
-        script: |
-          echo "=== Available Certificates ==="
-          security find-identity -v -p codesigning
-          echo "=== Available Provisioning Profiles ==="
-          find ~/Library/MobileDevice/Provisioning\ Profiles -name "*.mobileprovision" -exec echo {} \; -exec security cms -D -i {} \; 2>/dev/null || echo "No profiles found"
-                - name: Build with xcodebuild directly
-                          # Direkt xcodebuild kullan
           xcodebuild archive \
             -project "EnvantoBarkod.xcodeproj" \
             -scheme "EnvantoBarkod" \
@@ -39,10 +23,9 @@ workflows:
             -configuration Release \
             DEVELOPMENT_TEAM=6F974S63AX \
             CODE_SIGN_STYLE=Manual \
-                        "CODE_SIGN_IDENTITY=iPhone Distribution" \
+            "CODE_SIGN_IDENTITY=iPhone Distribution" \
             "PROVISIONING_PROFILE_SPECIFIER=EnvantoBarkod App Store"
           
-          # Export IPA
           xcodebuild -exportArchive \
             -archivePath "build/EnvantoBarkod.xcarchive" \
             -exportPath "build/ios/ipa" \
@@ -50,3 +33,4 @@ workflows:
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
