@@ -8,12 +8,7 @@ workflows:
     scripts:
       - name: Set up keychain
         script: keychain initialize
-      - name: Set up provisioning profiles
-        script: |
-          PROFILES_HOME="$HOME/Library/MobileDevice/Provisioning Profiles"
-          mkdir -p "$PROFILES_HOME"
-          PROFILE_PATH=$(find /tmp -name "*.mobileprovision")
-          cp "$PROFILE_PATH" "$PROFILES_HOME"
+
       - name: Set up signing certificate
         script: keychain add-certificates
       - name: Set up code signing settings on Xcode project
