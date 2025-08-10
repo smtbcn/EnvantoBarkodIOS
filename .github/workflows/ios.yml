@@ -27,15 +27,26 @@ jobs:
     - name: Import Provisioning Profile
       run: |
         echo "Creating provisioning profile..."
+        if [ -z "${{ secrets.PROVISIONING_PROFILE_BASE64 }}" ]; then
+          echo "ERROR: PROVISIONING_PROFILE_BASE64 secret is not set!"
+          exit 1
+        fi
+        
         echo "${{ secrets.PROVISIONING_PROFILE_BASE64 }}" | base64 --decode > profile.mobileprovision
+        
+        echo "Profile file size: $(wc -c < profile.mobileprovision) bytes"
+        
         mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
         cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
         
         echo "Checking profile content..."
-        security cms -D -i profile.mobileprovision | grep -A5 -B5 "Name\|UUID\|TeamName"
+        security cms -D -i profile.mobileprovision | grep -A3 -B1 "Name\|UUID\|TeamName\|ApplicationIdentifierPrefix"
         
         echo "Listing installed profiles..."
         ls -la ~/Library/MobileDevice/Provisioning\ Profiles/
+        
+        echo "Checking if profile matches bundle ID..."
+        security cms -D -i profile.mobileprovision | grep "com.envanto.barcode.ios" || echo "Bundle ID not found in profile!"
     
     - name: Build Archive
       run: |
