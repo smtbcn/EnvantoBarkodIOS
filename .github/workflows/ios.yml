@@ -41,6 +41,9 @@ jobs:
         
         echo "All identities:"
         security find-identity -v
+        
+        echo "Certificate details:"
+        security dump-keychain build.keychain | grep -A5 -B5 "labl"
     
     - name: Import Provisioning Profile
       run: |
@@ -58,8 +61,8 @@ jobs:
           -destination "generic/platform=iOS" \
           -archivePath EnvantoBarkod.xcarchive \
           -configuration Release \
+          -allowProvisioningUpdates \
           CODE_SIGN_STYLE=Automatic \
-          CODE_SIGN_IDENTITY="Apple Development" \
           DEVELOPMENT_TEAM=6F974S63AX
     
     - name: Export IPA
