@@ -20,17 +20,13 @@ workflows:
           app-store-connect certificates list --type IOS_DISTRIBUTION
           echo "=== Profiles ==="
           app-store-connect profiles list --type IOS_APP_STORE
-      - name: Download signing files with P12
+      - name: Skip automatic signing - use manual
         script: |
-          # P12 sertifikası ile signing files'ları indir
-          app-store-connect fetch-signing-files "com.envanto.barcode.ios" \
-            --type IOS_APP_STORE
-      - name: Add certificates to keychain
-        script: keychain add-certificates
-      - name: Configure code signing
-        script: xcode-project use-profiles
-      - name: Build IPA
+          echo "Using manual code signing from Codemagic dashboard"
+          echo "Certificates and profiles should be uploaded manually"
+      - name: Build IPA with manual signing
         script: |
+          # Manuel code signing ile build
           xcode-project build-ipa \
             --project "EnvantoBarkod.xcodeproj" \
             --scheme "EnvantoBarkod" \
