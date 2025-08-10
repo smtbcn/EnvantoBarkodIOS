@@ -11,10 +11,15 @@ workflows:
         script: xcode-select --print-path && xcodebuild -version
       - name: Set up keychain to be used for code signing using Codemagic CLI 'keychain' command
         script: keychain initialize
+      - name: Create temporary key file
+        script: |
+          echo "$CERTIFICATE_PRIVATE_KEY" | base64 -d > /tmp/private_key.pem
       - name: Fetch signing files
         script: |
           app-store-connect fetch-signing-files "com.envanto.barcode.ios" \
-          --type IOS_APP_STORE
+          --type IOS_APP_STORE \
+          --create \
+          --certificate-key=/tmp/private_key.pem
       - name: Set up signing certificate
         script: keychain add-certificates
       - name: Set up code signing settings on Xcode project
