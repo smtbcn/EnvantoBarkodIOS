@@ -26,11 +26,13 @@ workflows:
           echo "Certificates and profiles should be uploaded manually"
       - name: Build IPA with manual signing
         script: |
-          # Manuel code signing ile build
+          # Provisioning profile'ı manuel olarak belirt
           xcode-project build-ipa \
             --project "EnvantoBarkod.xcodeproj" \
             --scheme "EnvantoBarkod" \
-            --export-options-plist export_options.plist
+            --export-options-plist export_options.plist \
+            PROVISIONING_PROFILE_SPECIFIER="EnvantoBarkod App Store" \
+            CODE_SIGN_IDENTITY="iPhone Distribution"
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
