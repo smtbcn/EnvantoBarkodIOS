@@ -11,9 +11,13 @@ workflows:
         script: xcode-select --print-path && xcodebuild -version
       - name: Set up keychain to be used for code signing using Codemagic CLI 'keychain' command
         script: keychain initialize
-      - name: Create temporary key file
+      - name: Convert and prepare private key
         script: |
-          echo "$CERTIFICATE_PRIVATE_KEY" | base64 -d > /tmp/private_key.pem
+          echo "$CERTIFICATE_PRIVATE_KEY" | base64 -d > /tmp/rsa_key.pem
+          # RSA formatını PKCS#8'e çevir
+          openssl pkcs8 -topk8 -inform PEM -outform PEM -nocrypt -in /tmp/rsa_key.pem -out /tmp/private_key.pem
+          echo "Private key converted to PKCS#8 format"
+          head -2 /tmp/private_key.pem
       - name: Fetch signing files
         script: |
           app-store-connect fetch-signing-files "com.envanto.barcode.ios" \
