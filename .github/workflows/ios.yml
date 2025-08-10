@@ -26,9 +26,16 @@ jobs:
     
     - name: Import Provisioning Profile
       run: |
+        echo "Creating provisioning profile..."
         echo "${{ secrets.PROVISIONING_PROFILE_BASE64 }}" | base64 --decode > profile.mobileprovision
         mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
         cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
+        
+        echo "Checking profile content..."
+        security cms -D -i profile.mobileprovision | grep -A5 -B5 "Name\|UUID\|TeamName"
+        
+        echo "Listing installed profiles..."
+        ls -la ~/Library/MobileDevice/Provisioning\ Profiles/
     
     - name: Build Archive
       run: |
