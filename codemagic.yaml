@@ -8,11 +8,6 @@ workflows:
       vars:
         XCODE_WORKSPACE: "EnvantoBarkod.xcodeproj"
         XCODE_SCHEME: "EnvantoBarkod"
-        BUNDLE_ID: "com.envanto.barcode.ios"
-        APP_ID: "6749488468"  # App Store Connect'teki App ID'nizi yazın
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.envanto.barcode.ios
     integrations:
       app_store_connect: CodeMagic
     scripts:
@@ -39,6 +34,8 @@ workflows:
             -authenticationKeyID $APP_STORE_CONNECT_KEY_IDENTIFIER \
             -authenticationKeyIssuerID $APP_STORE_CONNECT_ISSUER_ID \
             CODE_SIGN_STYLE=Automatic \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            PROVISIONING_PROFILE_SPECIFIER="CodemagicProfildist" \
             DEVELOPMENT_TEAM=6F974S63AX
 
             
