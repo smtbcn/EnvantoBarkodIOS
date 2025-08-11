@@ -33,7 +33,8 @@ workflows:
             -authenticationKeyPath ~/private_keys/AuthKey_$APP_STORE_CONNECT_KEY_IDENTIFIER.p8 \
             -authenticationKeyID $APP_STORE_CONNECT_KEY_IDENTIFIER \
             -authenticationKeyIssuerID $APP_STORE_CONNECT_ISSUER_ID \
-            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_STYLE=Automatic \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
             DEVELOPMENT_TEAM=6F974S63AX
 
             
