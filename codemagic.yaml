@@ -44,3 +44,22 @@ workflows:
       - "*.ipa"
       - /tmp/xcodebuild_logs/*.log
       - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
+      
+    publishing:
+      app_store_connect:
+        auth: integration
+        
+        # TestFlight'a otomatik upload
+        submit_to_testflight: true
+        
+        # Beta App Review için otomatik submit (opsiyonel)
+        # beta_review: 
+        #   default_locale: en-US
+        #   beta_app_description: "EnvantoBarkod iOS uygulaması beta versiyonu"
+        #   beta_app_feedback_email: "your-email@example.com"
+        #   submit_for_beta_review: true
+        
+        # Test gruplarına otomatik dağıtım (opsiyonel)
+        # beta_groups:
+        #   - "Internal Testers"
+        #   - "External Testers"
