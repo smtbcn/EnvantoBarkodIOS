@@ -12,7 +12,7 @@ workflows:
       - name: Setup App Store Connect API
         script: |
           mkdir -p ~/private_keys
-          echo "$APP_STORE_CONNECT_PRIVATE_KEY" > ~/private_keys/AuthKey_$APP_STORE_CONNECT_KEY_IDENTIFIER.p8
+          echo "$APP_STORE_CONNECT_PRIVATE_KEY" | base64 --decode > ~/private_keys/AuthKey_$APP_STORE_CONNECT_KEY_IDENTIFIER.p8
           
       - name: Build Archive
         script: |
