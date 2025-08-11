@@ -9,7 +9,7 @@ workflows:
         XCODE_WORKSPACE: "EnvantoBarkod.xcodeproj"
         XCODE_SCHEME: "EnvantoBarkod"
         BUNDLE_ID: "com.envanto.barcode.ios"
-        # Sadece App Store Connect API bilgileri
+        # App Store Connect API bilgileri
         APP_STORE_CONNECT_ISSUER_ID: Encrypted(...) # Codemagic'te ekleyin
         APP_STORE_CONNECT_KEY_IDENTIFIER: Encrypted(...) # Codemagic'te ekleyin
         APP_STORE_CONNECT_PRIVATE_KEY: Encrypted(...) # Codemagic'te ekleyin
@@ -23,7 +23,7 @@ workflows:
           mkdir -p ~/private_keys
           echo "$APP_STORE_CONNECT_PRIVATE_KEY" | base64 --decode > ~/private_keys/AuthKey_$APP_STORE_CONNECT_KEY_IDENTIFIER.p8
           
-      - name: Fetch provisioning profiles (basit yöntem)
+      - name: Fetch provisioning profiles
         script: |
           app-store-connect fetch-signing-files $BUNDLE_ID \
             --type IOS_APP_STORE \
@@ -57,6 +57,7 @@ workflows:
       
     publishing:
       app_store_connect:
+        # API key authentication (integration yerine)
         api_key_path: ~/private_keys/AuthKey_$APP_STORE_CONNECT_KEY_IDENTIFIER.p8
         api_key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
         api_key_issuer_id: $APP_STORE_CONNECT_ISSUER_ID
