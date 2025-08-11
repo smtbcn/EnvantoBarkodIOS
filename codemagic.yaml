@@ -29,7 +29,6 @@ workflows:
             -destination "generic/platform=iOS" \
             -archivePath EnvantoBarkod.xcarchive \
             -configuration Release \
-
             -authenticationKeyPath ~/private_keys/AuthKey_$APP_STORE_CONNECT_KEY_IDENTIFIER.p8 \
             -authenticationKeyID $APP_STORE_CONNECT_KEY_IDENTIFIER \
             -authenticationKeyIssuerID $APP_STORE_CONNECT_ISSUER_ID \
@@ -44,7 +43,6 @@ workflows:
             -archivePath EnvantoBarkod.xcarchive \
             -exportPath . \
             -exportOptionsPlist export_options.plist \
-
             -authenticationKeyPath ~/private_keys/AuthKey_$APP_STORE_CONNECT_KEY_IDENTIFIER.p8 \
             -authenticationKeyID $APP_STORE_CONNECT_KEY_IDENTIFIER \
             -authenticationKeyIssuerID $APP_STORE_CONNECT_ISSUER_ID
