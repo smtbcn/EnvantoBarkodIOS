@@ -26,7 +26,7 @@
     <key>provisioningProfiles</key>
     <dict>
         <key>com.envanto.barcode.ios</key>
-        <string>Automatic</string>
+        <string>CodeMagicProfile</string>
     </dict>
     
     <key>destination</key>
@@ -34,8 +34,6 @@
     
     <key>stripSwiftSymbols</key>
     <true/>
-    
-    <key>thinning</key>
-    <string>&lt;none&gt;</string>
+  
 </dict>
 </plist>
