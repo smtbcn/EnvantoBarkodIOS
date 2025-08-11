@@ -6,36 +6,36 @@ workflows:
         - admin
       xcode: latest
       vars:
-        XCODE_WORKSPACE: "EnvantoBarkod.xcodeproj"
+        XCODE_PROJECT: "EnvantoBarkod.xcodeproj"
         XCODE_SCHEME: "EnvantoBarkod"
+        DEVELOPMENT_TEAM: "6F974S63AX"
+        CODE_SIGN_IDENTITY: "Apple Distribution"
+        PROVISIONING_PROFILE_SPECIFIER: "CodemagicDistProfil"
     integrations:
       app_store_connect: CodeMagic
     scripts:
       - name: Setup App Store Connect API
         script: |
           mkdir -p ~/private_keys
-          echo "APP_STORE_CONNECT_PRIVATE_KEY: $APP_STORE_CONNECT_PRIVATE_KEY_BASE64"
-          echo "APP_STORE_CONNECT_KEY_IDENTIFIER: $APP_STORE_CONNECT_KEY_IDENTIFIER"
-          echo "APP_STORE_CONNECT_ISSUER_ID: $APP_STORE_CONNECT_ISSUER_ID"
+          echo "$APP_STORE_CONNECT_PRIVATE_KEY_BASE64" | base64 --decode > ~/private_keys/AuthKey_$APP_STORE_CONNECT_KEY_IDENTIFIER.p8
 
-
-          echo "$APP_STORE_CONNECT_PRIVATE_KEY_BASE64" | base64 -d > ~/private_keys/AuthKey_$APP_STORE_CONNECT_KEY_IDENTIFIER.p8
-          
       - name: Build Archive
         script: |
           xcodebuild archive \
-            -project EnvantoBarkod.xcodeproj \
-            -scheme EnvantoBarkod \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME" \
             -destination "generic/platform=iOS" \
             -archivePath EnvantoBarkod.xcarchive \
             -configuration Release \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="$CODE_SIGN_IDENTITY" \
+            PROVISIONING_PROFILE_SPECIFIER="$PROVISIONING_PROFILE_SPECIFIER" \
+            DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" \
             -allowProvisioningUpdates \
             -authenticationKeyPath ~/private_keys/AuthKey_$APP_STORE_CONNECT_KEY_IDENTIFIER.p8 \
             -authenticationKeyID $APP_STORE_CONNECT_KEY_IDENTIFIER \
-            -authenticationKeyIssuerID $APP_STORE_CONNECT_ISSUER_ID \
-            CODE_SIGN_STYLE=Automatic \
-            DEVELOPMENT_TEAM=6F974S63AX
-            
+            -authenticationKeyIssuerID $APP_STORE_CONNECT_ISSUER_ID
+
       - name: Export IPA
         script: |
           xcodebuild -exportArchive \
@@ -46,15 +46,13 @@ workflows:
             -authenticationKeyPath ~/private_keys/AuthKey_$APP_STORE_CONNECT_KEY_IDENTIFIER.p8 \
             -authenticationKeyID $APP_STORE_CONNECT_KEY_IDENTIFIER \
             -authenticationKeyIssuerID $APP_STORE_CONNECT_ISSUER_ID
-            
+
     artifacts:
       - "*.ipa"
       - /tmp/xcodebuild_logs/*.log
-      - $HOME/Library/Developer/Xcode/DerivedData//Build//*.dSYM
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
 
     publishing:
       app_store_connect:
         auth: integration
-        
-        # TestFlight'a otomatik upload
         submit_to_testflight: true
