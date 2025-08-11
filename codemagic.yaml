@@ -44,3 +44,10 @@ workflows:
       - "*.ipa"
       - /tmp/xcodebuild_logs/*.log
       - $HOME/Library/Developer/Xcode/DerivedData//Build//*.dSYM
+
+    publishing:
+      app_store_connect:
+        auth: integration
+        
+        # TestFlight'a otomatik upload
+        submit_to_testflight: true
