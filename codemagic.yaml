@@ -1,62 +1,71 @@
 workflows:
   ios-workflow:
-    name: iOS Workflow son
+    name: iOS Workflow
     environment:
       groups:
         - admin
-      xcode: latest
+      xcode: 16.4  # 'latest' yerine spesifik versiyon
+      cocoapods: default
       vars:
-        XCODE_WORKSPACE: "EnvantoBarkod.xcodeproj"
+        XCODE_PROJECT: "EnvantoBarkod.xcodeproj"
         XCODE_SCHEME: "EnvantoBarkod"
+        BUNDLE_ID: "com.envanto.barcode.ios"
+        APP_ID: "6749488468"  # App Store Connect'teki App ID'nizi yazın
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.envanto.barcode.ios
     integrations:
       app_store_connect: CodeMagic
+    
     scripts:
-      - name: Setup App Store Connect API
+      # Otomatik code signing için Codemagic'in built-in fonksiyonlarını kullan
+      - name: Set up code signing settings on Xcode project
         script: |
-          mkdir -p ~/private_keys
-          echo "APP_STORE_CONNECT_PRIVATE_KEY: $APP_STORE_CONNECT_PRIVATE_KEY_BASE64"
-          echo "APP_STORE_CONNECT_KEY_IDENTIFIER: $APP_STORE_CONNECT_KEY_IDENTIFIER"
-          echo "APP_STORE_CONNECT_ISSUER_ID: $APP_STORE_CONNECT_ISSUER_ID"
-
-
-          echo "$APP_STORE_CONNECT_PRIVATE_KEY_BASE64" | base64 --decode > ~/private_keys/AuthKey_$APP_STORE_CONNECT_KEY_IDENTIFIER.p8
-          
-      - name: Build Archive
+          xcode-project use-profiles
+      
+      - name: Set Info.plist values
         script: |
-          xcodebuild archive \
-            -project EnvantoBarkod.xcodeproj \
-            -scheme EnvantoBarkod \
-            -destination "generic/platform=iOS" \
-            -archivePath EnvantoBarkod.xcarchive \
-            -configuration Release \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath ~/private_keys/AuthKey_$APP_STORE_CONNECT_KEY_IDENTIFIER.p8 \
-            -authenticationKeyID $APP_STORE_CONNECT_KEY_IDENTIFIER \
-            -authenticationKeyIssuerID $APP_STORE_CONNECT_ISSUER_ID \
-            CODE_SIGN_STYLE=Automatic \
-            DEVELOPMENT_TEAM=6F974S63AX
-
-            
-            
-      - name: Export IPA
+          # Build numarasını otomatik artır
+          PLIST_PATH="EnvantoBarkod/Info.plist"
+          CURRENT_BUILD_NUMBER=$(($(app-store-connect get-latest-build-number "$APP_ID") + 1))
+          echo "Setting build number to $CURRENT_BUILD_NUMBER"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $CURRENT_BUILD_NUMBER" "$PLIST_PATH"
+      
+      - name: Build ipa for distribution
         script: |
-          xcodebuild -exportArchive \
-            -archivePath EnvantoBarkod.xcarchive \
-            -exportPath . \
-            -exportOptionsPlist export_options.plist \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath ~/private_keys/AuthKey_$APP_STORE_CONNECT_KEY_IDENTIFIER.p8 \
-            -authenticationKeyID $APP_STORE_CONNECT_KEY_IDENTIFIER \
-            -authenticationKeyIssuerID $APP_STORE_CONNECT_ISSUER_ID
-            
+          xcode-project build-ipa \
+            --project "EnvantoBarkod.xcodeproj" \
+            --scheme "EnvantoBarkod" \
+            --config "Release" \
+            --export-method "app-store" \
+            --archive-flags="-destination 'generic/platform=iOS' DEVELOPMENT_TEAM=6F974S63AX"
+    
     artifacts:
-      - "*.ipa"
+      - build/ios/ipa/*.ipa
+      - build/ios/ipa/*.app.dSYM.zip
       - /tmp/xcodebuild_logs/*.log
-      - $HOME/Library/Developer/Xcode/DerivedData//Build//*.dSYM
-
+      - ~/Library/Developer/Xcode/DerivedData//Build//*.xcarchive
+    
     publishing:
       app_store_connect:
         auth: integration
         
-        # TestFlight'a otomatik upload
+        # TestFlight'a yükle
         submit_to_testflight: true
+        
+        # Beta test bilgileri (opsiyonel)
+        beta_groups:
+          - "Internal Testers"  # TestFlight'taki grup adınız
+        
+        # Otomatik olarak external test için gönder (opsiyonel)
+        submit_to_app_store: false
+        
+        # Uygulamanın TestFlight'ta ne zaman expire olacağı (90 gün default)
+        expire_build_submitted_for_review: true
+      
+      email:
+        recipients:
+          - samet.bicen@icloud.com  # Build sonucu için email
+        notify:
+          success: true
+          failure: true
