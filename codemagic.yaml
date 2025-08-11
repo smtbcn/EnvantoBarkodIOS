@@ -8,10 +8,17 @@ workflows:
       vars:
         XCODE_WORKSPACE: "EnvantoBarkod.xcodeproj"
         XCODE_SCHEME: "EnvantoBarkod"
+        BUNDLE_ID: "com.envanto.barcode.ios"
     integrations:
       app_store_connect: TestFlight Up
     scripts:
-      # Setup App Store Connect API script'ini kaldırdık çünkü integration kullanıyoruz
+      - name: Set up provisioning profiles
+        script: |
+          app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE --create
+      
+      - name: Set up signing certificate
+        script: |
+          keychain initialize
       
       - name: Build Archive
         script: |
@@ -21,7 +28,6 @@ workflows:
             -destination "generic/platform=iOS" \
             -archivePath EnvantoBarkod.xcarchive \
             -configuration Release \
-            -allowProvisioningUpdates \
             CODE_SIGN_STYLE=Automatic \
             DEVELOPMENT_TEAM=6F974S63AX
             
@@ -30,8 +36,7 @@ workflows:
           xcodebuild -exportArchive \
             -archivePath EnvantoBarkod.xcarchive \
             -exportPath . \
-            -exportOptionsPlist export_options.plist \
-            -allowProvisioningUpdates
+            -exportOptionsPlist export_options.plist
             
     artifacts:
       - "*.ipa"
