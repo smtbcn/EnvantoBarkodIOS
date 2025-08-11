@@ -1,6 +1,6 @@
 workflows:
   ios-workflow:
-    name: iOS Workflow 2
+    name: iOS Workflow son
     environment:
       groups:
         - admin
@@ -29,18 +29,22 @@ workflows:
             -destination "generic/platform=iOS" \
             -archivePath EnvantoBarkod.xcarchive \
             -configuration Release \
+            -allowProvisioningUpdates \
             -authenticationKeyPath ~/private_keys/AuthKey_$APP_STORE_CONNECT_KEY_IDENTIFIER.p8 \
             -authenticationKeyID $APP_STORE_CONNECT_KEY_IDENTIFIER \
             -authenticationKeyIssuerID $APP_STORE_CONNECT_ISSUER_ID \
             CODE_SIGN_STYLE=Automatic \
             DEVELOPMENT_TEAM=6F974S63AX
 
+            
+            
       - name: Export IPA
         script: |
           xcodebuild -exportArchive \
             -archivePath EnvantoBarkod.xcarchive \
             -exportPath . \
             -exportOptionsPlist export_options.plist \
+            -allowProvisioningUpdates \
             -authenticationKeyPath ~/private_keys/AuthKey_$APP_STORE_CONNECT_KEY_IDENTIFIER.p8 \
             -authenticationKeyID $APP_STORE_CONNECT_KEY_IDENTIFIER \
             -authenticationKeyIssuerID $APP_STORE_CONNECT_ISSUER_ID
