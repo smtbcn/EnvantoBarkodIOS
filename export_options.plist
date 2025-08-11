@@ -13,7 +13,7 @@
         <string>CodemagicProfildist</string>
     </dict>
     <key>signingStyle</key>
-    <string>automatic</string>
+    <string>manual</string>
     <key>signingCertificate</key>
     <string>Apple Distribution</string>
     <key>uploadBitcode</key>
