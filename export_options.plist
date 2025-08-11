@@ -7,15 +7,8 @@
     <string>app-store-connect</string>
     <key>teamID</key>
     <string>6F974S63AX</string>
-    <key>provisioningProfiles</key>
-    <dict>
-        <key>com.envanto.barcode.ios</key>
-        <string>CodemagicProfildist</string>
-    </dict>
     <key>signingStyle</key>
-    <string>manual</string>
-    <key>signingCertificate</key>
-    <string>Apple Distribution</string>
+    <string>automatic</string>
     <key>uploadBitcode</key>
     <true/>
     <key>uploadSymbols</key>
