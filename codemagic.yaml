@@ -63,9 +63,3 @@ workflows:
         # Uygulamanın TestFlight'ta ne zaman expire olacağı (90 gün default)
         expire_build_submitted_for_review: true
       
-      email:
-        recipients:
-          - samet.bicen@icloud.com  # Build sonucu için email
-        notify:
-          success: true
-          failure: true
