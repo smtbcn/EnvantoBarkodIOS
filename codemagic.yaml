@@ -11,11 +11,8 @@ workflows:
     integrations:
       app_store_connect: TestFlight Up
     scripts:
-      - name: Setup App Store Connect API
-        script: |
-          mkdir -p ~/private_keys
-          echo "$APP_STORE_CONNECT_PRIVATE_KEY" | base64 --decode > ~/private_keys/AuthKey_$APP_STORE_CONNECT_KEY_IDENTIFIER.p8
-          
+      # Setup App Store Connect API script'ini kaldırdık çünkü integration kullanıyoruz
+      
       - name: Build Archive
         script: |
           xcodebuild archive \
@@ -25,9 +22,6 @@ workflows:
             -archivePath EnvantoBarkod.xcarchive \
             -configuration Release \
             -allowProvisioningUpdates \
-            -authenticationKeyPath ~/private_keys/AuthKey_$APP_STORE_CONNECT_KEY_IDENTIFIER.p8 \
-            -authenticationKeyID $APP_STORE_CONNECT_KEY_IDENTIFIER \
-            -authenticationKeyIssuerID $APP_STORE_CONNECT_ISSUER_ID \
             CODE_SIGN_STYLE=Automatic \
             DEVELOPMENT_TEAM=6F974S63AX
             
@@ -37,10 +31,7 @@ workflows:
             -archivePath EnvantoBarkod.xcarchive \
             -exportPath . \
             -exportOptionsPlist export_options.plist \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath ~/private_keys/AuthKey_$APP_STORE_CONNECT_KEY_IDENTIFIER.p8 \
-            -authenticationKeyID $APP_STORE_CONNECT_KEY_IDENTIFIER \
-            -authenticationKeyIssuerID $APP_STORE_CONNECT_ISSUER_ID
+            -allowProvisioningUpdates
             
     artifacts:
       - "*.ipa"
