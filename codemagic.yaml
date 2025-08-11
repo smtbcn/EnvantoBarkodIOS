@@ -8,6 +8,8 @@ workflows:
       vars:
         XCODE_WORKSPACE: "EnvantoBarkod.xcodeproj"
         XCODE_SCHEME: "EnvantoBarkod"
+    integrations:
+      app_store_connect: codemagic
     scripts:
       - name: Setup App Store Connect API
         script: |
