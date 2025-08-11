@@ -9,7 +9,7 @@ workflows:
         XCODE_WORKSPACE: "EnvantoBarkod.xcodeproj"
         XCODE_SCHEME: "EnvantoBarkod"
     integrations:
-      app_store_connect: Codesigning Key
+      app_store_connect: TestFlight Up
     scripts:
       - name: Setup App Store Connect API
         script: |
