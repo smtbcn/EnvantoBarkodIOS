@@ -1,6 +1,6 @@
 workflows:
   ios-workflow:
-    name: iOS Workflow
+    name: iOS Workflow BASE64
     environment:
       groups:
         - admin
