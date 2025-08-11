@@ -8,30 +8,12 @@ workflows:
       vars:
         XCODE_WORKSPACE: "EnvantoBarkod.xcodeproj"
         XCODE_SCHEME: "EnvantoBarkod"
-        BUNDLE_ID: "com.envanto.barcode.ios"
-        # App Store Connect API bilgileri
-        APP_STORE_CONNECT_ISSUER_ID: Encrypted(...) # Codemagic'te ekleyin
-        APP_STORE_CONNECT_KEY_IDENTIFIER: Encrypted(...) # Codemagic'te ekleyin
-        APP_STORE_CONNECT_PRIVATE_KEY: Encrypted(...) # Codemagic'te ekleyin
     scripts:
-      - name: Set up keychain
-        script: |
-          keychain initialize
-          
-      - name: Set up App Store Connect API
+      - name: Setup App Store Connect API
         script: |
           mkdir -p ~/private_keys
-          echo "$APP_STORE_CONNECT_PRIVATE_KEY" | base64 --decode > ~/private_keys/AuthKey_$APP_STORE_CONNECT_KEY_IDENTIFIER.p8
+          echo "$APP_STORE_CONNECT_PRIVATE_KEY" > ~/private_keys/AuthKey_$APP_STORE_CONNECT_KEY_IDENTIFIER.p8
           
-      - name: Fetch provisioning profiles
-        script: |
-          app-store-connect fetch-signing-files $BUNDLE_ID \
-            --type IOS_APP_STORE \
-            --create \
-            --api-key-path ~/private_keys/AuthKey_$APP_STORE_CONNECT_KEY_IDENTIFIER.p8 \
-            --api-issuer-id $APP_STORE_CONNECT_ISSUER_ID \
-            --api-key-id $APP_STORE_CONNECT_KEY_IDENTIFIER
-      
       - name: Build Archive
         script: |
           xcodebuild archive \
@@ -40,6 +22,10 @@ workflows:
             -destination "generic/platform=iOS" \
             -archivePath EnvantoBarkod.xcarchive \
             -configuration Release \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_$APP_STORE_CONNECT_KEY_IDENTIFIER.p8 \
+            -authenticationKeyID $APP_STORE_CONNECT_KEY_IDENTIFIER \
+            -authenticationKeyIssuerID $APP_STORE_CONNECT_ISSUER_ID \
             CODE_SIGN_STYLE=Automatic \
             DEVELOPMENT_TEAM=6F974S63AX
             
@@ -48,31 +34,13 @@ workflows:
           xcodebuild -exportArchive \
             -archivePath EnvantoBarkod.xcarchive \
             -exportPath . \
-            -exportOptionsPlist export_options.plist
+            -exportOptionsPlist export_options.plist \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_$APP_STORE_CONNECT_KEY_IDENTIFIER.p8 \
+            -authenticationKeyID $APP_STORE_CONNECT_KEY_IDENTIFIER \
+            -authenticationKeyIssuerID $APP_STORE_CONNECT_ISSUER_ID
             
     artifacts:
       - "*.ipa"
       - /tmp/xcodebuild_logs/*.log
-      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.dSYM
-      
-    publishing:
-      app_store_connect:
-        # API key authentication (integration yerine)
-        api_key_path: ~/private_keys/AuthKey_$APP_STORE_CONNECT_KEY_IDENTIFIER.p8
-        api_key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
-        api_key_issuer_id: $APP_STORE_CONNECT_ISSUER_ID
-        
-        # TestFlight'a otomatik upload
-        submit_to_testflight: true
-        
-        # Beta App Review için otomatik submit (opsiyonel)
-        # beta_review: 
-        #   default_locale: en-US
-        #   beta_app_description: "EnvantoBarkod iOS uygulaması beta versiyonu"
-        #   beta_app_feedback_email: "your-email@example.com"
-        #   submit_for_beta_review: true
-        
-        # Test gruplarına otomatik dağıtım (opsiyonel)
-        # beta_groups:
-        #   - "Internal Testers"
-        #   - "External Testers"
+      - $HOME/Library/Developer/Xcode/DerivedData//Build//*.dSYM
