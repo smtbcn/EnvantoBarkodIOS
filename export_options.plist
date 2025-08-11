@@ -4,7 +4,7 @@
 <plist version="1.0">
 <dict>
     <key>method</key>
-    <string>debugging</string>
+    <string>app-store</string>
     <key>teamID</key>
     <string>6F974S63AX</string>
     <key>signingStyle</key>
@@ -15,5 +15,7 @@
     <true/>
     <key>compileBitcode</key>
     <false/>
+    <key>destination</key>
+    <string>upload</string>
 </dict>
 </plist>
