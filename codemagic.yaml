@@ -35,8 +35,6 @@ workflows:
             CODE_SIGN_STYLE=Automatic \
             DEVELOPMENT_TEAM=6F974S63AX
 
-            
-            
       - name: Export IPA
         script: |
           xcodebuild -exportArchive \
