@@ -360,46 +360,55 @@ class UploadService: ObservableObject {
         }
     }
     
-    // MARK: - Path Helper (Detaylı Debug)
+    // MARK: - Path Helper (PathHelper kullanarak)
     private func findActualImagePath(for imageRecord: BarkodResim) -> String {
-        
         let imagePath = imageRecord.resimYolu
         
         if imagePath.isEmpty {
             return ""
         }
         
-        // Path formatını analiz et
-        if imagePath.hasPrefix("/var/mobile") {
-        } else if imagePath.hasPrefix("Documents/") {
-        } else {
-        }
-        
-        // Dosya varlığını kontrol et
-        let fileExists = FileManager.default.fileExists(atPath: imagePath)
-        
-        if fileExists {
-            return imagePath
-        } else {
-            
-            // Alternative path dene - Documents klasörü
-            if let documentsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
-                
-                // Envanto klasör kontrol
-                let envantoDir = documentsDir.appendingPathComponent("Envanto")
-                
-                // Müşteri klasör kontrol
-                let customerDir = envantoDir.appendingPathComponent(imageRecord.musteriAdi)
-                
-                // Klasör içeriği listele
-                do {
-                    let contents = try FileManager.default.contentsOfDirectory(atPath: customerDir.path)
-                } catch {
-                }
+        // Eğer absolute path ise direkt kontrol et
+        if imagePath.hasPrefix("/") {
+            let fileExists = FileManager.default.fileExists(atPath: imagePath)
+            if fileExists {
+                return imagePath
             }
-            
-            return ""
         }
+        
+        // Relative path ise PathHelper ile absolute path'e çevir
+        if let absolutePath = PathHelper.getAbsolutePath(for: imagePath) {
+            let fileExists = FileManager.default.fileExists(atPath: absolutePath)
+            if fileExists {
+                return absolutePath
+            }
+        }
+        
+        // Legacy path format kontrolü (eski kayıtlar için)
+        if let documentsDir = PathHelper.getDocumentsDirectory() {
+            // Envanto klasör kontrol
+            let envantoDir = documentsDir.appendingPathComponent("Envanto")
+            let safeCustomerName = PathHelper.makeSafeFileName(imageRecord.musteriAdi)
+            let customerDir = envantoDir.appendingPathComponent(safeCustomerName)
+            
+            // Klasör içeriği listele ve dosya ara
+            do {
+                let contents = try FileManager.default.contentsOfDirectory(atPath: customerDir.path)
+                
+                // Dosya adını path'den çıkar
+                let fileName = URL(fileURLWithPath: imagePath).lastPathComponent
+                
+                // Aynı dosya adı var mı kontrol et
+                if contents.contains(fileName) {
+                    let fullPath = customerDir.appendingPathComponent(fileName).path
+                    return fullPath
+                }
+            } catch {
+                print("❌ [UploadService] Müşteri klasörü okunamadı: \(customerDir.path)")
+            }
+        }
+        
+        return ""
     }
     
     deinit {

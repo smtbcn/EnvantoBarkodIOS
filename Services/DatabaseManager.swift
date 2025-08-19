@@ -201,8 +201,20 @@ class DatabaseManager {
         }
     }
     
+    // MARK: - Müşteri Resmi Silme İşlemi
     func deleteMusteriResmiByPath(imagePath: String) throws {
         return try withDatabaseQueue {
+            // Önce path'in doğru olup olmadığını kontrol et
+            let cleanedPath = imagePath.trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            guard !cleanedPath.isEmpty else {
+                print("🚨 [DatabaseManager] Silme hatası: Boş path")
+                throw DatabaseError.deleteFailed
+            }
+            
+            // Eğer absolute path ise relative path'e çevir
+            let relativePath = PathHelper.getRelativePath(from: cleanedPath) ?? cleanedPath
+            
             let deleteSQL = """
                 DELETE FROM \(DatabaseManager.TABLE_MUSTERI_RESIMLER) 
                 WHERE \(DatabaseManager.COLUMN_RESIM_YOLU) = ?
@@ -212,13 +224,43 @@ class DatabaseManager {
             defer { sqlite3_finalize(statement) }
             
             guard sqlite3_prepare_v2(db, deleteSQL, -1, &statement, nil) == SQLITE_OK else {
+                print("🚨 [DatabaseManager] SQL hazırlama hatası")
                 throw DatabaseError.prepareFailed
             }
             
-            sqlite3_bind_text(statement, 1, imagePath, -1, SQLITE_TRANSIENT)
+            sqlite3_bind_text(statement, 1, relativePath, -1, SQLITE_TRANSIENT)
             
             guard sqlite3_step(statement) == SQLITE_DONE else {
+                print("🚨 [DatabaseManager] Silme işlemi başarısız")
                 throw DatabaseError.deleteFailed
+            }
+            
+            // Silinen kayıt sayısını kontrol et
+            let deletedCount = sqlite3_changes(db)
+            
+            // Detaylı log
+            print("🗑️ Müşteri resmi veritabanı kaydı silindi: \(deletedCount) kayıt")
+            print("🔍 Silinen relative path: \(relativePath)")
+            
+            // Eğer hiç kayıt silinmediyse, mevcut kayıtları listele
+            if deletedCount == 0 {
+                let listSQL = """
+                    SELECT \(DatabaseManager.COLUMN_ID), \(DatabaseManager.COLUMN_RESIM_YOLU) 
+                    FROM \(DatabaseManager.TABLE_MUSTERI_RESIMLER)
+                """
+                
+                var listStatement: OpaquePointer?
+                defer { sqlite3_finalize(listStatement) }
+                
+                if sqlite3_prepare_v2(db, listSQL, -1, &listStatement, nil) == SQLITE_OK {
+                    print("🔍 Mevcut müşteri resmi kayıtları:")
+                    while sqlite3_step(listStatement) == SQLITE_ROW {
+                        let id = sqlite3_column_int(listStatement, 0)
+                        let pathPtr = sqlite3_column_text(listStatement, 1)
+                        let path = pathPtr != nil ? String(cString: pathPtr!) : "Bilinmeyen"
+                        print("   • ID: \(id), Path: \(path)")
+                    }
+                }
             }
         }
     }
@@ -348,6 +390,9 @@ class DatabaseManager {
         createBarkodResimlerTable()
         createMusteriResimleriTable() // Ayrı tablo!
         createCihazYetkiTable()
+        
+        // Path migration işlemi
+        migrateAbsolutePathsToRelative()
     }
     
     private func createBarkodResimlerTable() {
@@ -413,6 +458,131 @@ class DatabaseManager {
             if let errorMessage = sqlite3_errmsg(db) {
             }
         }
+    }
+    
+    // MARK: - Path Migration (Absolute Path -> Relative Path)
+    private func migrateAbsolutePathsToRelative() {
+        print("🔄 [DatabaseManager] Path migration başlıyor...")
+        
+        // Barkod resimleri tablosu migration
+        migrateBarkodResimlerPaths()
+        
+        // Müşteri resimleri tablosu migration
+        migrateMusteriResimleriPaths()
+        
+        print("✅ [DatabaseManager] Path migration tamamlandı")
+    }
+    
+    private func migrateBarkodResimlerPaths() {
+        guard db != nil else { return }
+        
+        // Absolute path içeren kayıtları bul
+        let selectSQL = """
+            SELECT \(DatabaseManager.COLUMN_ID), \(DatabaseManager.COLUMN_MUSTERI_ADI), 
+                   \(DatabaseManager.COLUMN_RESIM_YOLU)
+            FROM \(DatabaseManager.TABLE_BARKOD_RESIMLER) 
+            WHERE \(DatabaseManager.COLUMN_RESIM_YOLU) LIKE '/var/mobile/%' 
+               OR \(DatabaseManager.COLUMN_RESIM_YOLU) LIKE '/private/var/mobile/%'
+        """
+        
+        var statement: OpaquePointer?
+        var recordsToUpdate: [(id: Int, musteriAdi: String, oldPath: String)] = []
+        
+        if sqlite3_prepare_v2(db, selectSQL, -1, &statement, nil) == SQLITE_OK {
+            while sqlite3_step(statement) == SQLITE_ROW {
+                let id = Int(sqlite3_column_int(statement, 0))
+                let musteriAdi = String(cString: sqlite3_column_text(statement, 1))
+                let oldPath = String(cString: sqlite3_column_text(statement, 2))
+                
+                recordsToUpdate.append((id: id, musteriAdi: musteriAdi, oldPath: oldPath))
+            }
+        }
+        sqlite3_finalize(statement)
+        
+        print("📊 [DatabaseManager] \(recordsToUpdate.count) barkod resmi kaydı migration gerekiyor")
+        
+        // Her kaydı güncelle
+        for record in recordsToUpdate {
+            if let relativePath = convertToRelativePath(absolutePath: record.oldPath, customerName: record.musteriAdi, isBarkod: true) {
+                updatePathInDatabase(table: DatabaseManager.TABLE_BARKOD_RESIMLER, id: record.id, newPath: relativePath)
+                print("✅ [DatabaseManager] Barkod resmi path güncellendi: \(record.id)")
+            }
+        }
+    }
+    
+    private func migrateMusteriResimleriPaths() {
+        guard db != nil else { return }
+        
+        // Absolute path içeren kayıtları bul
+        let selectSQL = """
+            SELECT \(DatabaseManager.COLUMN_ID), \(DatabaseManager.COLUMN_MUSTERI_ADI), 
+                   \(DatabaseManager.COLUMN_RESIM_YOLU)
+            FROM \(DatabaseManager.TABLE_MUSTERI_RESIMLER) 
+            WHERE \(DatabaseManager.COLUMN_RESIM_YOLU) LIKE '/var/mobile/%' 
+               OR \(DatabaseManager.COLUMN_RESIM_YOLU) LIKE '/private/var/mobile/%'
+        """
+        
+        var statement: OpaquePointer?
+        var recordsToUpdate: [(id: Int, musteriAdi: String, oldPath: String)] = []
+        
+        if sqlite3_prepare_v2(db, selectSQL, -1, &statement, nil) == SQLITE_OK {
+            while sqlite3_step(statement) == SQLITE_ROW {
+                let id = Int(sqlite3_column_int(statement, 0))
+                let musteriAdi = String(cString: sqlite3_column_text(statement, 1))
+                let oldPath = String(cString: sqlite3_column_text(statement, 2))
+                
+                recordsToUpdate.append((id: id, musteriAdi: musteriAdi, oldPath: oldPath))
+            }
+        }
+        sqlite3_finalize(statement)
+        
+        print("📊 [DatabaseManager] \(recordsToUpdate.count) müşteri resmi kaydı migration gerekiyor")
+        
+        // Her kaydı güncelle
+        for record in recordsToUpdate {
+            if let relativePath = convertToRelativePath(absolutePath: record.oldPath, customerName: record.musteriAdi, isBarkod: false) {
+                updatePathInDatabase(table: DatabaseManager.TABLE_MUSTERI_RESIMLER, id: record.id, newPath: relativePath)
+                print("✅ [DatabaseManager] Müşteri resmi path güncellendi: \(record.id)")
+            }
+        }
+    }
+    
+    private func convertToRelativePath(absolutePath: String, customerName: String, isBarkod: Bool) -> String? {
+        // Dosya adını çıkar
+        let fileName = URL(fileURLWithPath: absolutePath).lastPathComponent
+        
+        if isBarkod {
+            // Barkod resmi için Envanto klasörü altında
+            return PathHelper.getBarkodImageRelativePath(customerName: customerName, fileName: fileName)
+        } else {
+            // Müşteri resmi için musteriresimleri klasörü altında
+            return PathHelper.getMusteriImageRelativePath(customerName: customerName, fileName: fileName)
+        }
+    }
+    
+    private func updatePathInDatabase(table: String, id: Int, newPath: String) {
+        guard db != nil else { return }
+        
+        let updateSQL = """
+            UPDATE \(table) 
+            SET \(DatabaseManager.COLUMN_RESIM_YOLU) = ? 
+            WHERE \(DatabaseManager.COLUMN_ID) = ?
+        """
+        
+        var statement: OpaquePointer?
+        
+        if sqlite3_prepare_v2(db, updateSQL, -1, &statement, nil) == SQLITE_OK {
+            sqlite3_bind_text(statement, 1, newPath, -1, SQLITE_TRANSIENT)
+            sqlite3_bind_int(statement, 2, Int32(id))
+            
+            if sqlite3_step(statement) == SQLITE_DONE {
+                print("✅ [DatabaseManager] Path güncellendi: \(id) -> \(newPath)")
+            } else {
+                print("❌ [DatabaseManager] Path güncellenemedi: \(id)")
+            }
+        }
+        
+        sqlite3_finalize(statement)
     }
     
     // MARK: - Insert Barkod Resim (Android metoduna benzer)
@@ -1233,6 +1403,54 @@ class DatabaseManager {
         }
     }
     
+    // MARK: - Müşteri Resmi Çift Kayıt Kontrolü
+    func isCustomerImageAlreadyInDatabase(imagePath: String, customerName: String) throws -> Bool {
+        return try withDatabaseQueue {
+            let fileName = URL(fileURLWithPath: imagePath).lastPathComponent
+            
+            // 1. Tam path kontrolü
+            let pathCheckSQL = """
+                SELECT COUNT(*) FROM \(DatabaseManager.TABLE_MUSTERI_RESIMLER) 
+                WHERE \(DatabaseManager.COLUMN_RESIM_YOLU) = ? AND \(DatabaseManager.COLUMN_MUSTERI_ADI) = ?
+            """
+            
+            var statement: OpaquePointer?
+            var count = 0
+            
+            if sqlite3_prepare_v2(db, pathCheckSQL, -1, &statement, nil) == SQLITE_OK {
+                sqlite3_bind_text(statement, 1, imagePath, -1, SQLITE_TRANSIENT)
+                sqlite3_bind_text(statement, 2, customerName, -1, SQLITE_TRANSIENT)
+                
+                if sqlite3_step(statement) == SQLITE_ROW {
+                    count = Int(sqlite3_column_int(statement, 0))
+                }
+            }
+            sqlite3_finalize(statement)
+            
+            if count > 0 {
+                return true
+            }
+            
+            // 2. Dosya adı kontrolü
+            let fileCheckSQL = """
+                SELECT COUNT(*) FROM \(DatabaseManager.TABLE_MUSTERI_RESIMLER) 
+                WHERE \(DatabaseManager.COLUMN_RESIM_YOLU) LIKE '%' || ? AND \(DatabaseManager.COLUMN_MUSTERI_ADI) = ?
+            """
+            
+            if sqlite3_prepare_v2(db, fileCheckSQL, -1, &statement, nil) == SQLITE_OK {
+                sqlite3_bind_text(statement, 1, fileName, -1, SQLITE_TRANSIENT)
+                sqlite3_bind_text(statement, 2, customerName, -1, SQLITE_TRANSIENT)
+                
+                if sqlite3_step(statement) == SQLITE_ROW {
+                    count = Int(sqlite3_column_int(statement, 0))
+                }
+            }
+            sqlite3_finalize(statement)
+            
+            return count > 0
+        }
+    }
+    
 
     
 
@@ -1364,23 +1582,7 @@ class DatabaseManager {
     }
 }
 
-// MARK: - BarkodResim Model (Android'deki model ile aynı)
-struct BarkodResim: Identifiable, Equatable {
-    let id: Int
-    let musteriAdi: String
-    let resimYolu: String
-    let tarih: String
-    let yukleyen: String
-    let yuklendi: Int
-    
-    var isUploaded: Bool {
-        return yuklendi > 0
-    }
-    
-    var uploadStatusText: String {
-        return isUploaded ? "Yüklendi" : "Bekliyor"
-    }
-}
+
 
 // MARK: - CihazYetki Model (Android'deki model ile aynı)
 struct CihazYetki: Identifiable {

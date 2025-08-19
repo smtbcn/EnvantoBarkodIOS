@@ -136,13 +136,8 @@ class CustomerImagesViewModel: ObservableObject, DeviceAuthCallback {
     
     // MARK: - Offline Customer Search
     private func searchOfflineCustomers(query: String) -> [Customer] {
-        do {
-            let dbManager = DatabaseManager.getInstance()
-            return dbManager.searchCachedCustomers(query: query)
-        } catch {
-            print("Offline müşteri arama hatası: \(error)")
-            return []
-        }
+        let dbManager = DatabaseManager.getInstance()
+        return dbManager.searchCachedCustomers(query: query)
     }
     
     // MARK: - Customer Selection
@@ -165,22 +160,48 @@ class CustomerImagesViewModel: ObservableObject, DeviceAuthCallback {
     // MARK: - Image Handling (Müşteri Resimleri için özel)
     func handleSelectedPhotos(_ photos: [PhotosPickerItem]) async {
         guard let customer = selectedCustomer else {
-            await showError("Lütfen önce bir müşteri seçin")
+            await MainActor.run {
+                showError("Lütfen önce bir müşteri seçin")
+            }
             return
         }
         
+        // Eşzamanlı yükleme için güvenli sayaç
+        var successfulUploads = 0
+        var failedUploads = 0
+        
+        // Tüm resimleri seri olarak yükle
         for photo in photos {
             do {
                 if let data = try await photo.loadTransferable(type: Data.self),
                    let image = UIImage(data: data) {
-                    await saveImageLocally(image, customer: customer)
+                    let result = await saveImageLocally(image, customer: customer)
+                    
+                    await MainActor.run {
+                        if result {
+                            successfulUploads += 1
+                        } else {
+                            failedUploads += 1
+                        }
+                    }
+                } else {
+                    await MainActor.run {
+                        failedUploads += 1
+                    }
                 }
             } catch {
-                await showError("Resim yüklenirken hata: \(error.localizedDescription)")
+                print("Resim yükleme hatası: \(error.localizedDescription)")
+                await MainActor.run {
+                    failedUploads += 1
+                }
             }
         }
         
+        // Sonuçları göster
         await MainActor.run {
+            if failedUploads > 0 {
+                showError("Toplam \(photos.count) resimden \(successfulUploads) tanesi yüklendi, \(failedUploads) tanesi yüklenemedi.")
+            }
             refreshSavedImages()
         }
     }
@@ -188,7 +209,7 @@ class CustomerImagesViewModel: ObservableObject, DeviceAuthCallback {
     func handleCapturedImage(_ image: UIImage, customer: Customer) async {
         // Kamerayı açık bırak, sadece background'da kaydet (BarcodeUploadView ile aynı mantık)
         
-        await saveImageLocally(image, customer: customer)
+        let _ = await saveImageLocally(image, customer: customer)
         await MainActor.run {
             // Kamerayı KAPATMA - açık bırak (showingCamera = false YOK)
             refreshSavedImages()
@@ -196,23 +217,38 @@ class CustomerImagesViewModel: ObservableObject, DeviceAuthCallback {
     }
     
     // MARK: - Image Storage (Local Only - Android mantığı)
-    private func saveImageLocally(_ image: UIImage, customer: Customer) async {
+    private func saveImageLocally(_ image: UIImage, customer: Customer) async -> Bool {
         do {
-            // ImageStorageManager kullanarak müşteri resimleri klasörüne kaydet
-            let imagePath = try ImageStorageManager.saveMusteriResmi(image, customerName: customer.name)
-            
-            // Database'e kaydet
+            // Önce çift kayıt kontrolü
             let dbManager = DatabaseManager.getInstance()
+            
+            // Resmi kaydet
+            let result = try ImageStorageManager.saveMusteriResmi(image, customerName: customer.name)
+            
+            // Çift kayıt kontrolü
+            if try dbManager.isCustomerImageAlreadyInDatabase(imagePath: result.relativePath, customerName: customer.name) {
+                // Zaten var, kaydetme
+                print("🚫 Resim zaten mevcut: \(result.relativePath)")
+                return false
+            }
+            
+            // Database'e RELATIVE PATH kaydet
             let deviceOwner = getDeviceOwnerInfo()
             
             try dbManager.insertMusteriResmi(
                 customerName: customer.name,
-                imagePath: imagePath,
+                imagePath: result.relativePath, // ✅ Relative path kaydet
                 uploadedBy: deviceOwner
             )
             
+            return true
+            
         } catch {
-            await showError("Resim kaydedilemedi: \(error.localizedDescription)")
+            print("❌ Resim kaydetme hatası: \(error.localizedDescription)")
+            await MainActor.run {
+                showError("Resim kaydedilemedi: \(error.localizedDescription)")
+            }
+            return false
         }
     }
     
@@ -254,13 +290,22 @@ class CustomerImagesViewModel: ObservableObject, DeviceAuthCallback {
     
     // MARK: - Image Deletion
     func deleteImageByPath(_ imagePath: String) {
+        // Path boş veya geçersizse işlem yapma
+        guard !imagePath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            print("❌ Geçersiz resim yolu: \(imagePath)")
+            return
+        }
+        
+        // Path'in doğruluğunu kontrol et
+        print("🔍 Silinecek resim yolu: \(imagePath)")
+        
         Task {
             do {
-                // Database'den ilgili kaydı bul ve sil
+                // 1. Veritabanı kaydını sil
                 let dbManager = DatabaseManager.getInstance()
                 try dbManager.deleteMusteriResmiByPath(imagePath: imagePath)
                 
-                // Dosyayı sil
+                // 2. Dosyayı sil
                 try ImageStorageManager.deleteMusteriResmi(imagePath: imagePath)
                 
                 await MainActor.run {
@@ -268,7 +313,10 @@ class CustomerImagesViewModel: ObservableObject, DeviceAuthCallback {
                 }
                 
             } catch {
-                await showError("Resim silinemedi: \(error.localizedDescription)")
+                await MainActor.run {
+                    showError("Resim silinemedi: \(error.localizedDescription)")
+                }
+                print("❌ Resim silme hatası: \(error.localizedDescription)")
             }
         }
     }
@@ -287,7 +335,9 @@ class CustomerImagesViewModel: ObservableObject, DeviceAuthCallback {
                 }
                 
             } catch {
-                await showError("Müşteri resimleri silinemedi: \(error.localizedDescription)")
+                await MainActor.run {
+                    showError("Müşteri resimleri silinemedi: \(error.localizedDescription)")
+                }
             }
         }
     }
@@ -359,11 +409,8 @@ class CustomerImagesViewModel: ObservableObject, DeviceAuthCallback {
     }
     
     // MARK: - Error Handling
-    private func showError(_ message: String) async {
-        await MainActor.run {
-            errorMessage = message
-            // showingError kaldırıldı - sadece alert için kullanılıyor
-        }
+    private func showError(_ message: String) {
+        errorMessage = message
     }
     
     // MARK: - DeviceAuthCallback Implementation

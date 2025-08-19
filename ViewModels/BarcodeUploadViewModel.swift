@@ -344,8 +344,11 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         for (customerName, imageRecords) in customerGroups {
             
             let savedImages = imageRecords.compactMap { record -> SavedImage? in
-                // Dosya var mı kontrol et ama dosya yoksa da kayıt göster
-                let fileExists = FileManager.default.fileExists(atPath: record.resimYolu)
+                // Relative path'i absolute path'e çevir
+                let absolutePath = PathHelper.getAbsolutePath(for: record.resimYolu) ?? record.resimYolu
+                
+                // Dosya var mı kontrol et
+                let fileExists = FileManager.default.fileExists(atPath: absolutePath)
                 
                 // 🎯 Display format customer name
                 let displayCustomerName = record.musteriAdi.replacingOccurrences(of: "_", with: " ")
@@ -353,8 +356,8 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
                 // 🗄️ Database verilerinden SavedImage oluştur (dosya var/yok farketmez)
                 return SavedImage(
                     customerName: displayCustomerName,  // 📝 SAMET_BICEN → SAMET BICEN
-                    imagePath: record.resimYolu,
-                    localPath: record.resimYolu,
+                    imagePath: absolutePath, // ✅ UI için absolute path
+                    localPath: absolutePath, // ✅ UI için absolute path
                     uploadDate: parseDatabaseDate(record.tarih),  // 📅 Database'den tarih
                     isUploaded: record.isUploaded,  // ✅ Database'den upload durumu
                     yukleyen: record.yukleyen,  // 👤 Database'den yükleyen bilgisi
@@ -406,8 +409,10 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         
         // Dosya yoluna göre eşleştir
         for (index, imageRecord) in allImages.enumerated() {
+            // Database'deki relative path'i absolute path'e çevir
+            let dbAbsolutePath = PathHelper.getAbsolutePath(for: imageRecord.resimYolu) ?? imageRecord.resimYolu
             
-            if imageRecord.resimYolu == path {
+            if dbAbsolutePath == path {
                 return imageRecord.isUploaded
             }
             
@@ -447,16 +452,19 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
             
             await MainActor.run {
                 savedImages = customerImages.compactMap { record in
-                                    // Dosya var mı kontrol et ama dosya yoksa da kayıt göster
-                let fileExists = FileManager.default.fileExists(atPath: record.resimYolu)
+                    // Relative path'i absolute path'e çevir
+                    let absolutePath = PathHelper.getAbsolutePath(for: record.resimYolu) ?? record.resimYolu
+                    
+                    // Dosya var mı kontrol et
+                    let fileExists = FileManager.default.fileExists(atPath: absolutePath)
                     
                     // 🎯 Display format customer name
                     let displayCustomerName = record.musteriAdi.replacingOccurrences(of: "_", with: " ")
                     
                     return SavedImage(
                         customerName: displayCustomerName,  // 📝 SAMET_BICEN → SAMET BICEN
-                        imagePath: record.resimYolu,
-                        localPath: record.resimYolu,
+                        imagePath: absolutePath, // ✅ UI için absolute path
+                        localPath: absolutePath, // ✅ UI için absolute path
                         uploadDate: parseDatabaseDate(record.tarih),  // 📅 Database'den tarih
                         isUploaded: record.isUploaded,  // ✅ Database'den upload durumu
                         yukleyen: record.yukleyen,  // 👤 Database'den yükleyen bilgisi
@@ -515,7 +523,7 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
                 updateProgress(current: index, total: images.count)
                 
                 // Android'deki direktSaveImage mantığı - Önce cihaza kaydet
-                await directSaveImage(image: image, customer: customer, isGallery: true)
+                await directSaveImage(image: image, customer: customer)
                 
                 // Kısa bekleme
                 try await Task.sleep(nanoseconds: 100_000_000) // 0.1 saniye
@@ -538,24 +546,19 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
     
     // MARK: - Direct Save Image (Android Pattern)
     @MainActor
-    private func directSaveImage(image: UIImage, customer: Customer, isGallery: Bool) async {
-        // Cihaz sahibi bilgisini al
-        let yukleyen = getDeviceOwnerInfo()
-        
-        
-        // ImageStorageManager ile resmi Documents klasörüne kaydet ve veritabanına ekle
-        if let savedPath = await ImageStorageManager.saveImage(
+    private func directSaveImage(image: UIImage, customer: Customer) async {
+        // Resmi kaydet
+        let result = await ImageStorageManager.saveImage(
             image: image, 
             customerName: customer.name, 
-            isGallery: isGallery,
-            yukleyen: yukleyen
-        ) {
-            
-            // TODO: Sunucuya upload işlemi burada yapılacak
-            // Android'deki gibi: server upload ve yuklendi durumu güncelleme
-            
-        } else {
-            showError("❌ Resim kaydetme hatası")
+            yukleyen: getDeviceOwnerInfo()
+        )
+        
+        // Sonuç kontrolü
+        if result != nil {
+            await MainActor.run {
+                refreshSavedImages()
+            }
         }
     }
     
@@ -580,43 +583,39 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
             return
         }
         
-        await MainActor.run {
-            isUploading = true
-            uploadProgress = 0.0
-        }
+        // Eşzamanlı yükleme için güvenli sayaç
+        var successfulUploads = 0
+        var failedUploads = 0
         
-        do {
-            for (index, photo) in photos.enumerated() {
-                // Progress güncelle
-                await MainActor.run {
-                    updateProgress(current: index, total: photos.count)
-                }
-                
-                // PhotosPickerItem'den resim yükle ve kaydet
+        // Tüm resimleri seri olarak yükle
+        for photo in photos {
+            do {
                 if let data = try await photo.loadTransferable(type: Data.self),
                    let image = UIImage(data: data) {
+                    await directSaveImage(image: image, customer: customer)
                     
-                    // Galeri resmini direk kaydet (Android directSaveImage mantığı)
-                    await directSaveImage(image: image, customer: customer, isGallery: true)
+                    await MainActor.run {
+                        successfulUploads += 1
+                    }
+                } else {
+                    await MainActor.run {
+                        failedUploads += 1
+                    }
+                }
+            } catch {
+                print("Resim yükleme hatası: \(error.localizedDescription)")
+                await MainActor.run {
+                    failedUploads += 1
                 }
             }
-            
-            await MainActor.run {
-                // Tamamlandı
-                updateProgress(current: photos.count, total: photos.count)
-                isUploading = false
-                
-                // Kayıtlı resimleri yenile
-                loadSavedImagesForCustomer(customer.name)
-                // Müşteri gruplarını güncelle
-                loadCustomerImageGroups()
+        }
+        
+        // Sonuçları göster
+        await MainActor.run {
+            if failedUploads > 0 {
+                showError("Toplam \(photos.count) resimden \(successfulUploads) tanesi yüklendi, \(failedUploads) tanesi yüklenemedi.")
             }
-            
-        } catch {
-            await MainActor.run {
-                isUploading = false
-                showError("Fotoğraf yükleme hatası: \(error.localizedDescription)")
-            }
+            refreshSavedImages()
         }
     }
     
@@ -737,7 +736,7 @@ class BarcodeUploadViewModel: ObservableObject, DeviceAuthCallback {
         // Kamerayı açık bırak, sadece background'da kaydet
         
         // Kamera resmini direk kaydet (Android directSaveImage mantığı)
-        await directSaveImage(image: image, customer: customer, isGallery: false)
+        await directSaveImage(image: image, customer: customer)
         
         await MainActor.run {
             // Kayıtlı resimleri yenile (background'da)

@@ -43,6 +43,9 @@
 		AB1234567890123400000082 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000083 /* LoginView.swift */; };
 		AB1234567890123400000085 /* ImageOrientationUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000084 /* ImageOrientationUtils.swift */; };
 		AB1234567890123400000086 /* BatteryOptimizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000087 /* BatteryOptimizer.swift */; };
+		AB1234567890123400000088 /* PathHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000089 /* PathHelper.swift */; };
+		AB1234567890123400000090 /* BarkodResim.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000091 /* BarkodResim.swift */; };
+		AB1234567890123400000092 /* SavedCustomerImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1234567890123400000093 /* SavedCustomerImage.swift */; };
 		AB12345678901234ASSETS002 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AB12345678901234ASSETS001 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
@@ -84,6 +87,9 @@
 		AB1234567890123400000083 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
 		AB1234567890123400000084 /* ImageOrientationUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageOrientationUtils.swift; sourceTree = "<group>"; };
 		AB1234567890123400000087 /* BatteryOptimizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatteryOptimizer.swift; sourceTree = "<group>"; };
+		AB1234567890123400000089 /* PathHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PathHelper.swift; sourceTree = "<group>"; };
+		AB1234567890123400000091 /* BarkodResim.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarkodResim.swift; sourceTree = "<group>"; };
+		AB1234567890123400000093 /* SavedCustomerImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedCustomerImage.swift; sourceTree = "<group>"; };
 		AB12345678901234ASSETS001 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -156,8 +162,10 @@
 			isa = PBXGroup;
 			children = (
 				AB1234567890123400000014 /* BarcodeResult.swift */,
+				AB1234567890123400000091 /* BarkodResim.swift */,
 				AB1234567890123400000076 /* Customer.swift */,
 				AB123456789012340000007F /* LoginResponse.swift */,
+				AB1234567890123400000093 /* SavedCustomerImage.swift */,
 				AB1234567890123400000079 /* VehicleProduct.swift */,
 			);
 			path = Models;
@@ -188,6 +196,7 @@
 				AB1234567890123400000060 /* AudioManager.swift */,
 				AB1234567890123400000084 /* ImageOrientationUtils.swift */,
 				AB1234567890123400000087 /* BatteryOptimizer.swift */,
+				AB1234567890123400000089 /* PathHelper.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -240,9 +249,7 @@
 				TargetAttributes = {
 					AB123456789012340000002B = {
 						CreatedOnToolsVersion = 15.0;
-						DevelopmentTeam = 6F974S63AX;
 						LastSwiftMigration = 1500;
-						ProvisioningStyle = Automatic;
 						TestTargetID = "";
 					};
 				};
@@ -299,8 +306,10 @@
 				AB1234567890123400000072 /* CustomerImagesViewModel.swift in Sources */,
 				AB123456789012340000007A /* VehicleProductsViewModel.swift in Sources */,
 				AB1234567890123400000013 /* BarcodeResult.swift in Sources */,
+				AB1234567890123400000090 /* BarkodResim.swift in Sources */,
 				AB1234567890123400000077 /* Customer.swift in Sources */,
 				AB123456789012340000007E /* LoginResponse.swift in Sources */,
+				AB1234567890123400000092 /* SavedCustomerImage.swift in Sources */,
 				AB1234567890123400000078 /* VehicleProduct.swift in Sources */,
 				AB1234567890123400000015 /* CameraService.swift in Sources */,
 				AB1234567890123400000017 /* BarcodeService.swift in Sources */,
@@ -315,6 +324,7 @@
 				AB123456789012340000005F /* AudioManager.swift in Sources */,
 				AB1234567890123400000085 /* ImageOrientationUtils.swift in Sources */,
 				AB1234567890123400000086 /* BatteryOptimizer.swift in Sources */,
+				AB1234567890123400000088 /* PathHelper.swift in Sources */,
 				AB123456789012340000001B /* Constants.swift in Sources */,
 				AB123456789012340000001D /* Extensions.swift in Sources */,
 			);
@@ -328,6 +338,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -360,6 +371,7 @@
 				COMPILER_INDEX_STORE_ENABLE = NO;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 6F974S63AX;
 				ENABLE_BITCODE = NO;
 				ENABLE_BUILD_SYSTEM_CACHING = YES;
 				ENABLE_MODULE_VERIFIER = YES;
@@ -390,11 +402,9 @@
 				SDKROOT = iphoneos;
 				SUPPORTS_MACCATALYST = NO;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
-				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_INSTALL_OBJC_HEADER = NO;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
-				SWIFT_WHOLE_MODULE_OPTIMIZATION = NO;
 				VALIDATE_PRODUCT = NO;
 			};
 			name = Debug;
@@ -404,6 +414,7 @@
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -435,6 +446,7 @@
 				COMPILER_INDEX_STORE_ENABLE = NO;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 6F974S63AX;
 				ENABLE_BITCODE = NO;
 				ENABLE_MODULE_VERIFIER = YES;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -470,10 +482,9 @@
 				CLANG_ENABLE_MODULE_DEBUGGING = NO;
 				CODE_SIGN_IDENTITY = "";
 				CODE_SIGN_STYLE = Automatic;
-				PROVISIONING_PROFILE_SPECIFIER = "";
 				COMPILER_INDEX_STORE_ENABLE = NO;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 01;
+				CURRENT_PROJECT_VERSION = 02;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 6F974S63AX;
 				ENABLE_BITCODE = NO;
@@ -491,18 +502,21 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2025.08.01;
+				MARKETING_VERSION = 2025.08.18;
 				PRODUCT_BUNDLE_IDENTIFIER = com.envanto.barcode.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SKIP_INSTALL = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_COMPILATION_MODE = singlefile;
 				"SWIFT_COMPILATION_MODE[arch=*]" = singlefile;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_INSTALL_OBJC_HEADER = NO;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 				VALIDATE_PRODUCT = NO;
 			};
 			name = Debug;
@@ -512,11 +526,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_IDENTITY = "";
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				PROVISIONING_PROFILE_SPECIFIER = "";
 				COMPILER_INDEX_STORE_ENABLE = NO;
-				CURRENT_PROJECT_VERSION = 01;
+				CURRENT_PROJECT_VERSION = 02;
 				DEVELOPMENT_TEAM = 6F974S63AX;
 				ENABLE_BITCODE = NO;
 				ENABLE_PREVIEWS = YES;
@@ -533,15 +546,18 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2025.08.01;
+				MARKETING_VERSION = 2025.08.18;
 				PRODUCT_BUNDLE_IDENTIFIER = com.envanto.barcode.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
+				TARGETED_DEVICE_FAMILY = 1;
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;

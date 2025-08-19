@@ -24,31 +24,10 @@ struct CustomerResponse: Codable {
     let musteri_adi: String
 }
 
-// MARK: - SavedCustomerImage Model
-struct SavedCustomerImage: Codable, Identifiable {
-    let id: Int
-    let customerName: String
-    let imagePath: String
-    let date: Date
-    let uploadedBy: String
-    
-    // Computed properties for compatibility
-    var localPath: String {
-        return imagePath
-    }
-    
-    var fileExists: Bool {
-        return FileManager.default.fileExists(atPath: imagePath)
-    }
-    
-    var isUploaded: Bool {
-        // Müşteri resimleri local-only olduğu için her zaman false
-        return false
-    }
-}
+
 
 // MARK: - CustomerImageGroup Model
-struct CustomerImageGroup: Codable, Identifiable {
+struct CustomerImageGroup: Identifiable {
     let id = UUID()
     let customerName: String
     let images: [SavedCustomerImage]
@@ -60,7 +39,7 @@ struct CustomerImageGroup: Codable, Identifiable {
         self.customerName = customerName
         self.images = images
         self.imageCount = images.count
-        self.lastImageDate = images.map(\.date).max() ?? Date()
+        self.lastImageDate = images.map { $0.date }.max() ?? Date()
         
         // WhatsApp paylaşım kontrolü (sınır kaldırıldı - her zaman yeşil kalacak)
         let prefs = UserDefaults.standard

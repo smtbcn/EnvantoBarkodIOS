@@ -15,23 +15,24 @@ class ImageStorageManager {
     private static let TAG = "ImageStorageManager"
     
     // MARK: - Save Image (App Documents Only)
-    static func saveImage(image: UIImage, customerName: String, isGallery: Bool, yukleyen: String) async -> String? {
+    static func saveImage(image: UIImage, customerName: String, yukleyen: String) async -> String? {
         
-        // App Documents'a kaydet (Files uygulamasından erişilebilir)
-        if let documentsPath = saveToAppDocuments(image: image, customerName: customerName, isGallery: isGallery) {
+        // PathHelper kullanarak kaydet
+        if let relativePath = saveBarkodImageWithRelativePath(image: image, customerName: customerName) {
             
-            // NOT: Orientation düzeltmesi artık CameraModel'da yapılıyor
-            // let _ = ImageOrientationUtils.fixImageOrientation(imagePath: documentsPath)
+            // Absolute path'i al (dosya kontrol için)
+            guard let absolutePath = PathHelper.getAbsolutePath(for: relativePath) else {
+                return nil
+            }
             
             // Dosya kontrol et
-            let fileExists = FileManager.default.fileExists(atPath: documentsPath)
+            let fileExists = FileManager.default.fileExists(atPath: absolutePath)
             
-            // 🗄️ Database'e kaydet 
-            
+            // 🗄️ Database'e RELATIVE PATH kaydet 
             let dbManager = DatabaseManager.getInstance()
             let dbSaved = dbManager.insertBarkodResim(
                 musteriAdi: customerName,
-                resimYolu: documentsPath,
+                resimYolu: relativePath, // ✅ Relative path kaydet
                 yukleyen: yukleyen
             )
             
@@ -40,7 +41,7 @@ class ImageStorageManager {
                 triggerUploadAfterSave()
             }
             
-            return documentsPath
+            return absolutePath // UI için absolute path döndür
         }
         
         return nil
@@ -48,80 +49,139 @@ class ImageStorageManager {
     
     // MARK: - Customer Images Support (Müşteri Resimleri)
     
-    static func saveMusteriResmi(_ image: UIImage, customerName: String) throws -> String {
-        guard let documentsPath = saveToMusteriResimleriDocuments(image: image, customerName: customerName) else {
+    /// Müşteri resmi kaydetme - relative path döndürür
+    private static func saveMusteriImageWithRelativePath(image: UIImage, customerName: String) -> String? {
+        guard let customerDir = PathHelper.getMusteriResimleriDirectory(for: customerName) else {
+            print("❌ [ImageStorageManager] Müşteri klasörü oluşturulamadı: \(customerName)")
+            return nil
+        }
+        
+        print("📁 [ImageStorageManager] Müşteri klasörü: \(customerDir.path)")
+        
+        // Dosya adı oluştur
+        let fileName = PathHelper.generateMusteriFileName(customerName: customerName)
+        let fileURL = customerDir.appendingPathComponent(fileName)
+        
+        print("📁 [ImageStorageManager] Dosya yolu: \(fileURL.path)")
+        
+        // Resmi kaydet
+        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+            print("❌ [ImageStorageManager] JPEG data oluşturulamadı")
+            return nil
+        }
+        
+        do {
+            // Benzersiz dosya yolu oluştur
+            let finalPath = PathHelper.getUniqueFilePath(basePath: fileURL)
+            
+            try imageData.write(to: finalPath)
+            
+            // Dosya kaydedildi mi kontrol et
+            let fileExists = FileManager.default.fileExists(atPath: finalPath.path)
+            print("✅ [ImageStorageManager] Dosya kaydedildi: \(fileExists) - \(finalPath.path)")
+            
+            // Relative path oluştur
+            let finalFileName = finalPath.lastPathComponent
+            let relativePath = PathHelper.getMusteriImageRelativePath(customerName: customerName, fileName: finalFileName)
+            print("📁 [ImageStorageManager] Relative path: \(relativePath)")
+            
+            return relativePath
+        } catch {
+            print("❌ [ImageStorageManager] Müşteri resmi kaydedilemedi: \(error)")
+            return nil
+        }
+    }
+
+    static func saveMusteriResmi(_ image: UIImage, customerName: String) throws -> (absolutePath: String, relativePath: String) {
+        guard let relativePath = saveMusteriImageWithRelativePath(image: image, customerName: customerName) else {
             throw ImageStorageError.saveFailed
         }
         
-        // NOT: Orientation düzeltmesi artık CameraModel'da yapılıyor
-        // let _ = ImageOrientationUtils.fixImageOrientation(imagePath: documentsPath)
+        // Absolute path'i al (dosya kontrol için)
+        guard let absolutePath = PathHelper.getAbsolutePath(for: relativePath) else {
+            throw ImageStorageError.saveFailed
+        }
         
         // Dosya kontrol et
-        let fileExists = FileManager.default.fileExists(atPath: documentsPath)
+        let fileExists = FileManager.default.fileExists(atPath: absolutePath)
         if !fileExists {
             throw ImageStorageError.fileNotFound
         }
         
-        return documentsPath
+        return (absolutePath: absolutePath, relativePath: relativePath)
     }
     
     static func deleteMusteriResmi(imagePath: String) throws {
         let fileManager = FileManager.default
         
-        guard fileManager.fileExists(atPath: imagePath) else {
+        // Eğer relative path ise absolute path'e çevir
+        let actualPath: String
+        if imagePath.hasPrefix("/") {
+            actualPath = imagePath // Zaten absolute path
+        } else {
+            // Relative path'i absolute path'e çevir
+            actualPath = PathHelper.getAbsolutePath(for: imagePath) ?? imagePath
+        }
+        
+        guard fileManager.fileExists(atPath: actualPath) else {
             // Dosya zaten yok, sessizce devam et
             return
         }
         
         do {
-            try fileManager.removeItem(atPath: imagePath)
+            try fileManager.removeItem(atPath: actualPath)
         } catch {
             throw ImageStorageError.deleteFailed
         }
         
         // Eğer müşteri klasörü boş kaldıyse onu da sil
-        let parentDir = URL(fileURLWithPath: imagePath).deletingLastPathComponent()
+        let parentDir = URL(fileURLWithPath: actualPath).deletingLastPathComponent()
         if let contents = try? fileManager.contentsOfDirectory(atPath: parentDir.path),
            contents.isEmpty {
             try? fileManager.removeItem(at: parentDir)
         }
     }
     
-    private static func saveToMusteriResimleriDocuments(image: UIImage, customerName: String) -> String? {
-        guard let documentsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+    // MARK: - New PathHelper-based Save Functions
+    
+    /// Barkod resmi kaydetme - relative path döndürür
+    private static func saveBarkodImageWithRelativePath(image: UIImage, customerName: String) -> String? {
+        guard let customerDir = PathHelper.getBarkodCustomerDirectory(for: customerName) else {
             return nil
         }
         
-        // musteriresimleri/CustomerName klasör yapısı oluştur
-        let musteriResimleriDir = documentsDir.appendingPathComponent("musteriresimleri")
-        let customerDir = musteriResimleriDir.appendingPathComponent(customerName)
+        // Dosya adı oluştur
+        let fileName = PathHelper.generateBarkodFileName(customerName: customerName)
+        let filePath = customerDir.appendingPathComponent(fileName)
         
-        do {
-            try FileManager.default.createDirectory(at: customerDir, withIntermediateDirectories: true, attributes: nil)
-        } catch {
-            print("Müşteri klasörü oluşturulamadı: \(error)")
-            return nil
-        }
+        // Aynı isimde dosya varsa sayı ekle
+        let finalPath = PathHelper.getUniqueFilePath(basePath: filePath)
         
-        // Resim dosya adı oluştur
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyyMMdd_HHmmss"
-        let timestamp = dateFormatter.string(from: Date())
-        let fileName = "IMG_\(timestamp).jpg"
-        let fileURL = customerDir.appendingPathComponent(fileName)
-        
-        // Resmi kaydet
+        // Resmi JPEG olarak kaydet
         guard let imageData = image.jpegData(compressionQuality: 0.8) else {
             return nil
         }
         
         do {
-            try imageData.write(to: fileURL)
-            return fileURL.path
+            try imageData.write(to: finalPath)
+            
+            // Relative path döndür
+            let finalFileName = finalPath.lastPathComponent
+            return PathHelper.getBarkodImageRelativePath(customerName: customerName, fileName: finalFileName)
         } catch {
-            print("Müşteri resmi kaydedilemedi: \(error)")
+            print("❌ [ImageStorageManager] Barkod resmi kaydedilemedi: \(error)")
             return nil
         }
+    }
+    
+    // MARK: - Legacy Functions (Backward Compatibility)
+    
+    private static func saveToMusteriResimleriDocuments(image: UIImage, customerName: String) -> String? {
+        // PathHelper kullanarak kaydet ve absolute path döndür
+        guard let relativePath = saveMusteriImageWithRelativePath(image: image, customerName: customerName) else {
+            return nil
+        }
+        return PathHelper.getAbsolutePath(for: relativePath)
     }
     
     // MARK: - Upload Trigger (Android mantığı)
@@ -138,18 +198,17 @@ class ImageStorageManager {
 
     
     // MARK: - Save to App Documents (Files App Access)
-    private static func saveToAppDocuments(image: UIImage, customerName: String, isGallery: Bool) -> String? {
+    private static func saveToAppDocuments(image: UIImage, customerName: String) -> String? {
         guard let customerDir = getAppDocumentsCustomerDir(for: customerName) else {
             return nil
         }
         
         // Android'deki gibi dosya adı oluştur
-        let fileName = generateFileName(customerName: customerName, isGallery: isGallery)
+        let fileName = PathHelper.generateBarkodFileName(customerName: customerName)
         let filePath = customerDir.appendingPathComponent(fileName)
         
         // Aynı isimde dosya varsa sayı ekle (Android mantığı)
         let finalPath = getUniqueFilePath(basePath: filePath)
-        
         
         // Resmi JPEG olarak kaydet
         guard let imageData = image.jpegData(compressionQuality: 0.8) else {
@@ -159,8 +218,6 @@ class ImageStorageManager {
         do {
             try imageData.write(to: finalPath)
             
-
-            
             return finalPath.path
         } catch {
             return nil
@@ -169,14 +226,14 @@ class ImageStorageManager {
     
     // MARK: - PhotosPicker için URL'den kaydetme
     static func saveImageFromURL(sourceURL: URL, customerName: String, yukleyen: String) async -> String? {
-        // Hedef dosya yolu oluştur
-        guard let customerDir = getAppDocumentsCustomerDir(for: customerName) else {
+        // PathHelper kullanarak hedef dosya yolu oluştur
+        guard let customerDir = PathHelper.getBarkodCustomerDirectory(for: customerName) else {
             return nil
         }
         
-        let fileName = generateFileName(customerName: customerName, isGallery: true)
+        let fileName = PathHelper.generateBarkodFileName(customerName: customerName)
         let filePath = customerDir.appendingPathComponent(fileName)
-        let finalPath = getUniqueFilePath(basePath: filePath)
+        let finalPath = PathHelper.getUniqueFilePath(basePath: filePath)
         
         // YENİ: ImageOrientationUtils kullanarak kopyala ve orientation düzelt
         let success = ImageOrientationUtils.copyAndFixOrientation(
@@ -185,11 +242,15 @@ class ImageStorageManager {
         )
         
         if success {
-            // Database'e kaydet
+            // Relative path oluştur
+            let finalFileName = finalPath.lastPathComponent
+            let relativePath = PathHelper.getBarkodImageRelativePath(customerName: customerName, fileName: finalFileName)
+            
+            // Database'e RELATIVE PATH kaydet
             let dbManager = DatabaseManager.getInstance()
             let dbSaved = dbManager.insertBarkodResim(
                 musteriAdi: customerName,
-                resimYolu: finalPath.path,
+                resimYolu: relativePath, // ✅ Relative path kaydet
                 yukleyen: yukleyen
             )
             
@@ -197,7 +258,7 @@ class ImageStorageManager {
                 triggerUploadAfterSave()
             }
             
-            return finalPath.path
+            return finalPath.path // UI için absolute path döndür
         } else {
             // Fallback: Normal kopyalama yöntemi
             return await fallbackSaveFromURL(sourceURL: sourceURL, customerName: customerName, yukleyen: yukleyen)
@@ -210,83 +271,58 @@ class ImageStorageManager {
             return nil
         }
         
-        return await saveImage(image: image, customerName: customerName, isGallery: true, yukleyen: yukleyen)
+        return await saveImage(image: image, customerName: customerName, yukleyen: yukleyen)
     }
     
-    // MARK: - Generate File Name (Android Pattern + Customer)
-    private static func generateFileName(customerName: String, isGallery: Bool) -> String {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyyMMdd_HHmmss"
-        let timeStamp = dateFormatter.string(from: Date())
-        
-        // Android'deki gibi güvenli müşteri adı
-        let safeCustomerName = customerName.replacingOccurrences(of: "[^a-zA-Z0-9.-]", 
-                                                                with: "_", 
-                                                                options: .regularExpression)
-        
-        let prefix = isGallery ? "GALLERY" : "CAMERA"
-        return "\(safeCustomerName)_\(prefix)_\(timeStamp).jpg"
+    // MARK: - Legacy Functions (PathHelper'a yönlendirme)
+    
+    private static func generateFileName(customerName: String) -> String {
+        return PathHelper.generateBarkodFileName(customerName: customerName)
     }
     
-    // MARK: - App Documents Directory Functions (Files App Access)
     private static func getAppDocumentsDirectory() -> URL? {
-        return FileManager.default.urls(for: .documentDirectory, 
-                                       in: .userDomainMask).first
+        return PathHelper.getDocumentsDirectory()
     }
     
     private static func getAppDocumentsCustomerDir(for customerName: String) -> URL? {
-        guard let documentsDir = getAppDocumentsDirectory() else {
-            return nil
-        }
-        
-        let envantoDir = documentsDir.appendingPathComponent("Envanto")
-        
-        // Android'deki gibi güvenli klasör adı oluştur
-        let safeCustomerName = customerName.replacingOccurrences(of: "[^a-zA-Z0-9.-]", 
-                                                                with: "_", 
-                                                                options: .regularExpression)
-        
-        let customerDir = envantoDir.appendingPathComponent(safeCustomerName)
-        
-        // Klasör yoksa oluştur
-        if !FileManager.default.fileExists(atPath: customerDir.path) {
-            do {
-                try FileManager.default.createDirectory(at: customerDir, 
-                                                      withIntermediateDirectories: true, 
-                                                      attributes: nil)
-            } catch {
-                return nil
-            }
-        }
-        
-        return customerDir
+        return PathHelper.getBarkodCustomerDirectory(for: customerName)
     }
     
     private static func getUniqueFilePath(basePath: URL) -> URL {
-        var finalPath = basePath
-        var counter = 1
-        
-        while FileManager.default.fileExists(atPath: finalPath.path) {
-            let fileName = basePath.deletingPathExtension().lastPathComponent
-            let fileExtension = basePath.pathExtension
-            let newFileName = "\(fileName)_\(counter).\(fileExtension)"
-            finalPath = basePath.deletingLastPathComponent().appendingPathComponent(newFileName)
-            counter += 1
-        }
-        
-        return finalPath
+        return PathHelper.getUniqueFilePath(basePath: basePath)
     }
     
     // MARK: - List Customer Images (App Documents)
     static func listCustomerImages(customerName: String) async -> [String] {
-        // App Documents'tan ara
-        let documentsImages = getAppDocumentsImages(customerName: customerName)
+        // PathHelper kullanarak müşteri klasörünü al
+        guard let customerDir = PathHelper.getBarkodCustomerDirectory(for: customerName) else { 
+            return [] 
+        }
         
-        return documentsImages.sorted()
+        do {
+            let fileURLs = try FileManager.default.contentsOfDirectory(at: customerDir, 
+                                                                       includingPropertiesForKeys: nil)
+            
+            // Sadece resim dosyalarını filtrele ve absolute path döndür
+            let imagePaths = fileURLs
+                .filter { url in
+                    let pathExtension = url.pathExtension.lowercased()
+                    return ["jpg", "jpeg", "png"].contains(pathExtension)
+                }
+                .map { $0.path }
+                .sorted()
+            
+            return imagePaths
+        } catch {
+            return []
+        }
     }
     
     private static func getAppDocumentsImages(customerName: String) -> [String] {
-        guard let customerDir = getAppDocumentsCustomerDir(for: customerName) else { return [] }
+        // Legacy fonksiyon - PathHelper'a yönlendir
+        guard let customerDir = PathHelper.getBarkodCustomerDirectory(for: customerName) else { 
+            return [] 
+        }
         
         do {
             let fileURLs = try FileManager.default.contentsOfDirectory(at: customerDir, 
@@ -322,42 +358,24 @@ class ImageStorageManager {
         }
     }
     
-    // MARK: - Cleanup Empty Directories
+    // MARK: - Cleanup Empty Directories (PathHelper'a yönlendirme)
     private static func cleanupEmptyDirectories(_ directory: URL) {
-        let contents = try? FileManager.default.contentsOfDirectory(at: directory, 
-                                                                   includingPropertiesForKeys: nil)
-        
-        // Klasör boşsa ve Envanto klasörü değilse sil
-        if contents?.isEmpty == true && directory.lastPathComponent != "Envanto" {
-            do {
-                try FileManager.default.removeItem(at: directory)
-                
-                // Üst klasörü de kontrol et
-                cleanupEmptyDirectories(directory.deletingLastPathComponent())
-            } catch {
-            }
-        }
+        PathHelper.cleanupEmptyDirectories(directory)
     }
     
     // MARK: - Delete Customer Images (App Documents)
     static func deleteCustomerImages(customerName: String) async -> Bool {
-        
-        // 🎯 Klasör adını aynı şekilde dönüştür (getAppDocumentsCustomerDir ile aynı mantık)
-        let safeCustomerName = customerName.replacingOccurrences(of: "[^a-zA-Z0-9.-]", 
-                                                                with: "_", 
-                                                                options: .regularExpression)
-        
         var fileSuccess = false
         var dbSuccess = false
         
         // 1️⃣ Database kayıtlarını sil
         dbSuccess = DatabaseManager.getInstance().deleteCustomerImages(musteriAdi: customerName)
         
-        // 2️⃣ App Documents müşteri klasörünü sil
-        if let customerDir = getAppDocumentsCustomerDir(for: customerName) {
+        // 2️⃣ PathHelper kullanarak müşteri klasörünü sil
+        if let customerDir = PathHelper.getBarkodCustomerDirectory(for: customerName) {
             do {
                 try FileManager.default.removeItem(at: customerDir)
-                cleanupEmptyDirectories(customerDir.deletingLastPathComponent())
+                PathHelper.cleanupEmptyDirectories(customerDir.deletingLastPathComponent())
                 fileSuccess = true
             } catch {
                 fileSuccess = false
@@ -376,8 +394,8 @@ class ImageStorageManager {
     static func getStorageInfo() async -> String {
         var info = "📱 Envanto Storage Info:\n"
         
-        // App Documents bilgisi
-        if let documentsDir = getAppDocumentsDirectory() {
+        // PathHelper kullanarak Documents dizini bilgisi
+        if let documentsDir = PathHelper.getDocumentsDirectory() {
             let envantoDir = documentsDir.appendingPathComponent("Envanto")
             info += "📁 Files App: \(envantoDir.path)\n"
             
